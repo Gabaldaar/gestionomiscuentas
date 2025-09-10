@@ -47,11 +47,12 @@ export default function PropertyDetailPage({ params }: { params: { id: string } 
   const [loading, setLoading] = React.useState(true);
   const [selectedMonth, setSelectedMonth] = React.useState<string>((new Date().getMonth() + 1).toString());
   const [selectedYear, setSelectedYear] = React.useState<string>(new Date().getFullYear().toString());
+  const { id } = params;
 
   React.useEffect(() => {
     const fetchProperty = async () => {
       setLoading(true);
-      const docRef = doc(db, "properties", params.id);
+      const docRef = doc(db, "properties", id);
       const docSnap = await getDoc(docRef);
       if (docSnap.exists()) {
         setProperty({ id: docSnap.id, ...docSnap.data() } as Property);
@@ -63,7 +64,7 @@ export default function PropertyDetailPage({ params }: { params: { id: string } 
     };
 
     fetchProperty();
-  }, [params.id]);
+  }, [id]);
   
   if (loading) {
     return (
