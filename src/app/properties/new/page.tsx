@@ -35,7 +35,7 @@ import { Loader } from 'lucide-react';
 const propertySchema = z.object({
   name: z.string().min(1, 'El nombre es obligatorio.'),
   description: z.string().min(1, 'La descripción es obligatoria.'),
-  imageUrl: z.string().url('Debe ser una URL válida.'),
+  imageUrl: z.string().url('Debe ser una URL válida.').or(z.literal('')).optional(),
   notes: z.string().optional(),
 });
 
@@ -59,7 +59,14 @@ export default function NewPropertyPage() {
   const onSubmit = async (data: PropertyFormValues) => {
     setIsSubmitting(true);
     try {
-      await addDoc(collection(db, 'properties'), data);
+      const propertyData = { ...data };
+      if (!propertyData.imageUrl) {
+        // Generate a placeholder image URL if one isn't provided
+        const seed = propertyData.name.replace(/\s+/g, '-').toLowerCase();
+        propertyData.imageUrl = `https://picsum.photos/seed/${seed}/600/400`;
+      }
+
+      await addDoc(collection(db, 'properties'), propertyData);
       toast({
         title: 'Propiedad creada',
         description: 'La nueva propiedad ha sido añadida exitosamente.',
@@ -124,10 +131,10 @@ export default function NewPropertyPage() {
                 name="imageUrl"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>URL de la Imagen</FormLabel>
+                    <FormLabel>URL de la Imagen (Opcional)</FormLabel>
                     <FormControl>
                       <Input
-                        placeholder="https://ejemplo.com/imagen.jpg"
+                        placeholder="Déjalo en blanco para usar una imagen automática"
                         {...field}
                       />
                     </FormControl>
