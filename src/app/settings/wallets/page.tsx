@@ -4,6 +4,7 @@
 import * as React from 'react';
 import { collection, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import Link from 'next/link';
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -44,9 +45,11 @@ export default function WalletsSettingsPage() {
   return (
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
       <PageHeader title="Billeteras">
-        <Button onClick={() => toast({ title: "Funcionalidad no implementada" })}>
-          <PlusCircle className="mr-2 h-4 w-4" />
-          Añadir Billetera
+        <Button asChild>
+          <Link href="/settings/wallets/new">
+            <PlusCircle className="mr-2 h-4 w-4" />
+            Añadir Billetera
+          </Link>
         </Button>
       </PageHeader>
       
