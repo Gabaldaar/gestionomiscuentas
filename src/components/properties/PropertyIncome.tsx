@@ -23,12 +23,14 @@ export function PropertyIncome({ incomes, wallets }: PropertyIncomeProps) {
 
   return (
     <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle>Ingresos</CardTitle>
-        <Button onClick={() => toast({ title: "Funcionalidad no implementada" })}>
-          <PlusCircle className="mr-2 h-4 w-4" />
-          Añadir Ingreso
-        </Button>
+      <CardHeader>
+        <div className="flex flex-row items-center justify-between">
+            <CardTitle>Ingresos</CardTitle>
+            <Button onClick={() => toast({ title: "Funcionalidad no implementada" })}>
+            <PlusCircle className="mr-2 h-4 w-4" />
+            Añadir Ingreso
+            </Button>
+        </div>
       </CardHeader>
       <CardContent>
         <Table>
