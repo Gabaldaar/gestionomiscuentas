@@ -54,6 +54,7 @@ export default function PropertyDetailPage({ params }: { params: { id: string } 
               expectedExpenses={propertyExpectedExpenses}
               actualExpenses={propertyActualExpenses}
               expenseCategories={expenseCategories}
+              wallets={wallets}
             />
 
             <PropertyNotes notes={property.notes} />

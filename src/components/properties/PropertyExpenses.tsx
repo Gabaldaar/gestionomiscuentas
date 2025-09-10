@@ -8,7 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { PlusCircle, Pencil, Trash2 } from "lucide-react";
-import { type ExpectedExpense, type ActualExpense, type ExpenseCategory } from "@/lib/types";
+import { type ExpectedExpense, type ActualExpense, type ExpenseCategory, type Wallet } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
 import { AddExpenseDialog } from './AddExpenseDialog';
 import { AddExpectedExpenseDialog } from './AddExpectedExpenseDialog';
@@ -19,9 +19,10 @@ type PropertyExpensesProps = {
   expectedExpenses: ExpectedExpense[];
   actualExpenses: ActualExpense[];
   expenseCategories: ExpenseCategory[];
+  wallets: Wallet[];
 };
 
-export function PropertyExpenses({ expectedExpenses: initialExpectedExpenses, actualExpenses: initialActualExpenses, expenseCategories }: PropertyExpensesProps) {
+export function PropertyExpenses({ expectedExpenses: initialExpectedExpenses, actualExpenses: initialActualExpenses, expenseCategories, wallets }: PropertyExpensesProps) {
   const { toast } = useToast();
   
   // State for Actual Expenses
@@ -87,6 +88,11 @@ export function PropertyExpenses({ expectedExpenses: initialExpectedExpenses, ac
       if (subcategory) return category.name;
     }
     return "Desconocido";
+  };
+
+  const getWalletName = (id: string) => {
+    const wallet = wallets.find(w => w.id === id);
+    return wallet ? wallet.name : "Desconocido";
   };
 
 
@@ -344,6 +350,7 @@ export function PropertyExpenses({ expectedExpenses: initialExpectedExpenses, ac
                         <TableRow>
                             <TableHead>Fecha</TableHead>
                             <TableHead>Categoría</TableHead>
+                            <TableHead>Billetera</TableHead>
                             <TableHead>Notas</TableHead>
                             <TableHead className="text-right">Monto</TableHead>
                             <TableHead className="w-[100px]"></TableHead>
@@ -357,6 +364,7 @@ export function PropertyExpenses({ expectedExpenses: initialExpectedExpenses, ac
                                  <div className='font-medium'>{getSubcategoryName(expense.subcategoryId)}</div>
                                 <div className='text-xs text-muted-foreground'>{getCategoryName(expense.subcategoryId)}</div>
                             </TableCell>
+                            <TableCell>{getWalletName(expense.walletId)}</TableCell>
                             <TableCell className="text-muted-foreground max-w-[200px] truncate">{expense.notes}</TableCell>
                             <TableCell className="text-right font-medium">
                                 {new Intl.NumberFormat('es-AR', { style: 'currency', currency: expense.currency }).format(expense.amount)}
@@ -376,7 +384,7 @@ export function PropertyExpenses({ expectedExpenses: initialExpectedExpenses, ac
                             </TableRow>
                         )) : (
                             <TableRow>
-                            <TableCell colSpan={5} className="text-center text-muted-foreground">
+                            <TableCell colSpan={6} className="text-center text-muted-foreground">
                                 No hay gastos reales para mostrar para el período seleccionado.
                             </TableCell>
                             </TableRow>
@@ -394,6 +402,7 @@ export function PropertyExpenses({ expectedExpenses: initialExpectedExpenses, ac
         isOpen={isAddExpenseOpen}
         onOpenChange={closeDialogs}
         expenseCategories={expenseCategories}
+        wallets={wallets}
         onExpenseSubmit={handleActualExpenseSubmit}
         expenseToEdit={editingExpense}
       />

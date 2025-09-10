@@ -69,8 +69,8 @@ export const expectedExpenses: ExpectedExpense[] = [
 ];
 
 export const actualExpenses: ActualExpense[] = [
-    { id: 'act1', propertyId: 'prop1', subcategoryId: 'sub1', amount: 55, currency: 'USD', date: '2024-07-15T10:00:00Z', notes: 'Factura de electricidad de julio.' },
-    { id: 'act2', propertyId: 'prop2', subcategoryId: 'sub5', amount: 15000, currency: 'ARS', date: '2024-07-10T14:30:00Z', notes: 'Reparación de gotera en el techo.' },
+    { id: 'act1', propertyId: 'prop1', subcategoryId: 'sub1', walletId: 'wallet2', amount: 55, currency: 'USD', date: '2024-07-15T10:00:00Z', notes: 'Factura de electricidad de julio.' },
+    { id: 'act2', propertyId: 'prop2', subcategoryId: 'sub5', walletId: 'wallet1', amount: 15000, currency: 'ARS', date: '2024-07-10T14:30:00Z', notes: 'Reparación de gotera en el techo.' },
 ];
 
 export const incomes: Income[] = [

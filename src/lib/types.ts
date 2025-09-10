@@ -40,6 +40,7 @@ export type ActualExpense = {
   id: string;
   propertyId: string;
   subcategoryId: string;
+  walletId: string;
   amount: number;
   currency: Currency;
   date: string; // ISO string

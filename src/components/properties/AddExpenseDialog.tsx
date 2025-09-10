@@ -37,13 +37,14 @@ import { Textarea } from '@/components/ui/textarea';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
-import { type ExpenseCategory, type ActualExpense } from '@/lib/types';
+import { type ExpenseCategory, type ActualExpense, type Wallet } from '@/lib/types';
 
 const expenseSchema = z.object({
   date: z.date({
     required_error: 'La fecha es obligatoria.',
   }),
   subcategoryId: z.string().min(1, 'La categoría es obligatoria.'),
+  walletId: z.string().min(1, 'La billetera es obligatoria.'),
   amount: z.coerce.number().min(0.01, 'El monto debe ser mayor que cero.'),
   currency: z.enum(['ARS', 'USD'], {
     required_error: 'La moneda es obligatoria.',
@@ -57,6 +58,7 @@ type AddExpenseDialogProps = {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
   expenseCategories: ExpenseCategory[];
+  wallets: Wallet[];
   onExpenseSubmit: (data: ExpenseFormValues) => void;
   expenseToEdit?: ActualExpense | null;
 };
@@ -65,6 +67,7 @@ export function AddExpenseDialog({
   isOpen,
   onOpenChange,
   expenseCategories,
+  wallets,
   onExpenseSubmit,
   expenseToEdit,
 }: AddExpenseDialogProps) {
@@ -81,6 +84,7 @@ export function AddExpenseDialog({
         form.reset({
           date: new Date(expenseToEdit.date),
           subcategoryId: expenseToEdit.subcategoryId,
+          walletId: expenseToEdit.walletId,
           amount: expenseToEdit.amount,
           currency: expenseToEdit.currency,
           notes: expenseToEdit.notes || '',
@@ -89,6 +93,7 @@ export function AddExpenseDialog({
           form.reset({
               date: new Date(),
               subcategoryId: '',
+              walletId: '',
               amount: 0,
               currency: 'ARS',
               notes: '',
@@ -176,6 +181,30 @@ export function AddExpenseDialog({
                             </SelectItem>
                           ))}
                         </React.Fragment>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="walletId"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Billetera</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value} defaultValue={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecciona una billetera" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {wallets.map((wallet) => (
+                        <SelectItem key={wallet.id} value={wallet.id}>
+                          {wallet.name} ({wallet.currency})
+                        </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
