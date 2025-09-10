@@ -2,6 +2,7 @@ import { PageHeader } from "@/components/shared/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Wallet, Landmark } from "lucide-react";
+import Link from "next/link";
 
 export default function SettingsPage() {
   const settingsCards = [
@@ -10,12 +11,14 @@ export default function SettingsPage() {
       description: "Administra tus categorías y subcategorías de gastos.",
       icon: Landmark,
       action: "Administrar",
+      href: "/settings/expenses"
     },
     {
       title: "Billeteras",
       description: "Administra tus cuentas de ingresos (ARS, USD).",
       icon: Wallet,
       action: "Administrar",
+      href: "/settings/wallets"
     },
   ];
 
@@ -38,7 +41,9 @@ export default function SettingsPage() {
               <CardDescription>{card.description}</CardDescription>
             </CardContent>
             <CardContent>
-              <Button className="w-full">{card.action}</Button>
+              <Button className="w-full" asChild>
+                <Link href={card.href}>{card.action}</Link>
+              </Button>
             </CardContent>
           </Card>
         ))}
