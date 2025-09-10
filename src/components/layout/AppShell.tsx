@@ -57,10 +57,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   as={Link}
                   href={item.href}
                 >
-                  <>
+                  <div>
                     <item.icon />
                     <span>{item.label}</span>
-                  </>
+                  </div>
                 </SidebarMenuButton>
               </SidebarMenuItem>
             ))}
