@@ -12,7 +12,7 @@ import { PropertyExpenses } from '@/components/properties/PropertyExpenses';
 import { PropertyIncome } from '@/components/properties/PropertyIncome';
 import { db } from '@/lib/firebase';
 import { type Property } from '@/lib/types';
-import { expenseCategories, incomes, wallets } from '@/lib/data';
+import { expenseCategories, wallets } from '@/lib/data';
 
 
 async function getProperty(id: string): Promise<Property | null> {
@@ -34,8 +34,6 @@ export default async function PropertyDetailPage({ params }: { params: { id: str
     notFound();
   }
   
-  const propertyIncomes = incomes.filter(i => i.propertyId === params.id);
-
 
   return (
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
@@ -62,7 +60,7 @@ export default async function PropertyDetailPage({ params }: { params: { id: str
             </Card>
 
             <PropertyIncome
-              incomes={propertyIncomes}
+              propertyId={property.id}
               wallets={wallets}
             />
 

@@ -63,17 +63,17 @@ export const expenseCategories: ExpenseCategory[] = [
 ];
 
 export const expectedExpenses: ExpectedExpense[] = [
-    { id: 'exp1', propertyId: 'prop1', subcategoryId: 'sub1', amount: 50, currency: 'USD', month: 7, year: 2024 },
-    { id: 'exp2', propertyId: 'prop1', subcategoryId: 'sub9', amount: 100, currency: 'USD', month: 7, year: 2024 },
-    { id: 'exp3', propertyId: 'prop2', subcategoryId: 'sub6', amount: 8000, currency: 'ARS', month: 7, year: 2024 },
+    { id: 'exp1', subcategoryId: 'sub1', amount: 50, currency: 'USD', month: 7, year: 2024 },
+    { id: 'exp2', subcategoryId: 'sub9', amount: 100, currency: 'USD', month: 7, year: 2024 },
+    { id: 'exp3', subcategoryId: 'sub6', amount: 8000, currency: 'ARS', month: 7, year: 2024 },
 ];
 
 export const actualExpenses: ActualExpense[] = [
-    { id: 'act1', propertyId: 'prop1', subcategoryId: 'sub1', walletId: 'wallet2', amount: 55, currency: 'USD', date: '2024-07-15T10:00:00Z', notes: 'Factura de electricidad de julio.' },
-    { id: 'act2', propertyId: 'prop2', subcategoryId: 'sub5', walletId: 'wallet1', amount: 15000, currency: 'ARS', date: '2024-07-10T14:30:00Z', notes: 'Reparación de gotera en el techo.' },
+    { id: 'act1', subcategoryId: 'sub1', walletId: 'wallet2', amount: 55, currency: 'USD', date: '2024-07-15T10:00:00Z', notes: 'Factura de electricidad de julio.' },
+    { id: 'act2', subcategoryId: 'sub5', walletId: 'wallet1', amount: 15000, currency: 'ARS', date: '2024-07-10T14:30:00Z', notes: 'Reparación de gotera en el techo.' },
 ];
 
 export const incomes: Income[] = [
-    { id: 'inc1', propertyId: 'prop1', walletId: 'wallet2', amount: 1200, currency: 'USD', date: '2024-07-01T10:00:00Z', notes: 'Alquiler de Julio.' },
-    { id: 'inc2', propertyId: 'prop3', walletId: 'wallet2', amount: 2500, currency: 'USD', date: '2024-07-05T12:00:00Z', notes: 'Alquiler de temporada alta.' },
+    { id: 'inc1', walletId: 'wallet2', amount: 1200, currency: 'USD', date: '2024-07-01T10:00:00Z', notes: 'Alquiler de Julio.' },
+    { id: 'inc2', walletId: 'wallet2', amount: 2500, currency: 'USD', date: '2024-07-05T12:00:00Z', notes: 'Alquiler de temporada alta.' },
 ];

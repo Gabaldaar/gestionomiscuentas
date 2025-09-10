@@ -1,3 +1,4 @@
+
 export type Currency = 'ARS' | 'USD';
 
 export type Property = {
@@ -47,7 +48,6 @@ export type ActualExpense = {
 
 export type Income = {
   id: string;
-  propertyId: string;
   walletId: string;
   amount: number;
   currency: Currency;
