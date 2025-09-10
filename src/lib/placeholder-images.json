@@ -1,3 +1,22 @@
 {
-  "placeholderImages": []
+  "placeholderImages": [
+    {
+      "id": "prop1",
+      "description": "A modern apartment building in a city.",
+      "imageUrl": "https://picsum.photos/seed/prop1/600/400",
+      "imageHint": "apartment building"
+    },
+    {
+      "id": "prop2",
+      "description": "A suburban house with a green lawn.",
+      "imageUrl": "https://picsum.photos/seed/prop2/600/400",
+      "imageHint": "suburban house"
+    },
+    {
+      "id": "prop3",
+      "description": "A modern condo building near the beach.",
+      "imageUrl": "https://picsum.photos/seed/prop3/600/400",
+      "imageHint": "beach condo"
+    }
+  ]
 }
