@@ -13,6 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { AddExpenseDialog } from './AddExpenseDialog';
 import { AddExpectedExpenseDialog } from './AddExpectedExpenseDialog';
 import { ConfirmDeleteDialog } from '../shared/ConfirmDeleteDialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 
 type PropertyExpensesProps = {
   expectedExpenses: ExpectedExpense[];
@@ -34,6 +35,30 @@ export function PropertyExpenses({ expectedExpenses: initialExpectedExpenses, ac
   const [expectedExpenses, setExpectedExpenses] = React.useState<ExpectedExpense[]>(initialExpectedExpenses);
   const [editingExpectedExpense, setEditingExpectedExpense] = React.useState<ExpectedExpense | null>(null);
   const [deletingExpectedExpenseId, setDeletingExpectedExpenseId] = React.useState<string | null>(null);
+
+  // State for filters
+  const [selectedMonth, setSelectedMonth] = React.useState<string>((new Date().getMonth() + 1).toString());
+  const [selectedYear, setSelectedYear] = React.useState<string>(new Date().getFullYear().toString());
+
+  const months = [
+    { value: '1', label: 'Enero' }, { value: '2', label: 'Febrero' }, { value: '3', label: 'Marzo' },
+    { value: '4', label: 'Abril' }, { value: '5', label: 'Mayo' }, { value: '6', label: 'Junio' },
+    { value: '7', label: 'Julio' }, { value: '8', label: 'Agosto' }, { value: '9', label: 'Septiembre' },
+    { value: '10', label: 'Octubre' }, { value: '11', label: 'Noviembre' }, { value: '12', label: 'Diciembre' }
+  ];
+
+  const years = Array.from({ length: 10 }, (_, i) => (new Date().getFullYear() - 5 + i).toString());
+
+
+  const filteredExpectedExpenses = React.useMemo(() => {
+    return expectedExpenses.filter(expense => {
+      const expenseYear = expense.year.toString();
+      const expenseMonth = expense.month.toString();
+      const yearMatch = expenseYear === selectedYear;
+      const monthMatch = selectedMonth === 'all' || expenseMonth === selectedMonth;
+      return yearMatch && monthMatch;
+    }).sort((a, b) => a.month - b.month);
+  }, [expectedExpenses, selectedMonth, selectedYear]);
 
 
   const getSubcategoryName = (id: string) => {
@@ -181,10 +206,29 @@ export function PropertyExpenses({ expectedExpenses: initialExpectedExpenses, ac
                             <CardTitle>Gastos Previstos</CardTitle>
                             <CardDescription>Una descripción general de tus gastos previstos y su estado.</CardDescription>
                         </div>
-                        <Button onClick={() => { setEditingExpectedExpense(null); setIsAddExpectedExpenseOpen(true); }}>
-                            <PlusCircle className="mr-2 h-4 w-4" />
-                            Añadir Gasto Previsto
-                        </Button>
+                        <div className="flex items-center gap-2">
+                           <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+                                <SelectTrigger className="w-[180px]">
+                                    <SelectValue placeholder="Seleccionar mes" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">Todos los meses</SelectItem>
+                                    {months.map(m => <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>)}
+                                </SelectContent>
+                            </Select>
+                             <Select value={selectedYear} onValueChange={setSelectedYear}>
+                                <SelectTrigger className="w-[120px]">
+                                    <SelectValue placeholder="Seleccionar año" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {years.map(y => <SelectItem key={y} value={y}>{y}</SelectItem>)}
+                                </SelectContent>
+                            </Select>
+                            <Button onClick={() => { setEditingExpectedExpense(null); setIsAddExpectedExpenseOpen(true); }}>
+                                <PlusCircle className="mr-2 h-4 w-4" />
+                                Añadir Gasto Previsto
+                            </Button>
+                        </div>
                     </div>
                 </CardHeader>
                 <CardContent>
@@ -200,7 +244,7 @@ export function PropertyExpenses({ expectedExpenses: initialExpectedExpenses, ac
                         </TableRow>
                         </TableHeader>
                         <TableBody>
-                        {expectedExpenses.length > 0 ? expectedExpenses.map(expense => {
+                        {filteredExpectedExpenses.length > 0 ? filteredExpectedExpenses.map(expense => {
                             const paidAmount = getPaidAmount(expense);
                             const status = getStatus(expense.amount, paidAmount);
                             return (
@@ -239,7 +283,7 @@ export function PropertyExpenses({ expectedExpenses: initialExpectedExpenses, ac
                         }) : (
                             <TableRow>
                             <TableCell colSpan={6} className="text-center text-muted-foreground">
-                                No hay gastos previstos para mostrar.
+                                No hay gastos previstos para mostrar para el período seleccionado.
                             </TableCell>
                             </TableRow>
                         )}
