@@ -37,8 +37,11 @@ export function PropertyExpenses({ expectedExpenses: initialExpectedExpenses, ac
   const [deletingExpectedExpenseId, setDeletingExpectedExpenseId] = React.useState<string | null>(null);
 
   // State for filters
-  const [selectedMonth, setSelectedMonth] = React.useState<string>((new Date().getMonth() + 1).toString());
-  const [selectedYear, setSelectedYear] = React.useState<string>(new Date().getFullYear().toString());
+  const [expectedSelectedMonth, setExpectedSelectedMonth] = React.useState<string>((new Date().getMonth() + 1).toString());
+  const [expectedSelectedYear, setExpectedSelectedYear] = React.useState<string>(new Date().getFullYear().toString());
+  const [actualSelectedMonth, setActualSelectedMonth] = React.useState<string>((new Date().getMonth() + 1).toString());
+  const [actualSelectedYear, setActualSelectedYear] = React.useState<string>(new Date().getFullYear().toString());
+
 
   const months = [
     { value: '1', label: 'Enero' }, { value: '2', label: 'Febrero' }, { value: '3', label: 'Marzo' },
@@ -54,11 +57,20 @@ export function PropertyExpenses({ expectedExpenses: initialExpectedExpenses, ac
     return expectedExpenses.filter(expense => {
       const expenseYear = expense.year.toString();
       const expenseMonth = expense.month.toString();
-      const yearMatch = expenseYear === selectedYear;
-      const monthMatch = selectedMonth === 'all' || expenseMonth === selectedMonth;
+      const yearMatch = expenseYear === expectedSelectedYear;
+      const monthMatch = expectedSelectedMonth === 'all' || expenseMonth === expectedSelectedMonth;
       return yearMatch && monthMatch;
     }).sort((a, b) => a.month - b.month);
-  }, [expectedExpenses, selectedMonth, selectedYear]);
+  }, [expectedExpenses, expectedSelectedMonth, expectedSelectedYear]);
+
+  const filteredActualExpenses = React.useMemo(() => {
+    return actualExpenses.filter(expense => {
+        const expenseDate = new Date(expense.date);
+        const yearMatch = expenseDate.getFullYear().toString() === actualSelectedYear;
+        const monthMatch = actualSelectedMonth === 'all' || (expenseDate.getMonth() + 1).toString() === actualSelectedMonth;
+        return yearMatch && monthMatch;
+    }).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  }, [actualExpenses, actualSelectedMonth, actualSelectedYear]);
 
 
   const getSubcategoryName = (id: string) => {
@@ -207,7 +219,7 @@ export function PropertyExpenses({ expectedExpenses: initialExpectedExpenses, ac
                             <CardDescription>Una descripción general de tus gastos previstos y su estado.</CardDescription>
                         </div>
                         <div className="flex items-center gap-2">
-                           <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+                           <Select value={expectedSelectedMonth} onValueChange={setExpectedSelectedMonth}>
                                 <SelectTrigger className="w-[180px]">
                                     <SelectValue placeholder="Seleccionar mes" />
                                 </SelectTrigger>
@@ -216,7 +228,7 @@ export function PropertyExpenses({ expectedExpenses: initialExpectedExpenses, ac
                                     {months.map(m => <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>)}
                                 </SelectContent>
                             </Select>
-                             <Select value={selectedYear} onValueChange={setSelectedYear}>
+                             <Select value={expectedSelectedYear} onValueChange={setExpectedSelectedYear}>
                                 <SelectTrigger className="w-[120px]">
                                     <SelectValue placeholder="Seleccionar año" />
                                 </SelectTrigger>
@@ -301,10 +313,29 @@ export function PropertyExpenses({ expectedExpenses: initialExpectedExpenses, ac
                             <CardTitle>Historial de Gastos Reales</CardTitle>
                             <CardDescription>Una lista de todos los gastos individuales registrados.</CardDescription>
                         </div>
-                        <Button onClick={() => { setEditingExpense(null); setIsAddExpenseOpen(true); }}>
-                            <PlusCircle className="mr-2 h-4 w-4" />
-                            Añadir Gasto Real
-                        </Button>
+                        <div className="flex items-center gap-2">
+                           <Select value={actualSelectedMonth} onValueChange={setActualSelectedMonth}>
+                                <SelectTrigger className="w-[180px]">
+                                    <SelectValue placeholder="Seleccionar mes" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">Todos los meses</SelectItem>
+                                    {months.map(m => <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>)}
+                                </SelectContent>
+                            </Select>
+                             <Select value={actualSelectedYear} onValueChange={setActualSelectedYear}>
+                                <SelectTrigger className="w-[120px]">
+                                    <SelectValue placeholder="Seleccionar año" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {years.map(y => <SelectItem key={y} value={y}>{y}</SelectItem>)}
+                                </SelectContent>
+                            </Select>
+                            <Button onClick={() => { setEditingExpense(null); setIsAddExpenseOpen(true); }}>
+                                <PlusCircle className="mr-2 h-4 w-4" />
+                                Añadir Gasto Real
+                            </Button>
+                        </div>
                     </div>
                 </CardHeader>
                 <CardContent>
@@ -313,17 +344,20 @@ export function PropertyExpenses({ expectedExpenses: initialExpectedExpenses, ac
                         <TableRow>
                             <TableHead>Fecha</TableHead>
                             <TableHead>Categoría</TableHead>
+                            <TableHead>Notas</TableHead>
                             <TableHead className="text-right">Monto</TableHead>
                             <TableHead className="w-[100px]"></TableHead>
                         </TableRow>
                         </TableHeader>
                         <TableBody>
-                        {actualExpenses.length > 0 ? actualExpenses.map(expense => (
+                        {filteredActualExpenses.length > 0 ? filteredActualExpenses.map(expense => (
                             <TableRow key={expense.id}>
                             <TableCell>{new Date(expense.date).toLocaleDateString('es-ES')}</TableCell>
                             <TableCell>
-                                <Badge variant="outline">{`${getCategoryName(expense.subcategoryId)} - ${getSubcategoryName(expense.subcategoryId)}`}</Badge>
+                                 <div className='font-medium'>{getSubcategoryName(expense.subcategoryId)}</div>
+                                <div className='text-xs text-muted-foreground'>{getCategoryName(expense.subcategoryId)}</div>
                             </TableCell>
+                            <TableCell className="text-muted-foreground max-w-[200px] truncate">{expense.notes}</TableCell>
                             <TableCell className="text-right font-medium">
                                 {new Intl.NumberFormat('es-AR', { style: 'currency', currency: expense.currency }).format(expense.amount)}
                             </TableCell>
@@ -342,8 +376,8 @@ export function PropertyExpenses({ expectedExpenses: initialExpectedExpenses, ac
                             </TableRow>
                         )) : (
                             <TableRow>
-                            <TableCell colSpan={4} className="text-center text-muted-foreground">
-                                No hay gastos reales para mostrar.
+                            <TableCell colSpan={5} className="text-center text-muted-foreground">
+                                No hay gastos reales para mostrar para el período seleccionado.
                             </TableCell>
                             </TableRow>
                         )}
