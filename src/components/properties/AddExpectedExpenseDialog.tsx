@@ -5,8 +5,6 @@ import * as React from 'react';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { format } from 'date-fns';
-import { CalendarIcon } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -33,138 +31,120 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Calendar } from '@/components/ui/calendar';
-import { cn } from '@/lib/utils';
-import { type ExpenseCategory, type ActualExpense } from '@/lib/types';
+import { type ExpenseCategory, type ExpectedExpense } from '@/lib/types';
 
-const expenseSchema = z.object({
-  date: z.date({
-    required_error: 'La fecha es obligatoria.',
-  }),
+const expectedExpenseSchema = z.object({
   subcategoryId: z.string().min(1, 'La categoría es obligatoria.'),
   amount: z.coerce.number().min(0.01, 'El monto debe ser mayor que cero.'),
   currency: z.enum(['ARS', 'USD'], {
     required_error: 'La moneda es obligatoria.',
   }),
-  notes: z.string().optional(),
+  month: z.coerce.number().min(1, 'El mes es obligatorio.').max(12, 'El mes debe ser válido.'),
+  year: z.coerce.number().min(2000, 'El año debe ser válido.'),
 });
 
-type ExpenseFormValues = z.infer<typeof expenseSchema>;
+type ExpectedExpenseFormValues = z.infer<typeof expectedExpenseSchema>;
 
-type AddExpenseDialogProps = {
+type AddExpectedExpenseDialogProps = {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
   expenseCategories: ExpenseCategory[];
-  onExpenseSubmit: (data: ExpenseFormValues) => void;
-  expenseToEdit?: ActualExpense | null;
+  onExpenseSubmit: (data: ExpectedExpenseFormValues) => void;
+  expenseToEdit?: ExpectedExpense | null;
 };
 
-export function AddExpenseDialog({
+export function AddExpectedExpenseDialog({
   isOpen,
   onOpenChange,
   expenseCategories,
   onExpenseSubmit,
   expenseToEdit,
-}: AddExpenseDialogProps) {
+}: AddExpectedExpenseDialogProps) {
 
   const isEditing = !!expenseToEdit;
 
-  const form = useForm<ExpenseFormValues>({
-    resolver: zodResolver(expenseSchema),
+  const form = useForm<ExpectedExpenseFormValues>({
+    resolver: zodResolver(expectedExpenseSchema),
   });
 
   React.useEffect(() => {
     if (isOpen) {
       if (isEditing && expenseToEdit) {
         form.reset({
-          date: new Date(expenseToEdit.date),
           subcategoryId: expenseToEdit.subcategoryId,
           amount: expenseToEdit.amount,
           currency: expenseToEdit.currency,
-          notes: expenseToEdit.notes || '',
+          month: expenseToEdit.month,
+          year: expenseToEdit.year,
         });
       } else {
           form.reset({
-              date: new Date(),
               subcategoryId: '',
               amount: 0,
               currency: 'ARS',
-              notes: '',
+              month: new Date().getMonth() + 1,
+              year: new Date().getFullYear(),
           });
       }
     }
   }, [isOpen, expenseToEdit, isEditing, form]);
 
 
-  const onSubmit = (data: ExpenseFormValues) => {
+  const onSubmit = (data: ExpectedExpenseFormValues) => {
     onExpenseSubmit(data);
+    onOpenChange(false);
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>{isEditing ? 'Editar Gasto' : 'Añadir Gasto'}</DialogTitle>
+          <DialogTitle>{isEditing ? 'Editar Gasto Previsto' : 'Añadir Gasto Previsto'}</DialogTitle>
           <DialogDescription>
-            {isEditing ? 'Actualiza los detalles de este gasto.' : 'Registra un nuevo gasto para esta propiedad.'}
+            {isEditing ? 'Actualiza los detalles de este gasto previsto.' : 'Registra un nuevo gasto previsto para esta propiedad.'}
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
-            <FormField
-              control={form.control}
-              name="date"
-              render={({ field }) => (
-                <FormItem className="flex flex-col">
-                  <FormLabel>Fecha</FormLabel>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <FormControl>
-                        <Button
-                          variant={'outline'}
-                          className={cn(
-                            'w-full pl-3 text-left font-normal',
-                            !field.value && 'text-muted-foreground'
-                          )}
-                        >
-                          {field.value ? (
-                            format(field.value, 'PPP')
-                          ) : (
-                            <span>Elige una fecha</span>
-                          )}
-                          <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                        </Button>
-                      </FormControl>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={field.value}
-                        onSelect={field.onChange}
-                        disabled={(date) =>
-                          date > new Date() || date < new Date('1900-01-01')
-                        }
-                        initialFocus
-                      />
-                    </PopoverContent>
-                  </Popover>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <div className="grid grid-cols-2 gap-4">
+                <FormField
+                control={form.control}
+                name="month"
+                render={({ field }) => (
+                    <FormItem>
+                    <FormLabel>Mes</FormLabel>
+                    <FormControl>
+                        <Input type="number" placeholder="Mes" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                    </FormItem>
+                )}
+                />
+                <FormField
+                control={form.control}
+                name="year"
+                render={({ field }) => (
+                    <FormItem>
+                    <FormLabel>Año</FormLabel>
+                    <FormControl>
+                        <Input type="number" placeholder="Año" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                    </FormItem>
+                )}
+                />
+            </div>
             <FormField
               control={form.control}
               name="subcategoryId"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Categoría</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value} defaultValue={field.value}>
+                  <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Selecciona una categoría" />
-                      </Trigger>
+                      </SelectTrigger>
                     </FormControl>
                     <SelectContent>
                       {expenseCategories.map((category) => (
@@ -203,7 +183,7 @@ export function AddExpenseDialog({
                 render={({ field }) => (
                     <FormItem>
                     <FormLabel>Moneda</FormLabel>
-                    <Select onValuechange={field.onChange} value={field.value} defaultValue={field.value}>
+                    <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
                         <FormControl>
                         <SelectTrigger>
                             <SelectValue placeholder="Moneda" />
@@ -219,19 +199,6 @@ export function AddExpenseDialog({
                 )}
                 />
             </div>
-            <FormField
-              control={form.control}
-              name="notes"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Notas (opcional)</FormLabel>
-                  <FormControl>
-                    <Textarea placeholder="Añade una nota sobre el gasto..." {...field} value={field.value || ''} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
             <DialogFooter>
               <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>Cancelar</Button>
               <Button type="submit">{isEditing ? 'Guardar Cambios' : 'Guardar Gasto'}</Button>
