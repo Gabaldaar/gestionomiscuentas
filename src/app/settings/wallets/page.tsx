@@ -1,11 +1,13 @@
 
 'use client';
 
+import * as React from 'react';
+import { collection, getDocs } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { wallets } from "@/lib/data";
-import { PlusCircle, MoreVertical, Pencil, Trash2 } from "lucide-react";
+import { PlusCircle, MoreVertical, Pencil, Trash2, Loader } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -13,9 +15,31 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
+import { type Wallet } from '@/lib/types';
 
 export default function WalletsSettingsPage() {
   const { toast } = useToast();
+  const [wallets, setWallets] = React.useState<Wallet[]>([]);
+  const [loading, setLoading] = React.useState(true);
+
+  React.useEffect(() => {
+    const fetchWallets = async () => {
+        setLoading(true);
+        try {
+            const walletsCol = collection(db, 'wallets');
+            const walletsSnapshot = await getDocs(walletsCol);
+            const walletsList = walletsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Wallet));
+            setWallets(walletsList);
+        } catch (error) {
+            console.error("Error fetching wallets: ", error);
+            toast({ title: "Error", description: "No se pudieron cargar las billeteras.", variant: "destructive" });
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    fetchWallets();
+  }, [toast]);
 
   return (
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
@@ -25,41 +49,49 @@ export default function WalletsSettingsPage() {
           Añadir Billetera
         </Button>
       </PageHeader>
-
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {wallets.map((wallet) => (
-          <Card key={wallet.id}>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <div>
-                <CardTitle>{wallet.name}</CardTitle>
-                <CardDescription>{wallet.currency}</CardDescription>
-              </div>
-               <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon">
-                    <MoreVertical className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent>
-                  <DropdownMenuItem onClick={() => toast({ title: "Funcionalidad no implementada" })}>
-                    <Pencil className="mr-2 h-4 w-4" />
-                    Editar
-                  </DropdownMenuItem>
-                  <DropdownMenuItem className="text-destructive" onClick={() => toast({ title: "Elemento eliminado", variant: "destructive" })}>
-                    <Trash2 className="mr-2 h-4 w-4" />
-                    Eliminar
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {new Intl.NumberFormat('es-AR', { style: 'currency', currency: wallet.currency }).format(wallet.balance)}
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+      
+      {loading ? (
+         <div className="flex justify-center items-center">
+            <Loader className="h-8 w-8 animate-spin" />
+         </div>
+      ) : (
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {wallets.map((wallet) => (
+            <Card key={wallet.id}>
+                <CardHeader className="flex flex-row items-center justify-between">
+                <div>
+                    <CardTitle>{wallet.name}</CardTitle>
+                    <CardDescription>{wallet.currency}</CardDescription>
+                </div>
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon">
+                        <MoreVertical className="h-4 w-4" />
+                    </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent>
+                    <DropdownMenuItem onClick={() => toast({ title: "Funcionalidad no implementada" })}>
+                        <Pencil className="mr-2 h-4 w-4" />
+                        Editar
+                    </DropdownMenuItem>
+                    <DropdownMenuItem className="text-destructive" onClick={() => toast({ title: "Elemento eliminado", variant: "destructive" })}>
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        Eliminar
+                    </DropdownMenuItem>
+                    </DropdownMenuContent>
+                </DropdownMenu>
+                </CardHeader>
+                <CardContent>
+                <div className="text-2xl font-bold">
+                    {new Intl.NumberFormat('es-AR', { style: 'currency', currency: wallet.currency, minimumFractionDigits: 2 }).format(wallet.balance)}
+                </div>
+                </CardContent>
+            </Card>
+            ))}
+        </div>
+      )}
     </div>
   );
 }
+
+    

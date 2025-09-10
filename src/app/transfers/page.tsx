@@ -2,10 +2,10 @@
 'use client';
 
 import * as React from 'react';
-import { useForm, Controller } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { collection, addDoc, Timestamp } from 'firebase/firestore';
+import { collection, addDoc, doc, getDocs, getDoc, writeBatch, Timestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
@@ -17,9 +17,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { wallets } from "@/lib/data";
 import { ArrowRightLeft, Loader } from "lucide-react";
 import { Form, FormControl, FormField, FormItem, FormMessage } from '@/components/ui/form';
+import { type Wallet } from '@/lib/types';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const transferSchema = z.object({
   fromWalletId: z.string().min(1, 'La billetera de origen es obligatoria.'),
@@ -39,6 +40,26 @@ export default function TransfersPage() {
   const { toast } = useToast();
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const [wallets, setWallets] = React.useState<Wallet[]>([]);
+  const [loadingWallets, setLoadingWallets] = React.useState(true);
+
+  React.useEffect(() => {
+    const fetchWallets = async () => {
+      setLoadingWallets(true);
+      try {
+        const walletsCol = collection(db, 'wallets');
+        const walletsSnapshot = await getDocs(walletsCol);
+        const walletsList = walletsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Wallet));
+        setWallets(walletsList);
+      } catch (error) {
+        console.error("Error fetching wallets:", error);
+        toast({ title: "Error", description: "No se pudieron cargar las billeteras.", variant: "destructive" });
+      } finally {
+        setLoadingWallets(false);
+      }
+    };
+    fetchWallets();
+  }, [toast]);
 
   const form = useForm<TransferFormValues>({
     resolver: zodResolver(transferSchema),
@@ -57,12 +78,12 @@ export default function TransfersPage() {
   const amountSent = form.watch('amountSent');
   const exchangeRate = form.watch('exchangeRate');
 
-  const fromWallet = React.useMemo(() => wallets.find(w => w.id === fromWalletId), [fromWalletId]);
-  const toWallet = React.useMemo(() => wallets.find(w => w.id === toWalletId), [toWalletId]);
+  const fromWallet = React.useMemo(() => wallets.find(w => w.id === fromWalletId), [wallets, fromWalletId]);
+  const toWallet = React.useMemo(() => wallets.find(w => w.id === toWalletId), [wallets, toWalletId]);
 
   const showExchangeRate = fromWallet && toWallet && fromWallet.currency !== toWallet.currency;
 
-  const updateAmounts = () => {
+  const updateAmounts = React.useCallback(() => {
     const sent = form.getValues('amountSent');
     const rate = form.getValues('exchangeRate');
 
@@ -75,49 +96,111 @@ export default function TransfersPage() {
     } else if (fromWallet && toWallet && fromWallet.currency === toWallet.currency) {
       form.setValue('amountReceived', sent);
     }
-  };
+  }, [form, fromWallet, toWallet, showExchangeRate]);
 
   React.useEffect(() => {
     updateAmounts();
-  }, [amountSent, exchangeRate, fromWalletId, toWalletId, showExchangeRate, form]);
+  }, [amountSent, exchangeRate, fromWalletId, toWalletId, showExchangeRate, updateAmounts]);
   
   React.useEffect(() => {
     const sent = form.getValues('amountSent');
     if (fromWallet && toWallet && fromWallet.currency === toWallet.currency) {
       form.setValue('amountReceived', sent);
     }
-  }, [fromWalletId, toWalletId, form]);
+  }, [fromWalletId, toWalletId, form, fromWallet, toWallet]);
 
   const onSubmit = async (data: TransferFormValues) => {
+    if (!fromWallet || !toWallet) {
+        toast({ title: "Error", description: "Billeteras no válidas.", variant: "destructive" });
+        return;
+    }
+    
     setIsSubmitting(true);
-    const dataToSave = {
-      ...data,
-      date: Timestamp.now(),
-      fromCurrency: fromWallet?.currency,
-      toCurrency: toWallet?.currency,
-      exchangeRate: data.exchangeRate || null,
-    };
-
+    
+    const batch = writeBatch(db);
 
     try {
-      await addDoc(collection(db, 'transfers'), dataToSave);
-      toast({
-        title: 'Transferencia Exitosa',
-        description: 'La transferencia de fondos ha sido registrada.',
-      });
-      form.reset();
-      router.push('/');
+        // 1. Get current wallet states from DB to ensure we have the latest balance
+        const fromWalletRef = doc(db, 'wallets', data.fromWalletId);
+        const toWalletRef = doc(db, 'wallets', data.toWalletId);
+        
+        const [fromWalletSnap, toWalletSnap] = await Promise.all([
+            getDoc(fromWalletRef),
+            getDoc(toWalletRef)
+        ]);
+
+        if (!fromWalletSnap.exists() || !toWalletSnap.exists()) {
+            throw new Error("Una de las billeteras no existe.");
+        }
+
+        const fromWalletData = fromWalletSnap.data() as Wallet;
+        const toWalletData = toWalletSnap.data() as Wallet;
+
+        // 2. Check for sufficient funds
+        if (fromWalletData.balance < data.amountSent) {
+            toast({ title: "Fondos Insuficientes", description: `La billetera ${fromWalletData.name} no tiene suficiente saldo.`, variant: "destructive" });
+            setIsSubmitting(false);
+            return;
+        }
+
+        // 3. Calculate new balances
+        const newFromBalance = fromWalletData.balance - data.amountSent;
+        const newToBalance = toWalletData.balance + data.amountReceived;
+        
+        // 4. Update wallet balances in the batch
+        batch.update(fromWalletRef, { balance: newFromBalance });
+        batch.update(toWalletRef, { balance: newToBalance });
+
+        // 5. Create transfer record in the batch
+        const transferRef = doc(collection(db, 'transfers'));
+        const transferData = {
+          ...data,
+          date: Timestamp.now(),
+          fromCurrency: fromWallet.currency,
+          toCurrency: toWallet.currency,
+          exchangeRate: showExchangeRate ? data.exchangeRate : null,
+        };
+        batch.set(transferRef, transferData);
+        
+        // 6. Commit the batch
+        await batch.commit();
+
+        toast({
+            title: 'Transferencia Exitosa',
+            description: 'La transferencia de fondos ha sido registrada y los saldos actualizados.',
+        });
+        form.reset();
+        router.push('/');
+        
     } catch (error) {
-      console.error('Error creating transfer: ', error);
-      toast({
-        title: 'Error',
-        description: 'No se pudo registrar la transferencia.',
-        variant: 'destructive',
-      });
+        console.error('Error creating transfer: ', error);
+        toast({
+            title: 'Error',
+            description: 'No se pudo registrar la transferencia.',
+            variant: 'destructive',
+        });
     } finally {
-      setIsSubmitting(false);
+        setIsSubmitting(false);
     }
   };
+
+  if (loadingWallets) {
+    return (
+        <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
+            <PageHeader title="Transferencia de Fondos" />
+            <div className="flex justify-center">
+                <Card className="w-full max-w-2xl">
+                    <CardHeader><CardTitle>Cargando Billeteras...</CardTitle></CardHeader>
+                    <CardContent className='space-y-4'>
+                        <Skeleton className="h-10 w-full" />
+                        <Skeleton className="h-10 w-full" />
+                        <Skeleton className="h-10 w-full" />
+                    </CardContent>
+                </Card>
+            </div>
+        </div>
+    );
+  }
 
   return (
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
@@ -192,7 +275,7 @@ export default function TransfersPage() {
                       <FormItem>
                         <Label>Monto Enviado {fromWallet && `(${fromWallet.currency})`}</Label>
                         <FormControl>
-                          <Input type="number" placeholder="0.00" {...field} />
+                          <Input type="number" step="0.01" placeholder="0.00" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -205,7 +288,7 @@ export default function TransfersPage() {
                       <FormItem>
                         <Label>Monto Recibido {toWallet && `(${toWallet.currency})`}</Label>
                         <FormControl>
-                          <Input type="number" placeholder="0.00" {...field} disabled={showExchangeRate} />
+                          <Input type="number" step="0.01" placeholder="0.00" {...field} disabled={fromWallet?.currency !== toWallet?.currency} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -221,7 +304,7 @@ export default function TransfersPage() {
                       <FormItem>
                         <Label>Tasa de Cambio (1 USD a ARS)</Label>
                         <FormControl>
-                           <Input type="number" placeholder="Ej: 1000" {...field} value={field.value ?? ''} />
+                           <Input type="number" step="any" placeholder="Ej: 1000" {...field} value={field.value ?? ''} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -259,3 +342,5 @@ export default function TransfersPage() {
     </div>
   );
 }
+
+    
