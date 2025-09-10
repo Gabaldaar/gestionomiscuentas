@@ -69,6 +69,9 @@ export function AddExpenseDialog({
   const form = useForm<ExpenseFormValues>({
     resolver: zodResolver(expenseSchema),
     defaultValues: {
+      date: new Date(),
+      subcategoryId: '',
+      amount: 0,
       currency: 'ARS',
       notes: '',
     },
