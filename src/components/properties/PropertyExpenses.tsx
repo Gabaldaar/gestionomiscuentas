@@ -158,11 +158,14 @@ export function PropertyExpenses({ propertyId, expenseCategories, wallets, selec
   }
 
   const handleAddActualFromExpected = (expense: ExpectedExpense) => {
+    const paidAmount = getPaidAmount(expense);
+    const remainingAmount = expense.amount - paidAmount;
+
     setInitialExpenseData({
         subcategoryId: expense.subcategoryId,
-        amount: expense.amount,
+        amount: remainingAmount > 0 ? remainingAmount : 0,
         currency: expense.currency,
-        date: new Date(expense.year, expense.month - 1, 1).toISOString(),
+        date: new Date(expense.year, expense.month - 1, new Date().getDate()).toISOString(),
     });
     setEditingExpense(null);
     setIsAddExpenseOpen(true);
@@ -450,5 +453,7 @@ export function PropertyExpenses({ propertyId, expenseCategories, wallets, selec
     </>
   );
 }
+
+    
 
     
