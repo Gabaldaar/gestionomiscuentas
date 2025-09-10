@@ -43,6 +43,11 @@ export default function TransfersPage() {
   const form = useForm<TransferFormValues>({
     resolver: zodResolver(transferSchema),
     defaultValues: {
+      fromWalletId: '',
+      toWalletId: '',
+      amountSent: 0,
+      amountReceived: 0,
+      exchangeRate: undefined,
       notes: '',
     },
   });
@@ -212,7 +217,7 @@ export default function TransfersPage() {
                       <FormItem>
                         <Label>Tasa de Cambio (1 USD a ARS)</Label>
                         <FormControl>
-                           <Input type="number" placeholder="Ej: 1000" {...field} />
+                           <Input type="number" placeholder="Ej: 1000" {...field} value={field.value ?? ''} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
