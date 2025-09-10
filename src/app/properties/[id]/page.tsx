@@ -1,4 +1,4 @@
-import { properties, expectedExpenses, actualExpenses, expenseCategories } from '@/lib/data';
+import { properties, expectedExpenses, actualExpenses, expenseCategories, incomes, wallets } from '@/lib/data';
 import { notFound } from 'next/navigation';
 import Image from 'next/image';
 import { PageHeader } from '@/components/shared/PageHeader';
@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Pencil } from 'lucide-react';
 import { PropertyNotes } from '@/components/properties/PropertyNotes';
 import { PropertyExpenses } from '@/components/properties/PropertyExpenses';
+import { PropertyIncome } from '@/components/properties/PropertyIncome';
 
 export default function PropertyDetailPage({ params }: { params: { id: string } }) {
   const property = properties.find((p) => p.id === params.id);
@@ -17,6 +18,7 @@ export default function PropertyDetailPage({ params }: { params: { id: string } 
   
   const propertyExpectedExpenses = expectedExpenses.filter(e => e.propertyId === params.id);
   const propertyActualExpenses = actualExpenses.filter(e => e.propertyId === params.id);
+  const propertyIncomes = incomes.filter(i => i.propertyId === params.id);
 
 
   return (
@@ -42,6 +44,11 @@ export default function PropertyDetailPage({ params }: { params: { id: string } 
                     />
                 </CardContent>
             </Card>
+
+            <PropertyIncome
+              incomes={propertyIncomes}
+              wallets={wallets}
+            />
 
             <PropertyExpenses
               expectedExpenses={propertyExpectedExpenses}

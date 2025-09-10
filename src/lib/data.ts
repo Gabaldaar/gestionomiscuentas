@@ -1,4 +1,4 @@
-import { type Property, type Wallet, type ExpenseCategory, type ExpectedExpense, type ActualExpense } from './types';
+import { type Property, type Wallet, type ExpenseCategory, type ExpectedExpense, type ActualExpense, type Income } from './types';
 import { PlaceHolderImages } from './placeholder-images';
 
 export const properties: Property[] = [
@@ -71,4 +71,9 @@ export const expectedExpenses: ExpectedExpense[] = [
 export const actualExpenses: ActualExpense[] = [
     { id: 'act1', propertyId: 'prop1', subcategoryId: 'sub1', amount: 55, currency: 'USD', date: '2024-07-15T10:00:00Z', notes: 'Factura de electricidad de julio.' },
     { id: 'act2', propertyId: 'prop2', subcategoryId: 'sub5', amount: 15000, currency: 'ARS', date: '2024-07-10T14:30:00Z', notes: 'Reparación de gotera en el techo.' },
+];
+
+export const incomes: Income[] = [
+    { id: 'inc1', propertyId: 'prop1', walletId: 'wallet2', amount: 1200, currency: 'USD', date: '2024-07-01T10:00:00Z', notes: 'Alquiler de Julio.' },
+    { id: 'inc2', propertyId: 'prop3', walletId: 'wallet2', amount: 2500, currency: 'USD', date: '2024-07-05T12:00:00Z', notes: 'Alquiler de temporada alta.' },
 ];
