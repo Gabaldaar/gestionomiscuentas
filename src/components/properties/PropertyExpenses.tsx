@@ -33,6 +33,8 @@ export function PropertyExpenses({ propertyId, expenseCategories, wallets, selec
   const [actualExpenses, setActualExpenses] = React.useState<ActualExpense[]>([]);
   const [editingExpense, setEditingExpense] = React.useState<ActualExpense | null>(null);
   const [deletingExpenseId, setDeletingExpenseId] = React.useState<string | null>(null);
+  const [initialExpenseData, setInitialExpenseData] = React.useState<Partial<ActualExpense> | null>(null);
+
 
   // State for Expected Expenses
   const [isAddExpectedExpenseOpen, setIsAddExpectedExpenseOpen] = React.useState(false);
@@ -75,7 +77,7 @@ export function PropertyExpenses({ propertyId, expenseCategories, wallets, selec
     return expectedExpenses.filter(expense => {
       const expenseYear = expense.year.toString();
       const expenseMonth = expense.month.toString();
-      const yearMatch = expenseYear === selectedYear;
+      const yearMatch = selectedYear === 'all' || expenseYear === selectedYear;
       const monthMatch = selectedMonth === 'all' || expenseMonth === selectedMonth;
       return yearMatch && monthMatch;
     }).sort((a, b) => a.month - b.month);
@@ -84,7 +86,7 @@ export function PropertyExpenses({ propertyId, expenseCategories, wallets, selec
   const filteredActualExpenses = React.useMemo(() => {
     return actualExpenses.filter(expense => {
         const expenseDate = new Date(expense.date);
-        const yearMatch = expenseDate.getFullYear().toString() === selectedYear;
+        const yearMatch = selectedYear === 'all' || expenseDate.getFullYear().toString() === selectedYear;
         const monthMatch = selectedMonth === 'all' || (expenseDate.getMonth() + 1).toString() === selectedMonth;
         return yearMatch && monthMatch;
     }).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
@@ -155,8 +157,20 @@ export function PropertyExpenses({ propertyId, expenseCategories, wallets, selec
     }
   }
 
+  const handleAddActualFromExpected = (expense: ExpectedExpense) => {
+    setInitialExpenseData({
+        subcategoryId: expense.subcategoryId,
+        amount: expense.amount,
+        currency: expense.currency,
+        date: new Date(expense.year, expense.month - 1, 1).toISOString(),
+    });
+    setEditingExpense(null);
+    setIsAddExpenseOpen(true);
+  }
+
   const handleEditActual = (expense: ActualExpense) => {
     setEditingExpense(expense);
+    setInitialExpenseData(null);
     setIsAddExpenseOpen(true);
   };
   
@@ -228,6 +242,7 @@ export function PropertyExpenses({ propertyId, expenseCategories, wallets, selec
   const closeDialogs = () => {
     setIsAddExpenseOpen(false);
     setEditingExpense(null);
+    setInitialExpenseData(null);
     setIsAddExpectedExpenseOpen(false);
     setEditingExpectedExpense(null);
   }
@@ -292,7 +307,11 @@ export function PropertyExpenses({ propertyId, expenseCategories, wallets, selec
                                     {new Intl.NumberFormat('es-AR', { style: 'currency', currency: expense.currency }).format(paidAmount)}
                                 </TableCell>
                                 <TableCell>
-                                    <Badge variant="outline" className='flex items-center gap-2'>
+                                    <Badge 
+                                        variant="outline" 
+                                        className='flex items-center gap-2 cursor-pointer hover:bg-secondary'
+                                        onClick={() => handleAddActualFromExpected(expense)}
+                                    >
                                         <span className={`h-2 w-2 rounded-full ${status.color}`}></span>
                                         {status.text}
                                     </Badge>
@@ -330,7 +349,7 @@ export function PropertyExpenses({ propertyId, expenseCategories, wallets, selec
                         <p className="text-sm text-muted-foreground">Una lista de todos los gastos individuales registrados.</p>
                     </div>
                     <div className="flex items-center gap-2">
-                        <Button onClick={() => { setEditingExpense(null); setIsAddExpenseOpen(true); }}>
+                        <Button onClick={() => { setEditingExpense(null); setInitialExpenseData(null); setIsAddExpenseOpen(true); }}>
                             <PlusCircle className="mr-2 h-4 w-4" />
                             Añadir Gasto
                         </Button>
@@ -395,13 +414,14 @@ export function PropertyExpenses({ propertyId, expenseCategories, wallets, selec
       
       {/* Dialog for Actual Expenses */}
       <AddExpenseDialog
-        key={editingExpense ? `edit-${editingExpense.id}` : 'add'}
+        key={editingExpense ? `edit-${editingExpense.id}` : (initialExpenseData ? `add-init-${initialExpenseData.subcategoryId}`: 'add')}
         isOpen={isAddExpenseOpen}
         onOpenChange={closeDialogs}
         expenseCategories={expenseCategories}
         wallets={wallets}
         onExpenseSubmit={handleActualExpenseSubmit}
         expenseToEdit={editingExpense}
+        initialData={initialExpenseData}
       />
       <ConfirmDeleteDialog
         isOpen={!!deletingExpenseId}

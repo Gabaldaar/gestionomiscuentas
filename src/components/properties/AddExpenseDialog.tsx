@@ -61,6 +61,7 @@ type AddExpenseDialogProps = {
   wallets: Wallet[];
   onExpenseSubmit: (data: ExpenseFormValues) => void;
   expenseToEdit?: ActualExpense | null;
+  initialData?: Partial<ActualExpense> | null;
 };
 
 export function AddExpenseDialog({
@@ -70,6 +71,7 @@ export function AddExpenseDialog({
   wallets,
   onExpenseSubmit,
   expenseToEdit,
+  initialData,
 }: AddExpenseDialogProps) {
 
   const isEditing = !!expenseToEdit;
@@ -101,6 +103,15 @@ export function AddExpenseDialog({
           currency: expenseToEdit.currency,
           notes: expenseToEdit.notes || '',
         });
+      } else if (initialData) {
+        form.reset({
+            date: initialData.date ? new Date(initialData.date) : new Date(),
+            subcategoryId: initialData.subcategoryId || '',
+            walletId: initialData.walletId || '',
+            amount: initialData.amount || 0,
+            currency: initialData.currency || 'ARS',
+            notes: initialData.notes || '',
+        })
       } else {
           form.reset({
               date: new Date(),
@@ -112,7 +123,7 @@ export function AddExpenseDialog({
           });
       }
     }
-  }, [isOpen, expenseToEdit, isEditing, form]);
+  }, [isOpen, expenseToEdit, isEditing, initialData, form]);
 
 
   const onSubmit = (data: ExpenseFormValues) => {
