@@ -326,13 +326,13 @@ export function PropertyExpenses({ propertyId, expenseCategories, wallets, selec
             <TabsContent value="actual">
                 <div className='flex justify-between items-center mb-4'>
                     <div>
-                        <h3 className="text-lg font-semibold">Historial de Gastos Reales</h3>
+                        <h3 className="text-lg font-semibold">Gastos Realizados</h3>
                         <p className="text-sm text-muted-foreground">Una lista de todos los gastos individuales registrados.</p>
                     </div>
                     <div className="flex items-center gap-2">
                         <Button onClick={() => { setEditingExpense(null); setIsAddExpenseOpen(true); }}>
                             <PlusCircle className="mr-2 h-4 w-4" />
-                            Añadir Gasto Real
+                            Añadir Gasto
                         </Button>
                     </div>
                 </div>
