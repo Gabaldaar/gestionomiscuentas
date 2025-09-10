@@ -3,9 +3,9 @@ import { DollarSign, TrendingDown, TrendingUp } from "lucide-react";
 
 export function DashboardStats() {
     const stats = [
-        { title: "Total Income", value: "$12,345", icon: TrendingUp, color: "text-green-500" },
-        { title: "Total Expenses", value: "$8,765", icon: TrendingDown, color: "text-red-500" },
-        { title: "Net Balance", value: "$3,580", icon: DollarSign, color: "text-primary" },
+        { title: "Ingresos Totales", value: "$12,345", icon: TrendingUp, color: "text-green-500" },
+        { title: "Egresos Totales", value: "$8,765", icon: TrendingDown, color: "text-red-500" },
+        { title: "Saldo Neto", value: "$3,580", icon: DollarSign, color: "text-primary" },
     ];
 
     return (
@@ -21,7 +21,7 @@ export function DashboardStats() {
                     <CardContent>
                         <div className="text-2xl font-bold">{stat.value}</div>
                         <p className="text-xs text-muted-foreground">
-                            +20.1% from last month
+                            +20.1% desde el mes pasado
                         </p>
                     </CardContent>
                 </Card>

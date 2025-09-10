@@ -31,7 +31,7 @@ export function PropertyCard({ property }: PropertyCardProps) {
         <CardContent>
             <Link href={`/properties/${property.id}`}>
                 <Button variant="outline" className="w-full">
-                    View Details
+                    Ver Detalles
                     <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
             </Link>

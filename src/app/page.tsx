@@ -11,7 +11,7 @@ import { Calendar } from "@/components/ui/calendar";
 export default function DashboardPage() {
   return (
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
-      <PageHeader title="Dashboard" />
+      <PageHeader title="Panel de Control" />
 
       <div className="flex items-center justify-between space-y-2">
         <div className="flex items-center space-x-2">
@@ -22,7 +22,7 @@ export default function DashboardPage() {
                 className="w-[240px] justify-start text-left font-normal"
               >
                 <CalendarIcon className="mr-2 h-4 w-4" />
-                <span>Pick a date</span>
+                <span>Elige una fecha</span>
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0" align="start">
@@ -34,17 +34,17 @@ export default function DashboardPage() {
           </Popover>
           <Select>
             <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="All Currencies" />
+              <SelectValue placeholder="Todas las monedas" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Currencies</SelectItem>
+              <SelectItem value="all">Todas las monedas</SelectItem>
               <SelectItem value="ars">ARS</SelectItem>
               <SelectItem value="usd">USD</SelectItem>
             </SelectContent>
           </Select>
           <Button variant="outline">
             <Filter className="mr-2 h-4 w-4" />
-            Apply Filters
+            Aplicar Filtros
           </Button>
         </div>
       </div>
@@ -54,7 +54,7 @@ export default function DashboardPage() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
         <Card className="col-span-4">
           <CardHeader>
-            <CardTitle>Expected vs. Actual Costs</CardTitle>
+            <CardTitle>Costos Esperados vs. Reales</CardTitle>
           </CardHeader>
           <CardContent className="pl-2">
             <MonthlyComparisonChart />
@@ -62,10 +62,10 @@ export default function DashboardPage() {
         </Card>
         <Card className="col-span-4 md:col-span-3">
           <CardHeader>
-            <CardTitle>Recent Activity</CardTitle>
+            <CardTitle>Actividad Reciente</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-muted-foreground">No recent activity to display.</p>
+            <p className="text-sm text-muted-foreground">No hay actividad reciente para mostrar.</p>
           </CardContent>
         </Card>
       </div>

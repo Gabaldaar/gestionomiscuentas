@@ -24,10 +24,10 @@ import {
 import { Button } from '@/components/ui/button';
 
 const navItems = [
-  { href: '/', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/properties', label: 'Properties', icon: Building2 },
-  { href: '/transfers', label: 'Transfers', icon: ArrowLeftRight },
-  { href: '/settings', label: 'Settings', icon: Settings2 },
+  { href: '/', label: 'Panel de Control', icon: LayoutDashboard },
+  { href: '/properties', label: 'Propiedades', icon: Building2 },
+  { href: '/transfers', label: 'Transferencias', icon: ArrowLeftRight },
+  { href: '/settings', label: 'Configuración', icon: Settings2 },
 ];
 
 export function AppShell({ children }: { children: React.ReactNode }) {

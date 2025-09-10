@@ -6,22 +6,22 @@ import { Wallet, Landmark } from "lucide-react";
 export default function SettingsPage() {
   const settingsCards = [
     {
-      title: "Expense Accounts",
-      description: "Manage your expense categories and subcategories.",
+      title: "Cuentas de Gastos",
+      description: "Administra tus categorías y subcategorías de gastos.",
       icon: Landmark,
-      action: "Manage",
+      action: "Administrar",
     },
     {
-      title: "Wallets",
-      description: "Manage your income accounts (ARS, USD).",
+      title: "Billeteras",
+      description: "Administra tus cuentas de ingresos (ARS, USD).",
       icon: Wallet,
-      action: "Manage",
+      action: "Administrar",
     },
   ];
 
   return (
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
-      <PageHeader title="Settings" />
+      <PageHeader title="Configuración" />
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {settingsCards.map((card, index) => (

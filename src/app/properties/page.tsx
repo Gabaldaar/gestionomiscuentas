@@ -7,10 +7,10 @@ import { PropertyCard } from "@/components/properties/PropertyCard";
 export default function PropertiesPage() {
   return (
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
-      <PageHeader title="Properties">
+      <PageHeader title="Propiedades">
         <Button>
           <PlusCircle className="mr-2 h-4 w-4" />
-          Add Property
+          Añadir Propiedad
         </Button>
       </PageHeader>
       

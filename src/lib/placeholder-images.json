@@ -2,21 +2,21 @@
   "placeholderImages": [
     {
       "id": "prop1",
-      "description": "A modern apartment building in a city.",
+      "description": "Un edificio de apartamentos moderno en una ciudad.",
       "imageUrl": "https://picsum.photos/seed/prop1/600/400",
-      "imageHint": "apartment building"
+      "imageHint": "edificio de apartamentos"
     },
     {
       "id": "prop2",
-      "description": "A suburban house with a green lawn.",
+      "description": "Una casa suburbana con un césped verde.",
       "imageUrl": "https://picsum.photos/seed/prop2/600/400",
-      "imageHint": "suburban house"
+      "imageHint": "casa suburbana"
     },
     {
       "id": "prop3",
-      "description": "A modern condo building near the beach.",
+      "description": "Un moderno edificio de condominios cerca de la playa.",
       "imageUrl": "https://picsum.photos/seed/prop3/600/400",
-      "imageHint": "beach condo"
+      "imageHint": "condominio de playa"
     }
   ]
 }

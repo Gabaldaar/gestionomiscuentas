@@ -1,11 +1,11 @@
 'use server';
 
 /**
- * @fileOverview This file contains a Genkit flow for categorizing expense transactions based on their description.
+ * @fileOverview Este archivo contiene un flujo de Genkit para categorizar transacciones de gastos basado en su descripción.
  *
- * - categorizeExpenseTransaction - A function that categorizes an expense transaction.
- * - CategorizeExpenseTransactionInput - The input type for the categorizeExpenseTransaction function.
- * - CategorizeExpenseTransactionOutput - The return type for the categorizeExpenseTransaction function.
+ * - categorizeExpenseTransaction - Una función que categoriza una transacción de gastos.
+ * - CategorizeExpenseTransactionInput - El tipo de entrada para la función categorizeExpenseTransaction.
+ * - CategorizeExpenseTransactionOutput - El tipo de retorno para la función categorizeExpenseTransaction.
  */
 
 import {ai} from '@/ai/genkit';
@@ -14,21 +14,21 @@ import {z} from 'genkit';
 const CategorizeExpenseTransactionInputSchema = z.object({
   transactionDescription: z
     .string()
-    .describe('The description of the expense transaction.'),
+    .describe('La descripción de la transacción de gastos.'),
 });
 export type CategorizeExpenseTransactionInput = z.infer<
   typeof CategorizeExpenseTransactionInputSchema
 >;
 
 const CategorizeExpenseTransactionOutputSchema = z.object({
-  category: z.string().describe('The predicted category of the expense.'),
+  category: z.string().describe('La categoría predicha del gasto.'),
   subcategory: z
     .string()
-    .describe('The predicted subcategory of the expense.'),
+    .describe('La subcategoría predicha del gasto.'),
   confidence: z
     .number()
     .describe(
-      'The confidence score (0-1) of the categorization, with 1 being the most confident.'
+      'La puntuación de confianza (0-1) de la categorización, siendo 1 la más confiable.'
     ),
 });
 export type CategorizeExpenseTransactionOutput = z.infer<
@@ -45,14 +45,14 @@ const prompt = ai.definePrompt({
   name: 'categorizeExpenseTransactionPrompt',
   input: {schema: CategorizeExpenseTransactionInputSchema},
   output: {schema: CategorizeExpenseTransactionOutputSchema},
-  prompt: `You are an expert financial advisor specializing in expense categorization.
+  prompt: `Eres un experto asesor financiero especializado en categorización de gastos.
 
-  Given the following transaction description, determine the most appropriate category and subcategory.
-  Also, provide a confidence score (0-1) for your categorization.
+  Dada la siguiente descripción de la transacción, determina la categoría y subcategoría más apropiadas.
+  Además, proporciona una puntuación de confianza (0-1) para tu categorización.
 
-  Transaction Description: {{{transactionDescription}}}
+  Descripción de la transacción: {{{transactionDescription}}}
 
-  Respond in JSON format.
+  Responde en formato JSON.
   `,
 });
 
