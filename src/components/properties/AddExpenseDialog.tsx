@@ -83,13 +83,16 @@ export function AddExpenseDialog({
   const selectedWalletId = form.watch('walletId');
 
   React.useEffect(() => {
-    if (selectedWalletId) {
-      const selectedWallet = wallets.find(w => w.id === selectedWalletId);
-      if (selectedWallet) {
-        form.setValue('currency', selectedWallet.currency);
+    const subscription = form.watch((value, { name, type }) => {
+      if (name === 'walletId') {
+        const selectedWallet = wallets.find(w => w.id === value.walletId);
+        if (selectedWallet && form.getValues('currency') !== selectedWallet.currency) {
+          form.setValue('currency', selectedWallet.currency);
+        }
       }
-    }
-  }, [selectedWalletId, wallets, form]);
+    });
+    return () => subscription.unsubscribe();
+  }, [form, wallets]);
 
 
   React.useEffect(() => {
@@ -294,3 +297,5 @@ export function AddExpenseDialog({
     </Dialog>
   );
 }
+
+    
