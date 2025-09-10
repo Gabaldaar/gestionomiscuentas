@@ -198,7 +198,7 @@ export function AddExpenseDialog({
                       {expenseCategories.map((category) => (
                         <React.Fragment key={category.id}>
                           <FormLabel className="px-2 text-xs font-semibold text-muted-foreground">{category.name}</FormLabel>
-                          {category.subcategories.map((subcategory) => (
+                          {category.subcategories && category.subcategories.map((subcategory) => (
                             <SelectItem key={subcategory.id} value={subcategory.id}>
                               {subcategory.name}
                             </SelectItem>
