@@ -29,12 +29,12 @@ export function PropertyCard({ property }: PropertyCardProps) {
             </CardDescription>
         </CardHeader>
         <CardContent>
-            <Link href={`/properties/${property.id}`}>
-                <Button variant="outline" className="w-full">
+            <Button variant="outline" className="w-full" asChild>
+                <Link href={`/properties/${property.id}`}>
                     Ver Detalles
                     <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
-            </Link>
+                </Link>
+            </Button>
         </CardContent>
     </Card>
   );
