@@ -50,47 +50,38 @@ export default function TransfersPage() {
   const fromWalletId = form.watch('fromWalletId');
   const toWalletId = form.watch('toWalletId');
   const amountSent = form.watch('amountSent');
-  const amountReceived = form.watch('amountReceived');
+  const exchangeRate = form.watch('exchangeRate');
 
   const fromWallet = React.useMemo(() => wallets.find(w => w.id === fromWalletId), [fromWalletId]);
   const toWallet = React.useMemo(() => wallets.find(w => w.id === toWalletId), [toWalletId]);
 
   const showExchangeRate = fromWallet && toWallet && fromWallet.currency !== toWallet.currency;
 
-  // Calculate exchange rate automatically
-  React.useEffect(() => {
-    if (showExchangeRate && amountSent > 0 && amountReceived > 0) {
-      const rate = amountReceived / amountSent;
-      form.setValue('exchangeRate', parseFloat(rate.toFixed(4)));
-    }
-  }, [amountSent, amountReceived, showExchangeRate, form]);
-
-  const handleAmountSentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const sent = parseFloat(e.target.value);
-    form.setValue('amountSent', sent);
+  const updateAmounts = () => {
+    const sent = form.getValues('amountSent');
     const rate = form.getValues('exchangeRate');
+
     if (showExchangeRate && sent > 0 && rate && rate > 0) {
-      form.setValue('amountReceived', parseFloat((sent * rate).toFixed(2)));
+      if (fromWallet?.currency === 'USD' && toWallet?.currency === 'ARS') {
+        form.setValue('amountReceived', parseFloat((sent * rate).toFixed(2)));
+      } else if (fromWallet?.currency === 'ARS' && toWallet?.currency === 'USD') {
+        form.setValue('amountReceived', parseFloat((sent / rate).toFixed(2)));
+      }
     } else if (fromWallet && toWallet && fromWallet.currency === toWallet.currency) {
       form.setValue('amountReceived', sent);
     }
   };
 
-  const handleAmountReceivedChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const received = parseFloat(e.target.value);
-    form.setValue('amountReceived', received);
-    if (showExchangeRate && received > 0 && amountSent > 0) {
-      form.setValue('exchangeRate', parseFloat((received / amountSent).toFixed(4)));
-    }
-  };
+  React.useEffect(() => {
+    updateAmounts();
+  }, [amountSent, exchangeRate, fromWalletId, toWalletId, showExchangeRate, form]);
   
-  const handleExchangeRateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-      const rate = parseFloat(e.target.value);
-      form.setValue('exchangeRate', rate);
-      if (showExchangeRate && amountSent > 0 && rate > 0) {
-          form.setValue('amountReceived', parseFloat((amountSent * rate).toFixed(2)));
-      }
-  }
+  React.useEffect(() => {
+    const sent = form.getValues('amountSent');
+    if (fromWallet && toWallet && fromWallet.currency === toWallet.currency) {
+      form.setValue('amountReceived', sent);
+    }
+  }, [fromWalletId, toWalletId, form]);
 
   const onSubmit = async (data: TransferFormValues) => {
     setIsSubmitting(true);
@@ -105,8 +96,6 @@ export default function TransfersPage() {
         title: 'Transferencia Exitosa',
         description: 'La transferencia de fondos ha sido registrada.',
       });
-      // Here you would typically also update wallet balances
-      // For now, we just reset the form
       form.reset();
       router.push('/');
     } catch (error) {
@@ -194,7 +183,7 @@ export default function TransfersPage() {
                       <FormItem>
                         <Label>Monto Enviado {fromWallet && `(${fromWallet.currency})`}</Label>
                         <FormControl>
-                          <Input type="number" placeholder="0.00" {...field} onChange={handleAmountSentChange} />
+                          <Input type="number" placeholder="0.00" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -207,7 +196,7 @@ export default function TransfersPage() {
                       <FormItem>
                         <Label>Monto Recibido {toWallet && `(${toWallet.currency})`}</Label>
                         <FormControl>
-                          <Input type="number" placeholder="0.00" {...field} onChange={handleAmountReceivedChange} disabled={!showExchangeRate} />
+                          <Input type="number" placeholder="0.00" {...field} disabled={showExchangeRate} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -221,9 +210,9 @@ export default function TransfersPage() {
                     name="exchangeRate"
                     render={({ field }) => (
                       <FormItem>
-                        <Label>Tasa de Cambio</Label>
+                        <Label>Tasa de Cambio (1 USD a ARS)</Label>
                         <FormControl>
-                           <Input type="number" placeholder={`1 ${fromWallet?.currency} = ? ${toWallet?.currency}`} {...field} onChange={handleExchangeRateChange} />
+                           <Input type="number" placeholder="Ej: 1000" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
