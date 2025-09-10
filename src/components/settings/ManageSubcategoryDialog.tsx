@@ -28,7 +28,7 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { type ExpenseCategory, type ExpenseSubcategory } from '@/lib/types';
+import { type ExpenseCategory, type IncomeCategory, type ExpenseSubcategory, type IncomeSubcategory } from '@/lib/types';
 
 const subcategorySchema = z.object({
   name: z.string().min(1, 'El nombre es obligatorio.'),
@@ -40,8 +40,8 @@ type ManageSubcategoryDialogProps = {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
   onSave: () => void;
-  parentCategory: Pick<ExpenseCategory, 'id' | 'name'> | null;
-  subcategoryToEdit?: ExpenseSubcategory | null;
+  parentCategory: Pick<ExpenseCategory | IncomeCategory, 'id' | 'name'> | null;
+  subcategoryToEdit?: ExpenseSubcategory | IncomeSubcategory | null;
   collectionPath: string;
   entityName: string;
 };
