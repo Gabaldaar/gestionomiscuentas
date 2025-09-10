@@ -12,14 +12,16 @@ import { type Income, type Wallet, type IncomeCategory } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
 import { AddIncomeDialog } from './AddIncomeDialog';
 import { ConfirmDeleteDialog } from '../shared/ConfirmDeleteDialog';
-import { incomeCategories } from '@/lib/data';
 
 type PropertyIncomeProps = {
   propertyId: string;
   wallets: Wallet[];
+  incomeCategories: IncomeCategory[];
+  selectedMonth: string;
+  selectedYear: string;
 };
 
-export function PropertyIncome({ propertyId, wallets }: PropertyIncomeProps) {
+export function PropertyIncome({ propertyId, wallets, incomeCategories, selectedMonth, selectedYear }: PropertyIncomeProps) {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = React.useState(true);
   const [incomes, setIncomes] = React.useState<Income[]>([]);
@@ -38,7 +40,6 @@ export function PropertyIncome({ propertyId, wallets }: PropertyIncomeProps) {
           date: (doc.data().date as Timestamp).toDate().toISOString(),
       })) as Income[];
       
-      incomesList.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
       setIncomes(incomesList);
     } catch (error) {
       console.error("Error fetching incomes:", error);
@@ -51,6 +52,15 @@ export function PropertyIncome({ propertyId, wallets }: PropertyIncomeProps) {
   React.useEffect(() => {
     fetchIncomes();
   }, [fetchIncomes]);
+
+  const filteredIncomes = React.useMemo(() => {
+    return incomes.filter(income => {
+        const incomeDate = new Date(income.date);
+        const yearMatch = incomeDate.getFullYear().toString() === selectedYear;
+        const monthMatch = selectedMonth === 'all' || (incomeDate.getMonth() + 1).toString() === selectedMonth;
+        return yearMatch && monthMatch;
+    }).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  }, [incomes, selectedMonth, selectedYear]);
 
   const getSubcategoryName = (id: string) => {
     for (const category of incomeCategories) {
@@ -153,7 +163,7 @@ export function PropertyIncome({ propertyId, wallets }: PropertyIncomeProps) {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {incomes.length > 0 ? incomes.map(income => (
+              {filteredIncomes.length > 0 ? filteredIncomes.map(income => (
                 <TableRow key={income.id}>
                   <TableCell>{new Date(income.date).toLocaleDateString('es-ES')}</TableCell>
                   <TableCell>
@@ -183,7 +193,7 @@ export function PropertyIncome({ propertyId, wallets }: PropertyIncomeProps) {
               )) : (
                 <TableRow>
                   <TableCell colSpan={6} className="text-center text-muted-foreground">
-                    No hay ingresos para mostrar.
+                    No hay ingresos para mostrar para el período seleccionado.
                   </TableCell>
                 </TableRow>
               )}

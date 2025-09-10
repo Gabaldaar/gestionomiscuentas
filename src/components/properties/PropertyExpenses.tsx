@@ -15,15 +15,16 @@ import { useToast } from "@/hooks/use-toast";
 import { AddExpenseDialog } from './AddExpenseDialog';
 import { AddExpectedExpenseDialog } from './AddExpectedExpenseDialog';
 import { ConfirmDeleteDialog } from '../shared/ConfirmDeleteDialog';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 
 type PropertyExpensesProps = {
   propertyId: string;
   expenseCategories: ExpenseCategory[];
   wallets: Wallet[];
+  selectedMonth: string;
+  selectedYear: string;
 };
 
-export function PropertyExpenses({ propertyId, expenseCategories, wallets }: PropertyExpensesProps) {
+export function PropertyExpenses({ propertyId, expenseCategories, wallets, selectedMonth, selectedYear }: PropertyExpensesProps) {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = React.useState(true);
   
@@ -38,12 +39,6 @@ export function PropertyExpenses({ propertyId, expenseCategories, wallets }: Pro
   const [expectedExpenses, setExpectedExpenses] = React.useState<ExpectedExpense[]>([]);
   const [editingExpectedExpense, setEditingExpectedExpense] = React.useState<ExpectedExpense | null>(null);
   const [deletingExpectedExpenseId, setDeletingExpectedExpenseId] = React.useState<string | null>(null);
-
-  // State for filters
-  const [expectedSelectedMonth, setExpectedSelectedMonth] = React.useState<string>((new Date().getMonth() + 1).toString());
-  const [expectedSelectedYear, setExpectedSelectedYear] = React.useState<string>(new Date().getFullYear().toString());
-  const [actualSelectedMonth, setActualSelectedMonth] = React.useState<string>((new Date().getMonth() + 1).toString());
-  const [actualSelectedYear, setActualSelectedYear] = React.useState<string>(new Date().getFullYear().toString());
 
   const fetchExpenses = React.useCallback(async () => {
     setIsLoading(true);
@@ -76,35 +71,24 @@ export function PropertyExpenses({ propertyId, expenseCategories, wallets }: Pro
     fetchExpenses();
   }, [fetchExpenses]);
 
-
-  const months = [
-    { value: '1', label: 'Enero' }, { value: '2', label: 'Febrero' }, { value: '3', label: 'Marzo' },
-    { value: '4', label: 'Abril' }, { value: '5', label: 'Mayo' }, { value: '6', label: 'Junio' },
-    { value: '7', label: 'Julio' }, { value: '8', label: 'Agosto' }, { value: '9', label: 'Septiembre' },
-    { value: '10', label: 'Octubre' }, { value: '11', label: 'Noviembre' }, { value: '12', label: 'Diciembre' }
-  ];
-
-  const years = Array.from({ length: 10 }, (_, i) => (new Date().getFullYear() - 5 + i).toString());
-
-
   const filteredExpectedExpenses = React.useMemo(() => {
     return expectedExpenses.filter(expense => {
       const expenseYear = expense.year.toString();
       const expenseMonth = expense.month.toString();
-      const yearMatch = expenseYear === expectedSelectedYear;
-      const monthMatch = expectedSelectedMonth === 'all' || expenseMonth === expectedSelectedMonth;
+      const yearMatch = expenseYear === selectedYear;
+      const monthMatch = selectedMonth === 'all' || expenseMonth === selectedMonth;
       return yearMatch && monthMatch;
     }).sort((a, b) => a.month - b.month);
-  }, [expectedExpenses, expectedSelectedMonth, expectedSelectedYear]);
+  }, [expectedExpenses, selectedMonth, selectedYear]);
 
   const filteredActualExpenses = React.useMemo(() => {
     return actualExpenses.filter(expense => {
         const expenseDate = new Date(expense.date);
-        const yearMatch = expenseDate.getFullYear().toString() === actualSelectedYear;
-        const monthMatch = actualSelectedMonth === 'all' || (expenseDate.getMonth() + 1).toString() === actualSelectedMonth;
+        const yearMatch = expenseDate.getFullYear().toString() === selectedYear;
+        const monthMatch = selectedMonth === 'all' || (expenseDate.getMonth() + 1).toString() === selectedMonth;
         return yearMatch && monthMatch;
     }).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  }, [actualExpenses, actualSelectedMonth, actualSelectedYear]);
+  }, [actualExpenses, selectedMonth, selectedYear]);
 
 
   const getSubcategoryName = (id: string) => {
@@ -269,24 +253,7 @@ export function PropertyExpenses({ propertyId, expenseCategories, wallets }: Pro
                             <CardDescription>Una descripción general de tus gastos previstos y su estado.</CardDescription>
                         </div>
                         <div className="flex items-center gap-2">
-                           <Select value={expectedSelectedMonth} onValueChange={setExpectedSelectedMonth}>
-                                <SelectTrigger className="w-[180px]">
-                                    <SelectValue placeholder="Seleccionar mes" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="all">Todos los meses</SelectItem>
-                                    {months.map(m => <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>)}
-                                </SelectContent>
-                            </Select>
-                             <Select value={expectedSelectedYear} onValueChange={setExpectedSelectedYear}>
-                                <SelectTrigger className="w-[120px]">
-                                    <SelectValue placeholder="Seleccionar año" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {years.map(y => <SelectItem key={y} value={y}>{y}</SelectItem>)}
-                                </SelectContent>
-                            </Select>
-                            <Button onClick={() => { setEditingExpectedExpense(null); setIsAddExpectedExpenseOpen(true); }}>
+                           <Button onClick={() => { setEditingExpectedExpense(null); setIsAddExpectedExpenseOpen(true); }}>
                                 <PlusCircle className="mr-2 h-4 w-4" />
                                 Añadir Gasto Previsto
                             </Button>
@@ -370,24 +337,7 @@ export function PropertyExpenses({ propertyId, expenseCategories, wallets }: Pro
                             <CardDescription>Una lista de todos los gastos individuales registrados.</CardDescription>
                         </div>
                         <div className="flex items-center gap-2">
-                           <Select value={actualSelectedMonth} onValueChange={setActualSelectedMonth}>
-                                <SelectTrigger className="w-[180px]">
-                                    <SelectValue placeholder="Seleccionar mes" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="all">Todos los meses</SelectItem>
-                                    {months.map(m => <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>)}
-                                </SelectContent>
-                            </Select>
-                             <Select value={actualSelectedYear} onValueChange={setActualSelectedYear}>
-                                <SelectTrigger className="w-[120px]">
-                                    <SelectValue placeholder="Seleccionar año" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {years.map(y => <SelectItem key={y} value={y}>{y}</SelectItem>)}
-                                </SelectContent>
-                            </Select>
-                            <Button onClick={() => { setEditingExpense(null); setIsAddExpenseOpen(true); }}>
+                           <Button onClick={() => { setEditingExpense(null); setIsAddExpenseOpen(true); }}>
                                 <PlusCircle className="mr-2 h-4 w-4" />
                                 Añadir Gasto Real
                             </Button>

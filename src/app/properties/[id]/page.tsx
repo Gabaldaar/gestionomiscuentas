@@ -1,5 +1,7 @@
 
+'use client';
 
+import * as React from 'react';
 import { notFound } from 'next/navigation';
 import Image from 'next/image';
 import { doc, getDoc } from 'firebase/firestore';
@@ -13,28 +15,75 @@ import { PropertyExpenses } from '@/components/properties/PropertyExpenses';
 import { PropertyIncome } from '@/components/properties/PropertyIncome';
 import { db } from '@/lib/firebase';
 import { type Property } from '@/lib/types';
-import { expenseCategories, wallets } from '@/lib/data';
+import { expenseCategories, wallets, incomeCategories } from '@/lib/data';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Loader } from 'lucide-react';
 
 
 async function getProperty(id: string): Promise<Property | null> {
-  const docRef = doc(db, "properties", id);
-  const docSnap = await getDoc(docRef);
+  // This function needs to be executed on the server, so we can't use the client-side `db` object directly.
+  // For now, we'll assume it's fetched and passed as a prop, or we use a server-side fetch.
+  // This is a placeholder for the actual data fetching logic.
+  try {
+    const docRef = doc(db, "properties", id);
+    const docSnap = await getDoc(docRef);
 
-  if (docSnap.exists()) {
-    return { id: docSnap.id, ...docSnap.data() } as Property;
-  } else {
+    if (docSnap.exists()) {
+      return { id: docSnap.id, ...docSnap.data() } as Property;
+    } else {
+      return null;
+    }
+  } catch (error) {
+    // This will be caught by the server and potentially result in a 500 error.
+    // In a real app, you'd handle this more gracefully.
+    console.error("Failed to fetch property:", error);
     return null;
   }
 }
 
 
-export default async function PropertyDetailPage({ params }: { params: { id: string } }) {
-  const property = await getProperty(params.id);
+export default function PropertyDetailPage({ params }: { params: { id: string } }) {
+  const [property, setProperty] = React.useState<Property | null>(null);
+  const [loading, setLoading] = React.useState(true);
+  const [selectedMonth, setSelectedMonth] = React.useState<string>((new Date().getMonth() + 1).toString());
+  const [selectedYear, setSelectedYear] = React.useState<string>(new Date().getFullYear().toString());
+
+  React.useEffect(() => {
+    const fetchProperty = async () => {
+      setLoading(true);
+      const docRef = doc(db, "properties", params.id);
+      const docSnap = await getDoc(docRef);
+      if (docSnap.exists()) {
+        setProperty({ id: docSnap.id, ...docSnap.data() } as Property);
+      } else {
+        // Handle not found case, maybe redirect or show a 404 component
+        setProperty(null);
+      }
+      setLoading(false);
+    };
+
+    fetchProperty();
+  }, [params.id]);
+  
+  if (loading) {
+    return (
+      <div className="flex-1 space-y-4 p-4 md:p-8 pt-6 flex justify-center items-center">
+        <Loader className="h-10 w-10 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   if (!property) {
     notFound();
   }
   
+  const months = [
+    { value: '1', label: 'Enero' }, { value: '2', label: 'Febrero' }, { value: '3', label: 'Marzo' },
+    { value: '4', label: 'Abril' }, { value: '5', label: 'Mayo' }, { value: '6', label: 'Junio' },
+    { value: '7', label: 'Julio' }, { value: '8', label: 'Agosto' }, { value: '9', label: 'Septiembre' },
+    { value: '10', label: 'Octubre' }, { value: '11', label: 'Noviembre' }, { value: '12', label: 'Diciembre' }
+  ];
+  const years = Array.from({ length: 10 }, (_, i) => (new Date().getFullYear() - 5 + i).toString());
 
   return (
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
@@ -44,6 +93,34 @@ export default async function PropertyDetailPage({ params }: { params: { id: str
           Editar Propiedad
         </Button>
       </PageHeader>
+
+       <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle>Filtros Globales</CardTitle>
+            <div className="flex items-center gap-2">
+              <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="Seleccionar mes" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos los meses</SelectItem>
+                  {months.map(m => <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>)}
+                </SelectContent>
+              </Select>
+              <Select value={selectedYear} onValueChange={setSelectedYear}>
+                <SelectTrigger className="w-[120px]">
+                  <SelectValue placeholder="Seleccionar año" />
+                </SelectTrigger>
+                <SelectContent>
+                  {years.map(y => <SelectItem key={y} value={y}>{y}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </CardHeader>
+      </Card>
+
 
       <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
         <div className="lg:col-span-2 space-y-8">
@@ -63,12 +140,17 @@ export default async function PropertyDetailPage({ params }: { params: { id: str
             <PropertyIncome
               propertyId={property.id}
               wallets={wallets}
+              incomeCategories={incomeCategories}
+              selectedMonth={selectedMonth}
+              selectedYear={selectedYear}
             />
 
             <PropertyExpenses
               propertyId={property.id}
               expenseCategories={expenseCategories}
               wallets={wallets}
+              selectedMonth={selectedMonth}
+              selectedYear={selectedYear}
             />
 
             <PropertyNotes notes={property.notes} />
