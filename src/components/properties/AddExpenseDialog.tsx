@@ -164,7 +164,7 @@ export function AddExpenseDialog({
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Selecciona una categoría" />
-                      </Trigger>
+                      </SelectTrigger>
                     </FormControl>
                     <SelectContent>
                       {expenseCategories.map((category) => (
@@ -203,7 +203,7 @@ export function AddExpenseDialog({
                 render={({ field }) => (
                     <FormItem>
                     <FormLabel>Moneda</FormLabel>
-                    <Select onValuechange={field.onChange} value={field.value} defaultValue={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value} defaultValue={field.value}>
                         <FormControl>
                         <SelectTrigger>
                             <SelectValue placeholder="Moneda" />
