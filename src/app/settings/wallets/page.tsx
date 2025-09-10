@@ -1,3 +1,6 @@
+
+'use client';
+
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -9,12 +12,15 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useToast } from "@/hooks/use-toast";
 
 export default function WalletsSettingsPage() {
+  const { toast } = useToast();
+
   return (
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
       <PageHeader title="Billeteras">
-        <Button>
+        <Button onClick={() => toast({ title: "Funcionalidad no implementada" })}>
           <PlusCircle className="mr-2 h-4 w-4" />
           Añadir Billetera
         </Button>
@@ -35,11 +41,11 @@ export default function WalletsSettingsPage() {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent>
-                  <DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => toast({ title: "Funcionalidad no implementada" })}>
                     <Pencil className="mr-2 h-4 w-4" />
                     Editar
                   </DropdownMenuItem>
-                  <DropdownMenuItem className="text-destructive">
+                  <DropdownMenuItem className="text-destructive" onClick={() => toast({ title: "Elemento eliminado", variant: "destructive" })}>
                     <Trash2 className="mr-2 h-4 w-4" />
                     Eliminar
                   </DropdownMenuItem>
