@@ -37,12 +37,13 @@ import { Textarea } from '@/components/ui/textarea';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
-import { type Income, type Wallet } from '@/lib/types';
+import { type Income, type Wallet, type IncomeCategory } from '@/lib/types';
 
 const incomeSchema = z.object({
   date: z.date({
     required_error: 'La fecha es obligatoria.',
   }),
+  subcategoryId: z.string().min(1, 'La categoría es obligatoria.'),
   walletId: z.string().min(1, 'La billetera es obligatoria.'),
   amount: z.coerce.number().min(0.01, 'El monto debe ser mayor que cero.'),
   currency: z.enum(['ARS', 'USD'], {
@@ -57,6 +58,7 @@ type AddIncomeDialogProps = {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
   wallets: Wallet[];
+  incomeCategories: IncomeCategory[];
   onIncomeSubmit: (data: IncomeFormValues) => void;
   incomeToEdit?: Income | null;
 };
@@ -65,6 +67,7 @@ export function AddIncomeDialog({
   isOpen,
   onOpenChange,
   wallets,
+  incomeCategories,
   onIncomeSubmit,
   incomeToEdit,
 }: AddIncomeDialogProps) {
@@ -80,6 +83,7 @@ export function AddIncomeDialog({
       if (isEditing && incomeToEdit) {
         form.reset({
           date: new Date(incomeToEdit.date),
+          subcategoryId: incomeToEdit.subcategoryId,
           walletId: incomeToEdit.walletId,
           amount: incomeToEdit.amount,
           currency: incomeToEdit.currency,
@@ -88,6 +92,7 @@ export function AddIncomeDialog({
       } else {
           form.reset({
               date: new Date(),
+              subcategoryId: '',
               walletId: '',
               amount: 0,
               currency: 'ARS',
@@ -155,6 +160,36 @@ export function AddIncomeDialog({
               )}
             />
             
+            <FormField
+              control={form.control}
+              name="subcategoryId"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Categoría</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value} defaultValue={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecciona una categoría" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {incomeCategories.map((category) => (
+                        <React.Fragment key={category.id}>
+                          <FormLabel className="px-2 text-xs font-semibold text-muted-foreground">{category.name}</FormLabel>
+                          {category.subcategories.map((subcategory) => (
+                            <SelectItem key={subcategory.id} value={subcategory.id}>
+                              {subcategory.name}
+                            </SelectItem>
+                          ))}
+                        </React.Fragment>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
             <FormField
               control={form.control}
               name="walletId"

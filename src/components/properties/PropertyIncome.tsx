@@ -8,10 +8,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { PlusCircle, Loader, Pencil, Trash2 } from "lucide-react";
-import { type Income, type Wallet } from "@/lib/types";
+import { type Income, type Wallet, type IncomeCategory } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
 import { AddIncomeDialog } from './AddIncomeDialog';
 import { ConfirmDeleteDialog } from '../shared/ConfirmDeleteDialog';
+import { incomeCategories } from '@/lib/data';
 
 type PropertyIncomeProps = {
   propertyId: string;
@@ -51,6 +52,21 @@ export function PropertyIncome({ propertyId, wallets }: PropertyIncomeProps) {
     fetchIncomes();
   }, [fetchIncomes]);
 
+  const getSubcategoryName = (id: string) => {
+    for (const category of incomeCategories) {
+      const subcategory = category.subcategories.find(sub => sub.id === id);
+      if (subcategory) return subcategory.name;
+    }
+    return "Desconocido";
+  };
+  
+  const getCategoryName = (subcategoryId: string) => {
+    for (const category of incomeCategories) {
+      const subcategory = category.subcategories.find(sub => sub.id === subcategoryId);
+      if (subcategory) return category.name;
+    }
+    return "Desconocido";
+  };
 
   const getWalletName = (id: string) => {
     const wallet = wallets.find(w => w.id === id);
@@ -129,6 +145,7 @@ export function PropertyIncome({ propertyId, wallets }: PropertyIncomeProps) {
             <TableHeader>
               <TableRow>
                 <TableHead>Fecha</TableHead>
+                <TableHead>Categoría</TableHead>
                 <TableHead>Billetera</TableHead>
                 <TableHead>Notas</TableHead>
                 <TableHead className="text-right">Monto</TableHead>
@@ -139,6 +156,10 @@ export function PropertyIncome({ propertyId, wallets }: PropertyIncomeProps) {
               {incomes.length > 0 ? incomes.map(income => (
                 <TableRow key={income.id}>
                   <TableCell>{new Date(income.date).toLocaleDateString('es-ES')}</TableCell>
+                  <TableCell>
+                    <div className='font-medium'>{getSubcategoryName(income.subcategoryId)}</div>
+                    <div className='text-xs text-muted-foreground'>{getCategoryName(income.subcategoryId)}</div>
+                  </TableCell>
                   <TableCell>
                     {getWalletName(income.walletId)}
                   </TableCell>
@@ -161,7 +182,7 @@ export function PropertyIncome({ propertyId, wallets }: PropertyIncomeProps) {
                 </TableRow>
               )) : (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center text-muted-foreground">
+                  <TableCell colSpan={6} className="text-center text-muted-foreground">
                     No hay ingresos para mostrar.
                   </TableCell>
                 </TableRow>
@@ -177,6 +198,7 @@ export function PropertyIncome({ propertyId, wallets }: PropertyIncomeProps) {
         isOpen={isAddIncomeOpen}
         onOpenChange={closeDialogs}
         wallets={wallets}
+        incomeCategories={incomeCategories}
         onIncomeSubmit={handleIncomeSubmit}
         incomeToEdit={editingIncome}
       />

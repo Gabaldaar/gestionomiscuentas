@@ -25,6 +25,7 @@ import {
   Home,
   Landmark,
   Wallet,
+  TrendingUp,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -39,6 +40,7 @@ const navItems = [
 const settingsNavItems = [
     { href: '/settings', label: 'General', icon: Settings2 },
     { href: '/settings/expenses', label: 'Cuentas de Gastos', icon: Landmark },
+    { href: '/settings/incomes', label: 'Cuentas de Ingresos', icon: TrendingUp },
     { href: '/settings/wallets', label: 'Billeteras', icon: Wallet },
 ]
 

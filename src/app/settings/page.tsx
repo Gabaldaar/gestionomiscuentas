@@ -1,7 +1,7 @@
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Wallet, Landmark } from "lucide-react";
+import { Wallet, Landmark, TrendingUp } from "lucide-react";
 import Link from "next/link";
 
 export default function SettingsPage() {
@@ -12,6 +12,13 @@ export default function SettingsPage() {
       icon: Landmark,
       action: "Administrar",
       href: "/settings/expenses"
+    },
+    {
+      title: "Cuentas de Ingresos",
+      description: "Administra tus categorías y subcategorías de ingresos.",
+      icon: TrendingUp,
+      action: "Administrar",
+      href: "/settings/incomes"
     },
     {
       title: "Billeteras",

@@ -1,4 +1,4 @@
-import { type Property, type Wallet, type ExpenseCategory, type ExpectedExpense, type ActualExpense, type Income } from './types';
+import { type Property, type Wallet, type ExpenseCategory, type ExpectedExpense, type ActualExpense, type Income, type IncomeCategory } from './types';
 import { PlaceHolderImages } from './placeholder-images';
 
 export const properties: Property[] = [
@@ -29,6 +29,25 @@ export const wallets: Wallet[] = [
     { id: 'wallet1', name: 'Cuenta Principal ARS', currency: 'ARS', balance: 150000 },
     { id: 'wallet2', name: 'Ahorros en Dólares US', currency: 'USD', balance: 5000 },
     { id: 'wallet3', name: 'Inversión ARS', currency: 'ARS', balance: 500000 },
+];
+
+export const incomeCategories: IncomeCategory[] = [
+    {
+        id: 'inc_cat1',
+        name: 'Alquileres',
+        subcategories: [
+            { id: 'inc_sub1', name: 'Alquiler Casa Benteveo' },
+            { id: 'inc_sub2', name: 'Alquiler Departamento Centro' },
+        ]
+    },
+    {
+        id: 'inc_cat2',
+        name: 'Otros Ingresos',
+        subcategories: [
+            { id: 'inc_sub3', name: 'Venta de Activos' },
+            { id: 'inc_sub4', name: 'Devoluciones' },
+        ]
+    }
 ];
 
 export const expenseCategories: ExpenseCategory[] = [
@@ -74,6 +93,6 @@ export const actualExpenses: ActualExpense[] = [
 ];
 
 export const incomes: Income[] = [
-    { id: 'inc1', walletId: 'wallet2', amount: 1200, currency: 'USD', date: '2024-07-01T10:00:00Z', notes: 'Alquiler de Julio.' },
-    { id: 'inc2', walletId: 'wallet2', amount: 2500, currency: 'USD', date: '2024-07-05T12:00:00Z', notes: 'Alquiler de temporada alta.' },
+    { id: 'inc1', subcategoryId: 'inc_sub1', walletId: 'wallet2', amount: 1200, currency: 'USD', date: '2024-07-01T10:00:00Z', notes: 'Alquiler de Julio.' },
+    { id: 'inc2', subcategoryId: 'inc_sub2', walletId: 'wallet2', amount: 2500, currency: 'USD', date: '2024-07-05T12:00:00Z', notes: 'Alquiler de temporada alta.' },
 ];

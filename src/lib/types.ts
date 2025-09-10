@@ -27,6 +27,17 @@ export type ExpenseSubcategory = {
   name: string;
 };
 
+export type IncomeCategory = {
+  id: string;
+  name: string;
+  subcategories: IncomeSubcategory[];
+};
+
+export type IncomeSubcategory = {
+    id: string;
+    name: string;
+};
+
 export type ExpectedExpense = {
   id: string;
   subcategoryId: string;
@@ -48,6 +59,7 @@ export type ActualExpense = {
 
 export type Income = {
   id: string;
+  subcategoryId: string;
   walletId: string;
   amount: number;
   currency: Currency;
@@ -65,3 +77,4 @@ export type Transfer = {
   date: string; // ISO string
   notes: string;
 };
+
