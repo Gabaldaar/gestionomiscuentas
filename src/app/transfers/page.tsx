@@ -90,13 +90,17 @@ export default function TransfersPage() {
 
   const onSubmit = async (data: TransferFormValues) => {
     setIsSubmitting(true);
+    const dataToSave = {
+      ...data,
+      date: Timestamp.now(),
+      fromCurrency: fromWallet?.currency,
+      toCurrency: toWallet?.currency,
+      exchangeRate: data.exchangeRate || null,
+    };
+
+
     try {
-      await addDoc(collection(db, 'transfers'), {
-        ...data,
-        date: Timestamp.now(),
-        fromCurrency: fromWallet?.currency,
-        toCurrency: toWallet?.currency,
-      });
+      await addDoc(collection(db, 'transfers'), dataToSave);
       toast({
         title: 'Transferencia Exitosa',
         description: 'La transferencia de fondos ha sido registrada.',
