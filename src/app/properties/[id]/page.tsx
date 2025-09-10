@@ -1,4 +1,4 @@
-import { properties } from '@/lib/data';
+import { properties, expectedExpenses, actualExpenses, expenseCategories } from '@/lib/data';
 import { notFound } from 'next/navigation';
 import Image from 'next/image';
 import { PageHeader } from '@/components/shared/PageHeader';
@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Pencil } from 'lucide-react';
 import { PropertyNotes } from '@/components/properties/PropertyNotes';
+import { PropertyExpenses } from '@/components/properties/PropertyExpenses';
 
 export default function PropertyDetailPage({ params }: { params: { id: string } }) {
   const property = properties.find((p) => p.id === params.id);
@@ -13,6 +14,10 @@ export default function PropertyDetailPage({ params }: { params: { id: string } 
   if (!property) {
     notFound();
   }
+  
+  const propertyExpectedExpenses = expectedExpenses.filter(e => e.propertyId === params.id);
+  const propertyActualExpenses = actualExpenses.filter(e => e.propertyId === params.id);
+
 
   return (
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
@@ -37,6 +42,12 @@ export default function PropertyDetailPage({ params }: { params: { id: string } 
                     />
                 </CardContent>
             </Card>
+
+            <PropertyExpenses
+              expectedExpenses={propertyExpectedExpenses}
+              actualExpenses={propertyActualExpenses}
+              expenseCategories={expenseCategories}
+            />
 
             <PropertyNotes notes={property.notes} />
         </div>

@@ -1,4 +1,4 @@
-import { type Property, type Wallet, type ExpenseCategory } from './types';
+import { type Property, type Wallet, type ExpenseCategory, type ExpectedExpense, type ActualExpense } from './types';
 import { PlaceHolderImages } from './placeholder-images';
 
 export const properties: Property[] = [
@@ -60,4 +60,15 @@ export const expenseCategories: ExpenseCategory[] = [
             { id: 'sub10', name: 'Seguro' },
         ]
     }
+];
+
+export const expectedExpenses: ExpectedExpense[] = [
+    { id: 'exp1', propertyId: 'prop1', subcategoryId: 'sub1', amount: 50, currency: 'USD', month: 7, year: 2024 },
+    { id: 'exp2', propertyId: 'prop1', subcategoryId: 'sub9', amount: 100, currency: 'USD', month: 7, year: 2024 },
+    { id: 'exp3', propertyId: 'prop2', subcategoryId: 'sub6', amount: 8000, currency: 'ARS', month: 7, year: 2024 },
+];
+
+export const actualExpenses: ActualExpense[] = [
+    { id: 'act1', propertyId: 'prop1', subcategoryId: 'sub1', amount: 55, currency: 'USD', date: '2024-07-15T10:00:00Z', notes: 'Factura de electricidad de julio.' },
+    { id: 'act2', propertyId: 'prop2', subcategoryId: 'sub5', amount: 15000, currency: 'ARS', date: '2024-07-10T14:30:00Z', notes: 'Reparación de gotera en el techo.' },
 ];
