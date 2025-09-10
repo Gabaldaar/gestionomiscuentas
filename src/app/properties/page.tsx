@@ -5,6 +5,7 @@ import { PropertyCard } from "@/components/properties/PropertyCard";
 import { db } from "@/lib/firebase";
 import { collection, getDocs } from "firebase/firestore";
 import { type Property } from "@/lib/types";
+import Link from "next/link";
 
 async function getProperties(): Promise<Property[]> {
   const propertiesCol = collection(db, 'properties');
@@ -19,9 +20,11 @@ export default async function PropertiesPage() {
   return (
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
       <PageHeader title="Propiedades">
-        <Button>
-          <PlusCircle className="mr-2 h-4 w-4" />
-          Añadir Propiedad
+        <Button asChild>
+          <Link href="/properties/new">
+            <PlusCircle className="mr-2 h-4 w-4" />
+            Añadir Propiedad
+          </Link>
         </Button>
       </PageHeader>
       
