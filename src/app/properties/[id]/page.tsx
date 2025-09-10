@@ -1,4 +1,4 @@
-import { properties, expectedExpenses, actualExpenses, expenseCategories, incomes, wallets } from '@/lib/data';
+import { expectedExpenses, actualExpenses, expenseCategories, incomes, wallets } from '@/lib/data';
 import { notFound } from 'next/navigation';
 import Image from 'next/image';
 import { PageHeader } from '@/components/shared/PageHeader';
@@ -8,9 +8,25 @@ import { Pencil } from 'lucide-react';
 import { PropertyNotes } from '@/components/properties/PropertyNotes';
 import { PropertyExpenses } from '@/components/properties/PropertyExpenses';
 import { PropertyIncome } from '@/components/properties/PropertyIncome';
+import { db } from '@/lib/firebase';
+import { doc, getDoc } from 'firebase/firestore';
+import { type Property } from '@/lib/types';
 
-export default function PropertyDetailPage({ params }: { params: { id: string } }) {
-  const property = properties.find((p) => p.id === params.id);
+
+async function getProperty(id: string): Promise<Property | null> {
+  const docRef = doc(db, "properties", id);
+  const docSnap = await getDoc(docRef);
+
+  if (docSnap.exists()) {
+    return { id: docSnap.id, ...docSnap.data() } as Property;
+  } else {
+    return null;
+  }
+}
+
+
+export default async function PropertyDetailPage({ params }: { params: { id: string } }) {
+  const property = await getProperty(params.id);
 
   if (!property) {
     notFound();
