@@ -235,172 +235,163 @@ export function PropertyExpenses({ propertyId, expenseCategories, wallets, selec
 
   return (
     <>
+      <Card>
         <Tabs defaultValue="overview">
-        <div className='flex justify-between items-center mb-4'>
+          <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Gastos</CardTitle>
             <TabsList className="grid grid-cols-2 w-[300px]">
               <TabsTrigger value="overview">Presupuesto</TabsTrigger>
               <TabsTrigger value="actual">Gastos</TabsTrigger>
             </TabsList>
-        </div>
-
-        <TabsContent value="overview">
-            <Card>
-                <CardHeader>
-                    <div className='flex justify-between items-center'>
-                        <div>
-                            <CardTitle>Gastos Previstos</CardTitle>
-                            <CardDescription>Una descripción general de tus gastos previstos y su estado.</CardDescription>
-                        </div>
-                        <div className="flex items-center gap-2">
-                           <Button onClick={() => { setEditingExpectedExpense(null); setIsAddExpectedExpenseOpen(true); }}>
-                                <PlusCircle className="mr-2 h-4 w-4" />
-                                Añadir Gasto Previsto
-                            </Button>
-                        </div>
+          </CardHeader>
+          <CardContent>
+            <TabsContent value="overview">
+                <div className='flex justify-between items-center mb-4'>
+                    <div>
+                        <h3 className="text-lg font-semibold">Gastos Previstos</h3>
+                        <p className="text-sm text-muted-foreground">Una descripción general de tus gastos previstos y su estado.</p>
                     </div>
-                </CardHeader>
-                <CardContent>
-                    {isLoading ? (
-                        <div className="flex justify-center items-center h-24">
-                           <Loader className="h-6 w-6 animate-spin text-primary" />
-                        </div>
-                    ) : (
-                    <Table>
-                        <TableHeader>
-                        <TableRow>
-                            <TableHead>Período</TableHead>
-                            <TableHead>Categoría</TableHead>
-                            <TableHead className="text-right">Previsto</TableHead>
-                            <TableHead className="text-right">Pagado</TableHead>
-                            <TableHead>Estado</TableHead>
-                            <TableHead className="w-[100px]"></TableHead>
-                        </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                        {filteredExpectedExpenses.length > 0 ? filteredExpectedExpenses.map(expense => {
-                            const paidAmount = getPaidAmount(expense);
-                            const status = getStatus(expense.amount, paidAmount);
-                            return (
-                                <TableRow key={expense.id}>
-                                    <TableCell>{expense.month}/{expense.year}</TableCell>
-                                    <TableCell>
-                                        <div className='font-medium'>{getSubcategoryName(expense.subcategoryId)}</div>
-                                        <div className='text-xs text-muted-foreground'>{getCategoryName(expense.subcategoryId)}</div>
-                                    </TableCell>
-                                    <TableCell className="text-right font-medium">
-                                        {new Intl.NumberFormat('es-AR', { style: 'currency', currency: expense.currency }).format(expense.amount)}
-                                    </TableCell>
-                                    <TableCell className="text-right font-medium">
-                                        {new Intl.NumberFormat('es-AR', { style: 'currency', currency: expense.currency }).format(paidAmount)}
-                                    </TableCell>
-                                    <TableCell>
-                                        <Badge variant="outline" className='flex items-center gap-2'>
-                                            <span className={`h-2 w-2 rounded-full ${status.color}`}></span>
-                                            {status.text}
-                                        </Badge>
-                                    </TableCell>
-                                    <TableCell className="text-right">
-                                        <div className="flex items-center justify-end gap-2">
-                                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleEditExpected(expense)}>
-                                                <Pencil className="h-4 w-4" />
-                                                <span className="sr-only">Editar Gasto Previsto</span>
-                                            </Button>
-                                            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => handleDeleteExpected(expense.id)}>
-                                                <Trash2 className="h-4 w-4" />
-                                                <span className="sr-only">Eliminar Gasto Previsto</span>
-                                            </Button>
-                                        </div>
-                                    </TableCell>
-                                </TableRow>
-                            )
-                        }) : (
-                            <TableRow>
-                            <TableCell colSpan={6} className="text-center text-muted-foreground">
-                                No hay gastos previstos para mostrar para el período seleccionado.
-                            </TableCell>
-                            </TableRow>
-                        )}
-                        </TableBody>
-                    </Table>
-                    )}
-                </CardContent>
-            </Card>
-        </TabsContent>
-
-        <TabsContent value="actual">
-            <Card>
-                <CardHeader>
-                     <div className='flex justify-between items-center'>
-                        <div>
-                            <CardTitle>Historial de Gastos Reales</CardTitle>
-                            <CardDescription>Una lista de todos los gastos individuales registrados.</CardDescription>
-                        </div>
-                        <div className="flex items-center gap-2">
-                           <Button onClick={() => { setEditingExpense(null); setIsAddExpenseOpen(true); }}>
-                                <PlusCircle className="mr-2 h-4 w-4" />
-                                Añadir Gasto Real
-                            </Button>
-                        </div>
+                    <div className="flex items-center gap-2">
+                        <Button onClick={() => { setEditingExpectedExpense(null); setIsAddExpectedExpenseOpen(true); }}>
+                            <PlusCircle className="mr-2 h-4 w-4" />
+                            Añadir Gasto Previsto
+                        </Button>
                     </div>
-                </CardHeader>
-                <CardContent>
-                    {isLoading ? (
-                        <div className="flex justify-center items-center h-24">
-                           <Loader className="h-6 w-6 animate-spin text-primary" />
-                        </div>
-                    ) : (
-                    <Table>
-                        <TableHeader>
-                        <TableRow>
-                            <TableHead>Fecha</TableHead>
-                            <TableHead>Categoría</TableHead>
-                            <TableHead>Billetera</TableHead>
-                            <TableHead>Notas</TableHead>
-                            <TableHead className="text-right">Monto</TableHead>
-                            <TableHead className="w-[100px]"></TableHead>
-                        </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                        {filteredActualExpenses.length > 0 ? filteredActualExpenses.map(expense => (
+                </div>
+                {isLoading ? (
+                    <div className="flex justify-center items-center h-24">
+                        <Loader className="h-6 w-6 animate-spin text-primary" />
+                    </div>
+                ) : (
+                <Table>
+                    <TableHeader>
+                    <TableRow>
+                        <TableHead>Período</TableHead>
+                        <TableHead>Categoría</TableHead>
+                        <TableHead className="text-right">Previsto</TableHead>
+                        <TableHead className="text-right">Pagado</TableHead>
+                        <TableHead>Estado</TableHead>
+                        <TableHead className="w-[100px]"></TableHead>
+                    </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                    {filteredExpectedExpenses.length > 0 ? filteredExpectedExpenses.map(expense => {
+                        const paidAmount = getPaidAmount(expense);
+                        const status = getStatus(expense.amount, paidAmount);
+                        return (
                             <TableRow key={expense.id}>
-                            <TableCell>{new Date(expense.date).toLocaleDateString('es-ES')}</TableCell>
-                            <TableCell>
-                                 <div className='font-medium'>{getSubcategoryName(expense.subcategoryId)}</div>
-                                <div className='text-xs text-muted-foreground'>{getCategoryName(expense.subcategoryId)}</div>
-                            </TableCell>
-                            <TableCell>{getWalletName(expense.walletId)}</TableCell>
-                            <TableCell className="text-muted-foreground max-w-[200px] truncate">{expense.notes}</TableCell>
-                            <TableCell className="text-right font-medium">
-                                {new Intl.NumberFormat('es-AR', { style: 'currency', currency: expense.currency }).format(expense.amount)}
-                            </TableCell>
-                            <TableCell className="text-right">
-                                <div className="flex items-center justify-end gap-2">
-                                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleEditActual(expense)}>
-                                        <Pencil className="h-4 w-4" />
-                                        <span className="sr-only">Editar Gasto</span>
-                                    </Button>
-                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => handleDeleteActual(expense.id)}>
-                                        <Trash2 className="h-4 w-4" />
-                                        <span className="sr-only">Eliminar Gasto</span>
-                                    </Button>
-                                </div>
-                            </TableCell>
+                                <TableCell>{expense.month}/{expense.year}</TableCell>
+                                <TableCell>
+                                    <div className='font-medium'>{getSubcategoryName(expense.subcategoryId)}</div>
+                                    <div className='text-xs text-muted-foreground'>{getCategoryName(expense.subcategoryId)}</div>
+                                </TableCell>
+                                <TableCell className="text-right font-medium">
+                                    {new Intl.NumberFormat('es-AR', { style: 'currency', currency: expense.currency }).format(expense.amount)}
+                                </TableCell>
+                                <TableCell className="text-right font-medium">
+                                    {new Intl.NumberFormat('es-AR', { style: 'currency', currency: expense.currency }).format(paidAmount)}
+                                </TableCell>
+                                <TableCell>
+                                    <Badge variant="outline" className='flex items-center gap-2'>
+                                        <span className={`h-2 w-2 rounded-full ${status.color}`}></span>
+                                        {status.text}
+                                    </Badge>
+                                </TableCell>
+                                <TableCell className="text-right">
+                                    <div className="flex items-center justify-end gap-2">
+                                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleEditExpected(expense)}>
+                                            <Pencil className="h-4 w-4" />
+                                            <span className="sr-only">Editar Gasto Previsto</span>
+                                        </Button>
+                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => handleDeleteExpected(expense.id)}>
+                                            <Trash2 className="h-4 w-4" />
+                                            <span className="sr-only">Eliminar Gasto Previsto</span>
+                                        </Button>
+                                    </div>
+                                </TableCell>
                             </TableRow>
-                        )) : (
-                            <TableRow>
-                            <TableCell colSpan={6} className="text-center text-muted-foreground">
-                                No hay gastos reales para mostrar para el período seleccionado.
-                            </TableCell>
-                            </TableRow>
-                        )}
-                        </TableBody>
-                    </Table>
+                        )
+                    }) : (
+                        <TableRow>
+                        <TableCell colSpan={6} className="text-center text-muted-foreground py-10">
+                            No hay gastos previstos para mostrar para el período seleccionado.
+                        </TableCell>
+                        </TableRow>
                     )}
-                </CardContent>
-            </Card>
-        </TabsContent>
+                    </TableBody>
+                </Table>
+                )}
+            </TabsContent>
+
+            <TabsContent value="actual">
+                <div className='flex justify-between items-center mb-4'>
+                    <div>
+                        <h3 className="text-lg font-semibold">Historial de Gastos Reales</h3>
+                        <p className="text-sm text-muted-foreground">Una lista de todos los gastos individuales registrados.</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <Button onClick={() => { setEditingExpense(null); setIsAddExpenseOpen(true); }}>
+                            <PlusCircle className="mr-2 h-4 w-4" />
+                            Añadir Gasto Real
+                        </Button>
+                    </div>
+                </div>
+                {isLoading ? (
+                    <div className="flex justify-center items-center h-24">
+                        <Loader className="h-6 w-6 animate-spin text-primary" />
+                    </div>
+                ) : (
+                <Table>
+                    <TableHeader>
+                    <TableRow>
+                        <TableHead>Fecha</TableHead>
+                        <TableHead>Categoría</TableHead>
+                        <TableHead>Billetera</TableHead>
+                        <TableHead>Notas</TableHead>
+                        <TableHead className="text-right">Monto</TableHead>
+                        <TableHead className="w-[100px]"></TableHead>
+                    </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                    {filteredActualExpenses.length > 0 ? filteredActualExpenses.map(expense => (
+                        <TableRow key={expense.id}>
+                        <TableCell>{new Date(expense.date).toLocaleDateString('es-ES')}</TableCell>
+                        <TableCell>
+                                <div className='font-medium'>{getSubcategoryName(expense.subcategoryId)}</div>
+                            <div className='text-xs text-muted-foreground'>{getCategoryName(expense.subcategoryId)}</div>
+                        </TableCell>
+                        <TableCell>{getWalletName(expense.walletId)}</TableCell>
+                        <TableCell className="text-muted-foreground max-w-[200px] truncate">{expense.notes}</TableCell>
+                        <TableCell className="text-right font-medium">
+                            {new Intl.NumberFormat('es-AR', { style: 'currency', currency: expense.currency }).format(expense.amount)}
+                        </TableCell>
+                        <TableCell className="text-right">
+                            <div className="flex items-center justify-end gap-2">
+                                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleEditActual(expense)}>
+                                    <Pencil className="h-4 w-4" />
+                                    <span className="sr-only">Editar Gasto</span>
+                                </Button>
+                                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => handleDeleteActual(expense.id)}>
+                                    <Trash2 className="h-4 w-4" />
+                                    <span className="sr-only">Eliminar Gasto</span>
+                                </Button>
+                            </div>
+                        </TableCell>
+                        </TableRow>
+                    )) : (
+                        <TableRow>
+                        <TableCell colSpan={6} className="text-center text-muted-foreground py-10">
+                            No hay gastos reales para mostrar para el período seleccionado.
+                        </TableCell>
+                        </TableRow>
+                    )}
+                    </TableBody>
+                </Table>
+                )}
+            </TabsContent>
+          </CardContent>
         </Tabs>
+      </Card>
       
       {/* Dialog for Actual Expenses */}
       <AddExpenseDialog
@@ -439,3 +430,5 @@ export function PropertyExpenses({ propertyId, expenseCategories, wallets, selec
     </>
   );
 }
+
+    
