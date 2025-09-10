@@ -2,9 +2,9 @@
 'use client';
 
 import * as React from 'react';
-import { collection, addDoc, getDocs, doc, updateDoc, deleteDoc, query, where, Timestamp } from 'firebase/firestore';
+import { collection, addDoc, doc, updateDoc, deleteDoc, Timestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -22,15 +22,26 @@ type PropertyExpensesProps = {
   wallets: Wallet[];
   selectedMonth: string;
   selectedYear: string;
+  actualExpenses: ActualExpense[];
+  expectedExpenses: ExpectedExpense[];
+  onTransactionUpdate: () => void;
 };
 
-export function PropertyExpenses({ propertyId, expenseCategories, wallets, selectedMonth, selectedYear }: PropertyExpensesProps) {
+export function PropertyExpenses({ 
+  propertyId, 
+  expenseCategories, 
+  wallets, 
+  selectedMonth, 
+  selectedYear,
+  actualExpenses,
+  expectedExpenses,
+  onTransactionUpdate,
+}: PropertyExpensesProps) {
   const { toast } = useToast();
-  const [isLoading, setIsLoading] = React.useState(true);
+  const [isLoading, setIsLoading] = React.useState(false);
   
   // State for Actual Expenses
   const [isAddExpenseOpen, setIsAddExpenseOpen] = React.useState(false);
-  const [actualExpenses, setActualExpenses] = React.useState<ActualExpense[]>([]);
   const [editingExpense, setEditingExpense] = React.useState<ActualExpense | null>(null);
   const [deletingExpenseId, setDeletingExpenseId] = React.useState<string | null>(null);
   const [initialExpenseData, setInitialExpenseData] = React.useState<Partial<ActualExpense> | null>(null);
@@ -38,40 +49,8 @@ export function PropertyExpenses({ propertyId, expenseCategories, wallets, selec
 
   // State for Expected Expenses
   const [isAddExpectedExpenseOpen, setIsAddExpectedExpenseOpen] = React.useState(false);
-  const [expectedExpenses, setExpectedExpenses] = React.useState<ExpectedExpense[]>([]);
   const [editingExpectedExpense, setEditingExpectedExpense] = React.useState<ExpectedExpense | null>(null);
   const [deletingExpectedExpenseId, setDeletingExpectedExpenseId] = React.useState<string | null>(null);
-
-  const fetchExpenses = React.useCallback(async () => {
-    setIsLoading(true);
-    try {
-      // Fetch actual expenses
-      const actualExpensesCol = collection(db, 'properties', propertyId, 'actualExpenses');
-      const actualExpensesSnapshot = await getDocs(actualExpensesCol);
-      const actualExpensesList = actualExpensesSnapshot.docs.map(doc => ({ 
-          id: doc.id, 
-          ...doc.data(),
-          date: (doc.data().date as Timestamp).toDate().toISOString(),
-      })) as ActualExpense[];
-      setActualExpenses(actualExpensesList);
-
-      // Fetch expected expenses
-      const expectedExpensesCol = collection(db, 'properties', propertyId, 'expectedExpenses');
-      const expectedExpensesSnapshot = await getDocs(expectedExpensesCol);
-      const expectedExpensesList = expectedExpensesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as ExpectedExpense[];
-      setExpectedExpenses(expectedExpensesList);
-
-    } catch (error) {
-      console.error("Error fetching expenses:", error);
-      toast({ title: "Error", description: "No se pudieron cargar los gastos.", variant: "destructive" });
-    } finally {
-      setIsLoading(false);
-    }
-  }, [propertyId, toast]);
-
-  React.useEffect(() => {
-    fetchExpenses();
-  }, [fetchExpenses]);
 
   const filteredExpectedExpenses = React.useMemo(() => {
     return expectedExpenses.filter(expense => {
@@ -149,7 +128,7 @@ export function PropertyExpenses({ propertyId, expenseCategories, wallets, selec
             await addDoc(expensesCol, expenseData);
             toast({ title: "Gasto añadido exitosamente" });
         }
-        fetchExpenses();
+        onTransactionUpdate();
         closeDialogs();
     } catch(error) {
         console.error("Error saving actual expense:", error);
@@ -188,7 +167,7 @@ export function PropertyExpenses({ propertyId, expenseCategories, wallets, selec
             await deleteDoc(expenseRef);
             toast({ title: "Elemento eliminado", variant: "destructive" });
             setDeletingExpenseId(null);
-            fetchExpenses();
+            onTransactionUpdate();
         } catch(error) {
             console.error("Error deleting actual expense:", error);
             toast({ title: "Error", description: "No se pudo eliminar el gasto.", variant: "destructive" });
@@ -208,7 +187,7 @@ export function PropertyExpenses({ propertyId, expenseCategories, wallets, selec
         await addDoc(expensesCol, data);
         toast({ title: "Gasto previsto añadido exitosamente" });
       }
-      fetchExpenses();
+      onTransactionUpdate();
       closeDialogs();
     } catch(error) {
         console.error("Error saving expected expense:", error);
@@ -232,7 +211,7 @@ export function PropertyExpenses({ propertyId, expenseCategories, wallets, selec
             await deleteDoc(expenseRef);
             toast({ title: "Elemento eliminado", variant: "destructive" });
             setDeletingExpectedExpenseId(null);
-            fetchExpenses();
+            onTransactionUpdate();
         } catch(error) {
             console.error("Error deleting expected expense:", error);
             toast({ title: "Error", description: "No se pudo eliminar el gasto previsto.", variant: "destructive" });
@@ -453,7 +432,3 @@ export function PropertyExpenses({ propertyId, expenseCategories, wallets, selec
     </>
   );
 }
-
-    
-
-    

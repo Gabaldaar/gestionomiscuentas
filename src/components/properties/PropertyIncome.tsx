@@ -19,44 +19,21 @@ type PropertyIncomeProps = {
   incomeCategories: IncomeCategory[];
   selectedMonth: string;
   selectedYear: string;
+  incomes: Income[];
+  onTransactionUpdate: () => void;
 };
 
-export function PropertyIncome({ propertyId, wallets, incomeCategories, selectedMonth, selectedYear }: PropertyIncomeProps) {
+export function PropertyIncome({ propertyId, wallets, incomeCategories, selectedMonth, selectedYear, incomes, onTransactionUpdate }: PropertyIncomeProps) {
   const { toast } = useToast();
-  const [isLoading, setIsLoading] = React.useState(true);
-  const [incomes, setIncomes] = React.useState<Income[]>([]);
+  const [isLoading, setIsLoading] = React.useState(false);
   const [isAddIncomeOpen, setIsAddIncomeOpen] = React.useState(false);
   const [editingIncome, setEditingIncome] = React.useState<Income | null>(null);
   const [deletingIncomeId, setDeletingIncomeId] = React.useState<string | null>(null);
 
-  const fetchIncomes = React.useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const incomesCol = collection(db, 'properties', propertyId, 'incomes');
-      const incomesSnapshot = await getDocs(incomesCol);
-      const incomesList = incomesSnapshot.docs.map(doc => ({ 
-          id: doc.id, 
-          ...doc.data(),
-          date: (doc.data().date as Timestamp).toDate().toISOString(),
-      })) as Income[];
-      
-      setIncomes(incomesList);
-    } catch (error) {
-      console.error("Error fetching incomes:", error);
-      toast({ title: "Error", description: "No se pudieron cargar los ingresos.", variant: "destructive" });
-    } finally {
-      setIsLoading(false);
-    }
-  }, [propertyId, toast]);
-
-  React.useEffect(() => {
-    fetchIncomes();
-  }, [fetchIncomes]);
-
   const filteredIncomes = React.useMemo(() => {
     return incomes.filter(income => {
         const incomeDate = new Date(income.date);
-        const yearMatch = incomeDate.getFullYear().toString() === selectedYear;
+        const yearMatch = selectedYear === 'all' || incomeDate.getFullYear().toString() === selectedYear;
         const monthMatch = selectedMonth === 'all' || (incomeDate.getMonth() + 1).toString() === selectedMonth;
         return yearMatch && monthMatch;
     }).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
@@ -100,7 +77,7 @@ export function PropertyIncome({ propertyId, wallets, incomeCategories, selected
         await addDoc(incomesCol, incomeData);
         toast({ title: "Ingreso añadido exitosamente" });
       }
-      fetchIncomes();
+      onTransactionUpdate();
       closeDialogs();
     } catch (error) {
       console.error("Error saving income:", error);
@@ -124,7 +101,7 @@ export function PropertyIncome({ propertyId, wallets, incomeCategories, selected
         await deleteDoc(incomeRef);
         toast({ title: "Elemento eliminado", variant: "destructive" });
         setDeletingIncomeId(null);
-        fetchIncomes();
+        onTransactionUpdate();
       } catch (error) {
         console.error("Error deleting income:", error);
         toast({ title: "Error", description: "No se pudo eliminar el ingreso.", variant: "destructive" });
@@ -192,7 +169,7 @@ export function PropertyIncome({ propertyId, wallets, incomeCategories, selected
                 </TableRow>
               )) : (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center text-muted-foreground">
+                  <TableCell colSpan={6} className="text-center text-muted-foreground py-10">
                     No hay ingresos para mostrar para el período seleccionado.
                   </TableCell>
                 </TableRow>

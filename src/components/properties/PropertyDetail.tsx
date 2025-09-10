@@ -4,20 +4,21 @@
 import * as React from 'react';
 import { notFound } from 'next/navigation';
 import Image from 'next/image';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, collection, getDocs, Timestamp } from 'firebase/firestore';
 
 import { PageHeader } from '@/components/shared/PageHeader';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Pencil } from 'lucide-react';
+import { Pencil, Loader } from 'lucide-react';
 import { PropertyNotes } from '@/components/properties/PropertyNotes';
 import { PropertyExpenses } from '@/components/properties/PropertyExpenses';
 import { PropertyIncome } from '@/components/properties/PropertyIncome';
 import { db } from '@/lib/firebase';
-import { type Property } from '@/lib/types';
+import { type Property, type ActualExpense, type Income, type ExpectedExpense } from '@/lib/types';
 import { expenseCategories, wallets, incomeCategories } from '@/lib/data';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader } from 'lucide-react';
+import { FinancialSummary } from './FinancialSummary';
+import { RecentActivity } from './RecentActivity';
 
 
 export function PropertyDetail({ id }: { id: string }) {
@@ -25,24 +26,80 @@ export function PropertyDetail({ id }: { id: string }) {
   const [loading, setLoading] = React.useState(true);
   const [selectedMonth, setSelectedMonth] = React.useState<string>((new Date().getMonth() + 1).toString());
   const [selectedYear, setSelectedYear] = React.useState<string>(new Date().getFullYear().toString());
-  
-  React.useEffect(() => {
-    const fetchProperty = async () => {
-      setLoading(true);
-      const docRef = doc(db, "properties", id);
-      const docSnap = await getDoc(docRef);
-      if (docSnap.exists()) {
-        setProperty({ id: docSnap.id, ...docSnap.data() } as Property);
-      } else {
-        setProperty(null);
-      }
-      setLoading(false);
-    };
 
-    if (id) {
-        fetchProperty();
+  const [actualExpenses, setActualExpenses] = React.useState<ActualExpense[]>([]);
+  const [expectedExpenses, setExpectedExpenses] = React.useState<ExpectedExpense[]>([]);
+  const [incomes, setIncomes] = React.useState<Income[]>([]);
+
+  const fetchTransactions = React.useCallback(async () => {
+    if (!id) return;
+    setLoading(true);
+    try {
+        // Property
+        const docRef = doc(db, "properties", id);
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+            setProperty({ id: docSnap.id, ...docSnap.data() } as Property);
+        } else {
+            setProperty(null); // Triggers notFound()
+        }
+
+        // Incomes
+        const incomesCol = collection(db, 'properties', id, 'incomes');
+        const incomesSnapshot = await getDocs(incomesCol);
+        const incomesList = incomesSnapshot.docs.map(doc => ({ 
+            id: doc.id, 
+            ...doc.data(),
+            date: (doc.data().date as Timestamp).toDate().toISOString(),
+        })) as Income[];
+        setIncomes(incomesList);
+        
+        // Actual Expenses
+        const actualExpensesCol = collection(db, 'properties', id, 'actualExpenses');
+        const actualExpensesSnapshot = await getDocs(actualExpensesCol);
+        const actualExpensesList = actualExpensesSnapshot.docs.map(doc => ({ 
+            id: doc.id, 
+            ...doc.data(),
+            date: (doc.data().date as Timestamp).toDate().toISOString(),
+        })) as ActualExpense[];
+        setActualExpenses(actualExpensesList);
+
+        // Expected Expenses
+        const expectedExpensesCol = collection(db, 'properties', id, 'expectedExpenses');
+        const expectedExpensesSnapshot = await getDocs(expectedExpensesCol);
+        const expectedExpensesList = expectedExpensesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as ExpectedExpense[];
+        setExpectedExpenses(expectedExpensesList);
+
+    } catch (error) {
+        console.error("Failed to fetch property data:", error);
+        setProperty(null); // error state
+    } finally {
+        setLoading(false);
     }
   }, [id]);
+
+  React.useEffect(() => {
+    fetchTransactions();
+  }, [fetchTransactions]);
+
+  const filteredIncomes = React.useMemo(() => {
+    return incomes.filter(income => {
+        const incomeDate = new Date(income.date);
+        const yearMatch = selectedYear === 'all' || incomeDate.getFullYear().toString() === selectedYear;
+        const monthMatch = selectedMonth === 'all' || (incomeDate.getMonth() + 1).toString() === selectedMonth;
+        return yearMatch && monthMatch;
+    });
+  }, [incomes, selectedMonth, selectedYear]);
+
+  const filteredActualExpenses = React.useMemo(() => {
+    return actualExpenses.filter(expense => {
+        const expenseDate = new Date(expense.date);
+        const yearMatch = selectedYear === 'all' || expenseDate.getFullYear().toString() === selectedYear;
+        const monthMatch = selectedMonth === 'all' || (expenseDate.getMonth() + 1).toString() === selectedMonth;
+        return yearMatch && monthMatch;
+    });
+  }, [actualExpenses, selectedMonth, selectedYear]);
+
   
   if (loading) {
     return (
@@ -122,6 +179,8 @@ export function PropertyDetail({ id }: { id: string }) {
               incomeCategories={incomeCategories}
               selectedMonth={selectedMonth}
               selectedYear={selectedYear}
+              incomes={incomes}
+              onTransactionUpdate={fetchTransactions}
             />
 
             <PropertyExpenses
@@ -130,28 +189,25 @@ export function PropertyDetail({ id }: { id: string }) {
               wallets={wallets}
               selectedMonth={selectedMonth}
               selectedYear={selectedYear}
+              actualExpenses={actualExpenses}
+              expectedExpenses={expectedExpenses}
+              onTransactionUpdate={fetchTransactions}
             />
 
             <PropertyNotes notes={property.notes} />
         </div>
 
         <div className="space-y-8">
-          <Card>
-            <CardHeader>
-              <CardTitle>Resumen Financiero</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground">No hay datos financieros para mostrar.</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader>
-              <CardTitle>Actividad Reciente</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground">No hay actividad reciente para mostrar.</p>
-            </CardContent>
-          </Card>
+          <FinancialSummary 
+            incomes={filteredIncomes}
+            expenses={filteredActualExpenses}
+          />
+          <RecentActivity 
+             incomes={incomes}
+             expenses={actualExpenses}
+             expenseCategories={expenseCategories}
+             incomeCategories={incomeCategories}
+          />
         </div>
       </div>
     </div>
