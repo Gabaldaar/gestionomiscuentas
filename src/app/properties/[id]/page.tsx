@@ -1,16 +1,17 @@
-import { expectedExpenses, actualExpenses, expenseCategories, incomes, wallets } from '@/lib/data';
 import { notFound } from 'next/navigation';
 import Image from 'next/image';
+import { doc, getDoc } from 'firebase/firestore';
+
 import { PageHeader } from '@/components/shared/PageHeader';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Pencil } from 'lucide-react';
 import { PropertyNotes } from '@/components/properties/PropertyNotes';
 import { PropertyExpenses } from '@/components/properties/PropertyExpenses';
 import { PropertyIncome } from '@/components/properties/PropertyIncome';
 import { db } from '@/lib/firebase';
-import { doc, getDoc } from 'firebase/firestore';
 import { type Property } from '@/lib/types';
+import { expenseCategories, incomes, wallets } from '@/lib/data';
 
 
 async function getProperty(id: string): Promise<Property | null> {
@@ -32,8 +33,6 @@ export default async function PropertyDetailPage({ params }: { params: { id: str
     notFound();
   }
   
-  const propertyExpectedExpenses = expectedExpenses.filter(e => e.propertyId === params.id);
-  const propertyActualExpenses = actualExpenses.filter(e => e.propertyId === params.id);
   const propertyIncomes = incomes.filter(i => i.propertyId === params.id);
 
 
@@ -67,8 +66,7 @@ export default async function PropertyDetailPage({ params }: { params: { id: str
             />
 
             <PropertyExpenses
-              expectedExpenses={propertyExpectedExpenses}
-              actualExpenses={propertyActualExpenses}
+              propertyId={property.id}
               expenseCategories={expenseCategories}
               wallets={wallets}
             />

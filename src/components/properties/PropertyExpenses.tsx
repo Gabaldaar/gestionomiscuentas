@@ -2,12 +2,14 @@
 'use client';
 
 import * as React from 'react';
+import { collection, addDoc, getDocs, doc, updateDoc, deleteDoc, query, where, Timestamp } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, Pencil, Trash2 } from "lucide-react";
+import { PlusCircle, Pencil, Trash2, Loader } from "lucide-react";
 import { type ExpectedExpense, type ActualExpense, type ExpenseCategory, type Wallet } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
 import { AddExpenseDialog } from './AddExpenseDialog';
@@ -16,24 +18,24 @@ import { ConfirmDeleteDialog } from '../shared/ConfirmDeleteDialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 
 type PropertyExpensesProps = {
-  expectedExpenses: ExpectedExpense[];
-  actualExpenses: ActualExpense[];
+  propertyId: string;
   expenseCategories: ExpenseCategory[];
   wallets: Wallet[];
 };
 
-export function PropertyExpenses({ expectedExpenses: initialExpectedExpenses, actualExpenses: initialActualExpenses, expenseCategories, wallets }: PropertyExpensesProps) {
+export function PropertyExpenses({ propertyId, expenseCategories, wallets }: PropertyExpensesProps) {
   const { toast } = useToast();
+  const [isLoading, setIsLoading] = React.useState(true);
   
   // State for Actual Expenses
   const [isAddExpenseOpen, setIsAddExpenseOpen] = React.useState(false);
-  const [actualExpenses, setActualExpenses] = React.useState<ActualExpense[]>(initialActualExpenses);
+  const [actualExpenses, setActualExpenses] = React.useState<ActualExpense[]>([]);
   const [editingExpense, setEditingExpense] = React.useState<ActualExpense | null>(null);
   const [deletingExpenseId, setDeletingExpenseId] = React.useState<string | null>(null);
 
   // State for Expected Expenses
   const [isAddExpectedExpenseOpen, setIsAddExpectedExpenseOpen] = React.useState(false);
-  const [expectedExpenses, setExpectedExpenses] = React.useState<ExpectedExpense[]>(initialExpectedExpenses);
+  const [expectedExpenses, setExpectedExpenses] = React.useState<ExpectedExpense[]>([]);
   const [editingExpectedExpense, setEditingExpectedExpense] = React.useState<ExpectedExpense | null>(null);
   const [deletingExpectedExpenseId, setDeletingExpectedExpenseId] = React.useState<string | null>(null);
 
@@ -42,6 +44,37 @@ export function PropertyExpenses({ expectedExpenses: initialExpectedExpenses, ac
   const [expectedSelectedYear, setExpectedSelectedYear] = React.useState<string>(new Date().getFullYear().toString());
   const [actualSelectedMonth, setActualSelectedMonth] = React.useState<string>((new Date().getMonth() + 1).toString());
   const [actualSelectedYear, setActualSelectedYear] = React.useState<string>(new Date().getFullYear().toString());
+
+  const fetchExpenses = React.useCallback(async () => {
+    setIsLoading(true);
+    try {
+      // Fetch actual expenses
+      const actualExpensesCol = collection(db, 'properties', propertyId, 'actualExpenses');
+      const actualExpensesSnapshot = await getDocs(actualExpensesCol);
+      const actualExpensesList = actualExpensesSnapshot.docs.map(doc => ({ 
+          id: doc.id, 
+          ...doc.data(),
+          date: (doc.data().date as Timestamp).toDate().toISOString(),
+      })) as ActualExpense[];
+      setActualExpenses(actualExpensesList);
+
+      // Fetch expected expenses
+      const expectedExpensesCol = collection(db, 'properties', propertyId, 'expectedExpenses');
+      const expectedExpensesSnapshot = await getDocs(expectedExpensesCol);
+      const expectedExpensesList = expectedExpensesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as ExpectedExpense[];
+      setExpectedExpenses(expectedExpensesList);
+
+    } catch (error) {
+      console.error("Error fetching expenses:", error);
+      toast({ title: "Error", description: "No se pudieron cargar los gastos.", variant: "destructive" });
+    } finally {
+      setIsLoading(false);
+    }
+  }, [propertyId, toast]);
+
+  React.useEffect(() => {
+    fetchExpenses();
+  }, [fetchExpenses]);
 
 
   const months = [
@@ -118,26 +151,24 @@ export function PropertyExpenses({ expectedExpenses: initialExpectedExpenses, ac
   };
 
   // --- Actual Expense Handlers ---
-  const handleActualExpenseSubmit = (data: any) => {
-    if (editingExpense) { // Editing existing expense
-        const updatedExpense: ActualExpense = {
-            ...editingExpense,
-            ...data,
-            date: data.date.toISOString(),
-        };
-        setActualExpenses(prev => prev.map(exp => exp.id === editingExpense.id ? updatedExpense : exp));
-        toast({ title: "Gasto actualizado exitosamente" });
-    } else { // Adding new expense
-        const newExpense: ActualExpense = {
-            id: `act${Date.now()}`,
-            propertyId: 'prop1', // This should be dynamic later
-            ...data,
-            date: data.date.toISOString(),
-        };
-        setActualExpenses(prev => [...prev, newExpense]);
-        toast({ title: "Gasto añadido exitosamente" });
+  const handleActualExpenseSubmit = async (data: any) => {
+    const expenseData = { ...data, date: Timestamp.fromDate(data.date) };
+    try {
+        if (editingExpense) { // Editing existing expense
+            const expenseRef = doc(db, 'properties', propertyId, 'actualExpenses', editingExpense.id);
+            await updateDoc(expenseRef, expenseData);
+            toast({ title: "Gasto actualizado exitosamente" });
+        } else { // Adding new expense
+            const expensesCol = collection(db, 'properties', propertyId, 'actualExpenses');
+            await addDoc(expensesCol, expenseData);
+            toast({ title: "Gasto añadido exitosamente" });
+        }
+        fetchExpenses();
+        closeDialogs();
+    } catch(error) {
+        console.error("Error saving actual expense:", error);
+        toast({ title: "Error", description: "No se pudo guardar el gasto.", variant: "destructive" });
     }
-    closeDialogs();
   }
 
   const handleEditActual = (expense: ActualExpense) => {
@@ -149,33 +180,39 @@ export function PropertyExpenses({ expectedExpenses: initialExpectedExpenses, ac
     setDeletingExpenseId(expenseId);
   };
 
-  const confirmDeleteActual = () => {
+  const confirmDeleteActual = async () => {
     if (deletingExpenseId) {
-        setActualExpenses(prev => prev.filter(exp => exp.id !== deletingExpenseId));
-        toast({ title: "Elemento eliminado", variant: "destructive" });
-        setDeletingExpenseId(null);
+        try {
+            const expenseRef = doc(db, 'properties', propertyId, 'actualExpenses', deletingExpenseId);
+            await deleteDoc(expenseRef);
+            toast({ title: "Elemento eliminado", variant: "destructive" });
+            setDeletingExpenseId(null);
+            fetchExpenses();
+        } catch(error) {
+            console.error("Error deleting actual expense:", error);
+            toast({ title: "Error", description: "No se pudo eliminar el gasto.", variant: "destructive" });
+        }
     }
   }
 
   // --- Expected Expense Handlers ---
-  const handleExpectedExpenseSubmit = (data: any) => {
+  const handleExpectedExpenseSubmit = async (data: any) => {
+    try {
       if(editingExpectedExpense) { // Editing existing expected expense
-        const updatedExpense: ExpectedExpense = {
-            ...editingExpectedExpense,
-            ...data,
-        };
-        setExpectedExpenses(prev => prev.map(exp => exp.id === editingExpectedExpense.id ? updatedExpense : exp));
+        const expenseRef = doc(db, 'properties', propertyId, 'expectedExpenses', editingExpectedExpense.id);
+        await updateDoc(expenseRef, data);
         toast({ title: "Gasto previsto actualizado exitosamente" });
       } else { // Adding new expected expense
-        const newExpense: ExpectedExpense = {
-            id: `exp${Date.now()}`,
-            propertyId: 'prop1', // This should be dynamic later
-            ...data,
-        };
-        setExpectedExpenses(prev => [...prev, newExpense]);
+        const expensesCol = collection(db, 'properties', propertyId, 'expectedExpenses');
+        await addDoc(expensesCol, data);
         toast({ title: "Gasto previsto añadido exitosamente" });
       }
+      fetchExpenses();
       closeDialogs();
+    } catch(error) {
+        console.error("Error saving expected expense:", error);
+        toast({ title: "Error", description: "No se pudo guardar el gasto previsto.", variant: "destructive" });
+    }
   }
 
   const handleEditExpected = (expense: ExpectedExpense) => {
@@ -187,11 +224,18 @@ export function PropertyExpenses({ expectedExpenses: initialExpectedExpenses, ac
     setDeletingExpectedExpenseId(expenseId);
   }
 
-  const confirmDeleteExpected = () => {
+  const confirmDeleteExpected = async () => {
     if (deletingExpectedExpenseId) {
-        setExpectedExpenses(prev => prev.filter(exp => exp.id !== deletingExpectedExpenseId));
-        toast({ title: "Elemento eliminado", variant: "destructive" });
-        setDeletingExpectedExpenseId(null);
+        try {
+            const expenseRef = doc(db, 'properties', propertyId, 'expectedExpenses', deletingExpectedExpenseId);
+            await deleteDoc(expenseRef);
+            toast({ title: "Elemento eliminado", variant: "destructive" });
+            setDeletingExpectedExpenseId(null);
+            fetchExpenses();
+        } catch(error) {
+            console.error("Error deleting expected expense:", error);
+            toast({ title: "Error", description: "No se pudo eliminar el gasto previsto.", variant: "destructive" });
+        }
     }
   }
 
@@ -250,6 +294,11 @@ export function PropertyExpenses({ expectedExpenses: initialExpectedExpenses, ac
                     </div>
                 </CardHeader>
                 <CardContent>
+                    {isLoading ? (
+                        <div className="flex justify-center items-center h-24">
+                           <Loader className="h-6 w-6 animate-spin text-primary" />
+                        </div>
+                    ) : (
                     <Table>
                         <TableHeader>
                         <TableRow>
@@ -307,6 +356,7 @@ export function PropertyExpenses({ expectedExpenses: initialExpectedExpenses, ac
                         )}
                         </TableBody>
                     </Table>
+                    )}
                 </CardContent>
             </Card>
         </TabsContent>
@@ -345,6 +395,11 @@ export function PropertyExpenses({ expectedExpenses: initialExpectedExpenses, ac
                     </div>
                 </CardHeader>
                 <CardContent>
+                    {isLoading ? (
+                        <div className="flex justify-center items-center h-24">
+                           <Loader className="h-6 w-6 animate-spin text-primary" />
+                        </div>
+                    ) : (
                     <Table>
                         <TableHeader>
                         <TableRow>
@@ -391,6 +446,7 @@ export function PropertyExpenses({ expectedExpenses: initialExpectedExpenses, ac
                         )}
                         </TableBody>
                     </Table>
+                    )}
                 </CardContent>
             </Card>
         </TabsContent>
