@@ -77,6 +77,18 @@ export function AddExpenseDialog({
   const form = useForm<ExpenseFormValues>({
     resolver: zodResolver(expenseSchema),
   });
+  
+  const selectedWalletId = form.watch('walletId');
+
+  React.useEffect(() => {
+    if (selectedWalletId) {
+      const selectedWallet = wallets.find(w => w.id === selectedWalletId);
+      if (selectedWallet) {
+        form.setValue('currency', selectedWallet.currency);
+      }
+    }
+  }, [selectedWalletId, wallets, form]);
+
 
   React.useEffect(() => {
     if (isOpen) {
@@ -232,7 +244,7 @@ export function AddExpenseDialog({
                 render={({ field }) => (
                     <FormItem>
                     <FormLabel>Moneda</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value} defaultValue={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value} defaultValue={field.value} disabled>
                         <FormControl>
                         <SelectTrigger>
                             <SelectValue placeholder="Moneda" />
