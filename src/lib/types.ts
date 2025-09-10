@@ -73,7 +73,7 @@ export type Transfer = {
   toWalletId: string;
   fromAmount: number;
   toAmount: number;
-  exchangeRate?: number;
+  exchangeRate?: number | null;
   date: string; // ISO string
   notes: string;
 };

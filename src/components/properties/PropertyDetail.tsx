@@ -4,7 +4,7 @@
 import * as React from 'react';
 import { notFound } from 'next/navigation';
 import Image from 'next/image';
-import { doc, getDoc, collection, getDocs, Timestamp } from 'firebase/firestore';
+import { doc, getDoc, collection, getDocs, Timestamp, query, orderBy } from 'firebase/firestore';
 
 import { PageHeader } from '@/components/shared/PageHeader';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
@@ -14,8 +14,7 @@ import { PropertyNotes } from '@/components/properties/PropertyNotes';
 import { PropertyExpenses } from '@/components/properties/PropertyExpenses';
 import { PropertyIncome } from '@/components/properties/PropertyIncome';
 import { db } from '@/lib/firebase';
-import { type Property, type ActualExpense, type Income, type ExpectedExpense } from '@/lib/types';
-import { expenseCategories, wallets, incomeCategories } from '@/lib/data';
+import { type Property, type ActualExpense, type Income, type ExpectedExpense, type Wallet, type ExpenseCategory, type IncomeCategory } from '@/lib/types';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { FinancialSummary } from './FinancialSummary';
 import { RecentActivity } from './RecentActivity';
@@ -30,8 +29,12 @@ export function PropertyDetail({ id }: { id: string }) {
   const [actualExpenses, setActualExpenses] = React.useState<ActualExpense[]>([]);
   const [expectedExpenses, setExpectedExpenses] = React.useState<ExpectedExpense[]>([]);
   const [incomes, setIncomes] = React.useState<Income[]>([]);
+  const [wallets, setWallets] = React.useState<Wallet[]>([]);
+  const [expenseCategories, setExpenseCategories] = React.useState<ExpenseCategory[]>([]);
+  const [incomeCategories, setIncomeCategories] = React.useState<IncomeCategory[]>([]);
 
-  const fetchTransactions = React.useCallback(async () => {
+
+  const fetchPageData = React.useCallback(async () => {
     if (!id) return;
     setLoading(true);
     try {
@@ -44,7 +47,7 @@ export function PropertyDetail({ id }: { id: string }) {
             setProperty(null); // Triggers notFound()
         }
 
-        // Incomes
+        // --- Transactions ---
         const incomesCol = collection(db, 'properties', id, 'incomes');
         const incomesSnapshot = await getDocs(incomesCol);
         const incomesList = incomesSnapshot.docs.map(doc => ({ 
@@ -54,7 +57,6 @@ export function PropertyDetail({ id }: { id: string }) {
         })) as Income[];
         setIncomes(incomesList);
         
-        // Actual Expenses
         const actualExpensesCol = collection(db, 'properties', id, 'actualExpenses');
         const actualExpensesSnapshot = await getDocs(actualExpensesCol);
         const actualExpensesList = actualExpensesSnapshot.docs.map(doc => ({ 
@@ -64,11 +66,43 @@ export function PropertyDetail({ id }: { id: string }) {
         })) as ActualExpense[];
         setActualExpenses(actualExpensesList);
 
-        // Expected Expenses
         const expectedExpensesCol = collection(db, 'properties', id, 'expectedExpenses');
         const expectedExpensesSnapshot = await getDocs(expectedExpensesCol);
         const expectedExpensesList = expectedExpensesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as ExpectedExpense[];
         setExpectedExpenses(expectedExpensesList);
+        
+        // --- Global Data ---
+        const walletsCol = collection(db, 'wallets');
+        const walletsSnapshot = await getDocs(walletsCol);
+        const walletsList = walletsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Wallet));
+        setWallets(walletsList);
+
+        const expenseCategoriesQuery = query(collection(db, 'expenseCategories'), orderBy('name'));
+        const expenseCategoriesSnapshot = await getDocs(expenseCategoriesQuery);
+        const expenseCategoriesList = await Promise.all(expenseCategoriesSnapshot.docs.map(async (categoryDoc) => {
+            const subcategoriesQuery = query(collection(db, 'expenseCategories', categoryDoc.id, 'subcategories'), orderBy('name'));
+            const subcategoriesSnapshot = await getDocs(subcategoriesQuery);
+            return {
+            id: categoryDoc.id,
+            name: categoryDoc.data().name,
+            subcategories: subcategoriesSnapshot.docs.map(subDoc => ({ id: subDoc.id, name: subDoc.data().name })),
+            } as ExpenseCategory;
+        }));
+        setExpenseCategories(expenseCategoriesList);
+        
+        const incomeCategoriesQuery = query(collection(db, 'incomeCategories'), orderBy('name'));
+        const incomeCategoriesSnapshot = await getDocs(incomeCategoriesQuery);
+        const incomeCategoriesList = await Promise.all(incomeCategoriesSnapshot.docs.map(async (categoryDoc) => {
+            const subcategoriesQuery = query(collection(db, 'incomeCategories', categoryDoc.id, 'subcategories'), orderBy('name'));
+            const subcategoriesSnapshot = await getDocs(subcategoriesQuery);
+            return {
+            id: categoryDoc.id,
+            name: categoryDoc.data().name,
+            subcategories: subcategoriesSnapshot.docs.map(subDoc => ({ id: subDoc.id, name: subDoc.data().name })),
+            } as IncomeCategory;
+        }));
+        setIncomeCategories(incomeCategoriesList);
+
 
     } catch (error) {
         console.error("Failed to fetch property data:", error);
@@ -79,8 +113,8 @@ export function PropertyDetail({ id }: { id: string }) {
   }, [id]);
 
   React.useEffect(() => {
-    fetchTransactions();
-  }, [fetchTransactions]);
+    fetchPageData();
+  }, [fetchPageData]);
 
   const filteredIncomes = React.useMemo(() => {
     return incomes.filter(income => {
@@ -180,7 +214,7 @@ export function PropertyDetail({ id }: { id: string }) {
               selectedMonth={selectedMonth}
               selectedYear={selectedYear}
               incomes={incomes}
-              onTransactionUpdate={fetchTransactions}
+              onTransactionUpdate={fetchPageData}
             />
 
             <PropertyExpenses
@@ -191,7 +225,7 @@ export function PropertyDetail({ id }: { id: string }) {
               selectedYear={selectedYear}
               actualExpenses={actualExpenses}
               expectedExpenses={expectedExpenses}
-              onTransactionUpdate={fetchTransactions}
+              onTransactionUpdate={fetchPageData}
             />
 
             <PropertyNotes notes={property.notes} />
