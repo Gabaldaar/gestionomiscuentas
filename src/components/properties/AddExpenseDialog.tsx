@@ -37,7 +37,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
-import { type ExpenseCategory } from '@/lib/types';
+import { type ExpenseCategory, type ActualExpense } from '@/lib/types';
 
 const expenseSchema = z.object({
   date: z.date({
@@ -57,28 +57,47 @@ type AddExpenseDialogProps = {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
   expenseCategories: ExpenseCategory[];
-  onExpenseAdded: (data: ExpenseFormValues) => void;
+  onExpenseSubmit: (data: ExpenseFormValues) => void;
+  expenseToEdit?: ActualExpense | null;
 };
 
 export function AddExpenseDialog({
   isOpen,
   onOpenChange,
   expenseCategories,
-  onExpenseAdded,
+  onExpenseSubmit,
+  expenseToEdit,
 }: AddExpenseDialogProps) {
+
+  const isEditing = !!expenseToEdit;
+
   const form = useForm<ExpenseFormValues>({
     resolver: zodResolver(expenseSchema),
-    defaultValues: {
-      date: new Date(),
-      subcategoryId: '',
-      amount: 0,
-      currency: 'ARS',
-      notes: '',
-    },
   });
 
+  React.useEffect(() => {
+    if (isEditing && expenseToEdit) {
+      form.reset({
+        date: new Date(expenseToEdit.date),
+        subcategoryId: expenseToEdit.subcategoryId,
+        amount: expenseToEdit.amount,
+        currency: expenseToEdit.currency,
+        notes: expenseToEdit.notes,
+      });
+    } else {
+        form.reset({
+            date: new Date(),
+            subcategoryId: '',
+            amount: 0,
+            currency: 'ARS',
+            notes: '',
+        });
+    }
+  }, [isOpen, expenseToEdit, isEditing, form]);
+
+
   const onSubmit = (data: ExpenseFormValues) => {
-    onExpenseAdded(data);
+    onExpenseSubmit(data);
     form.reset();
   };
 
@@ -86,9 +105,9 @@ export function AddExpenseDialog({
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Añadir Gasto</DialogTitle>
+          <DialogTitle>{isEditing ? 'Editar Gasto' : 'Añadir Gasto'}</DialogTitle>
           <DialogDescription>
-            Registra un nuevo gasto para esta propiedad.
+            {isEditing ? 'Actualiza los detalles de este gasto.' : 'Registra un nuevo gasto para esta propiedad.'}
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -214,7 +233,7 @@ export function AddExpenseDialog({
             />
             <DialogFooter>
               <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>Cancelar</Button>
-              <Button type="submit">Guardar Gasto</Button>
+              <Button type="submit">{isEditing ? 'Guardar Cambios' : 'Guardar Gasto'}</Button>
             </DialogFooter>
           </form>
         </Form>

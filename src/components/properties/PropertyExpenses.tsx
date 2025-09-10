@@ -11,6 +11,7 @@ import { PlusCircle, Pencil, Trash2 } from "lucide-react";
 import { type ExpectedExpense, type ActualExpense, type ExpenseCategory } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
 import { AddExpenseDialog } from './AddExpenseDialog';
+import { ConfirmDeleteDialog } from '../shared/ConfirmDeleteDialog';
 
 type PropertyExpensesProps = {
   expectedExpenses: ExpectedExpense[];
@@ -22,6 +23,9 @@ export function PropertyExpenses({ expectedExpenses, actualExpenses: initialActu
   const { toast } = useToast();
   const [isAddExpenseOpen, setIsAddExpenseOpen] = React.useState(false);
   const [actualExpenses, setActualExpenses] = React.useState<ActualExpense[]>(initialActualExpenses);
+  
+  const [editingExpense, setEditingExpense] = React.useState<ActualExpense | null>(null);
+  const [deletingExpenseId, setDeletingExpenseId] = React.useState<string | null>(null);
 
   const getSubcategoryName = (id: string) => {
     for (const category of expenseCategories) {
@@ -46,13 +50,44 @@ export function PropertyExpenses({ expectedExpenses, actualExpenses: initialActu
     setIsAddExpenseOpen(false);
   }
 
-  const handleEdit = () => {
-    toast({ title: "Funcionalidad no implementada" });
+  const handleExpenseEdited = (data: any) => {
+    if (!editingExpense) return;
+
+    const updatedExpense: ActualExpense = {
+        ...editingExpense,
+        subcategoryId: data.subcategoryId,
+        amount: data.amount,
+        currency: data.currency,
+        date: data.date.toISOString(),
+        notes: data.notes || '',
+    };
+    setActualExpenses(prev => prev.map(exp => exp.id === editingExpense.id ? updatedExpense : exp));
+    toast({ title: "Gasto actualizado exitosamente" });
+    setEditingExpense(null);
+    setIsAddExpenseOpen(false);
+  }
+
+  const handleEdit = (expense: ActualExpense) => {
+    setEditingExpense(expense);
+    setIsAddExpenseOpen(true);
   };
 
-  const handleDelete = () => {
-    toast({ title: "Elemento eliminado", variant: "destructive" });
+  const handleDelete = (expenseId: string) => {
+    setDeletingExpenseId(expenseId);
   };
+  
+  const confirmDelete = () => {
+    if (deletingExpenseId) {
+        setActualExpenses(prev => prev.filter(exp => exp.id !== deletingExpenseId));
+        toast({ title: "Elemento eliminado", variant: "destructive" });
+        setDeletingExpenseId(null);
+    }
+  }
+  
+  const closeDialogs = () => {
+    setIsAddExpenseOpen(false);
+    setEditingExpense(null);
+  }
 
 
   return (
@@ -60,7 +95,7 @@ export function PropertyExpenses({ expectedExpenses, actualExpenses: initialActu
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Gastos</CardTitle>
-          <Button onClick={() => setIsAddExpenseOpen(true)}>
+          <Button onClick={() => { setEditingExpense(null); setIsAddExpenseOpen(true); }}>
             <PlusCircle className="mr-2 h-4 w-4" />
             Añadir Gasto
           </Button>
@@ -93,11 +128,11 @@ export function PropertyExpenses({ expectedExpenses, actualExpenses: initialActu
                       </TableCell>
                       <TableCell className="text-right">
                          <div className="flex items-center justify-end gap-2">
-                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleEdit}>
+                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleEdit(expense)}>
                                 <Pencil className="h-4 w-4" />
                                 <span className="sr-only">Editar Gasto</span>
                             </Button>
-                            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={handleDelete}>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => handleDelete(expense.id)}>
                                 <Trash2 className="h-4 w-4" />
                                 <span className="sr-only">Eliminar Gasto</span>
                             </Button>
@@ -147,12 +182,21 @@ export function PropertyExpenses({ expectedExpenses, actualExpenses: initialActu
           </Tabs>
         </CardContent>
       </Card>
-    <AddExpenseDialog
-      isOpen={isAddExpenseOpen}
-      onOpenChange={setIsAddExpenseOpen}
-      expenseCategories={expenseCategories}
-      onExpenseAdded={handleExpenseAdded}
-    />
+      <AddExpenseDialog
+        key={editingExpense ? editingExpense.id : 'add'}
+        isOpen={isAddExpenseOpen}
+        onOpenChange={closeDialogs}
+        expenseCategories={expenseCategories}
+        onExpenseSubmit={editingExpense ? handleExpenseEdited : handleExpenseAdded}
+        expenseToEdit={editingExpense}
+      />
+      <ConfirmDeleteDialog
+        isOpen={!!deletingExpenseId}
+        onOpenChange={() => setDeletingExpenseId(null)}
+        onConfirm={confirmDelete}
+        title="¿Estás seguro de que deseas eliminar este gasto?"
+        description="Esta acción no se puede deshacer. Esto eliminará permanentemente el gasto de tus registros."
+       />
     </>
   );
 }
