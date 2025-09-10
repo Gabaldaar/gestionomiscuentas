@@ -1,9 +1,10 @@
+
 import { notFound } from 'next/navigation';
 import Image from 'next/image';
 import { doc, getDoc } from 'firebase/firestore';
 
 import { PageHeader } from '@/components/shared/PageHeader';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Pencil } from 'lucide-react';
 import { PropertyNotes } from '@/components/properties/PropertyNotes';
