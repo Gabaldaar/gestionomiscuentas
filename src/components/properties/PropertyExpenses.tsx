@@ -239,8 +239,8 @@ export function PropertyExpenses({ propertyId, expenseCategories, wallets, selec
         <div className='flex justify-between items-center mb-4'>
             <CardTitle>Gastos</CardTitle>
             <TabsList className="grid grid-cols-2 w-[300px]">
-              <TabsTrigger value="overview">Resumen</TabsTrigger>
-              <TabsTrigger value="actual">Historial</TabsTrigger>
+              <TabsTrigger value="overview">Presupuesto</TabsTrigger>
+              <TabsTrigger value="actual">Gastos</TabsTrigger>
             </TabsList>
         </div>
 
