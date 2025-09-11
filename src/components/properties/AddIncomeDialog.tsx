@@ -6,6 +6,7 @@ import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
 import { CalendarIcon } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -150,7 +151,7 @@ export function AddIncomeDialog({
                           )}
                         >
                           {field.value ? (
-                            format(field.value, 'PPP')
+                            format(field.value, 'PP', { locale: es })
                           ) : (
                             <span>Elige una fecha</span>
                           )}
@@ -167,6 +168,7 @@ export function AddIncomeDialog({
                           date > new Date() || date < new Date('1900-01-01')
                         }
                         initialFocus
+                        locale={es}
                       />
                     </PopoverContent>
                   </Popover>
@@ -291,5 +293,3 @@ export function AddIncomeDialog({
     </Dialog>
   );
 }
-
-    
