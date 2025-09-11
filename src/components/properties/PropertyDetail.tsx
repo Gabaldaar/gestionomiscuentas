@@ -236,19 +236,20 @@ export function PropertyDetail({ id }: { id: string }) {
                             data-ai-hint="apartment building"
                         />
                     </div>
-                    <div className="flex-grow space-y-4">
+                    <div className="flex-grow flex flex-col space-y-4">
                         <div>
                             <h3 className="font-semibold text-lg">Descripción</h3>
                             <p className="text-muted-foreground">{property.description}</p>
                         </div>
-                         <div>
+                        <div className="flex-grow flex flex-col">
                             <h3 className="font-semibold text-lg">Notas</h3>
                             <Textarea 
                                 value={property.notes}
                                 onChange={handleNotesChange}
-                                rows={5}
+                                className="flex-grow"
+                                rows={3}
                             />
-                            <Button onClick={handleSaveNotes} disabled={isSavingNotes} size="sm" className="mt-2">
+                            <Button onClick={handleSaveNotes} disabled={isSavingNotes} size="sm" className="mt-2 self-end">
                                 {isSavingNotes && <Loader className="mr-2 h-4 w-4 animate-spin" />}
                                 Guardar Notas
                             </Button>
