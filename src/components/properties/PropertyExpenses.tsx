@@ -9,13 +9,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, Pencil, Trash2, Loader } from "lucide-react";
+import { PlusCircle, Pencil, Trash2, Loader, Copy } from "lucide-react";
 import { type ExpectedExpense, type ActualExpense, type ExpenseCategory, type Wallet } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
 import { AddExpenseDialog } from './AddExpenseDialog';
 import { AddExpectedExpenseDialog } from './AddExpectedExpenseDialog';
 import { ConfirmDeleteDialog } from '../shared/ConfirmDeleteDialog';
 import { cn } from '@/lib/utils';
+import { CopyExpectedExpensesDialog } from './CopyExpectedExpensesDialog';
 
 type PropertyExpensesProps = {
   propertyId: string;
@@ -52,6 +53,9 @@ export function PropertyExpenses({
   const [isAddExpectedExpenseOpen, setIsAddExpectedExpenseOpen] = React.useState(false);
   const [editingExpectedExpense, setEditingExpectedExpense] = React.useState<ExpectedExpense | null>(null);
   const [deletingExpectedExpenseId, setDeletingExpectedExpenseId] = React.useState<string | null>(null);
+
+  // State for copying expenses
+  const [isCopyDialogOpen, setIsCopyDialogOpen] = React.useState(false);
 
   const filteredExpectedExpenses = React.useMemo(() => {
     return expectedExpenses.filter(expense => {
@@ -132,12 +136,12 @@ export function PropertyExpenses({
             const oldWalletData = oldWalletSnap.data() as Wallet;
 
             const revertedBalance = oldWalletData.balance + editingExpense.amount;
-            batch.update(oldWalletRef, { balance: revertedBalance });
             
             if (editingExpense.walletId === data.walletId) {
                 if (revertedBalance < data.amount) throw new Error("Fondos insuficientes en la billetera.");
                 batch.update(newWalletRef, { balance: revertedBalance - data.amount });
             } else {
+                batch.update(oldWalletRef, { balance: revertedBalance });
                 const newWalletSnap = await getDoc(newWalletRef);
                 if (!newWalletSnap.exists()) throw new Error("La nueva billetera no fue encontrada.");
                 const newWalletData = newWalletSnap.data() as Wallet;
@@ -289,6 +293,50 @@ export function PropertyExpenses({
     }
   }
 
+  const handleCopyExpenses = async (sourceYear: number, sourceMonth: number, numberOfMonths: number) => {
+    setIsLoading(true);
+    try {
+      const expensesToCopy = expectedExpenses.filter(e => e.year === sourceYear && e.month === sourceMonth);
+
+      if (expensesToCopy.length === 0) {
+        toast({ title: "Sin gastos", description: "No hay gastos previstos en el mes de origen para copiar.", variant: "destructive" });
+        return;
+      }
+
+      const batch = writeBatch(db);
+      const expensesCol = collection(db, 'properties', propertyId, 'expectedExpenses');
+
+      for (let i = 1; i <= numberOfMonths; i++) {
+        let newMonth = sourceMonth + i;
+        let newYear = sourceYear;
+
+        if (newMonth > 12) {
+            newYear += Math.floor((newMonth - 1) / 12);
+            newMonth = ((newMonth - 1) % 12) + 1;
+        }
+
+        for (const expense of expensesToCopy) {
+            const { id, ...expenseData } = expense;
+            const newExpenseRef = doc(expensesCol); // Generate new ID
+            batch.set(newExpenseRef, {
+                ...expenseData,
+                year: newYear,
+                month: newMonth,
+            });
+        }
+      }
+
+      await batch.commit();
+      toast({ title: "Gastos Copiados", description: `Los gastos se copiaron a los próximos ${numberOfMonths} meses.` });
+      onTransactionUpdate();
+    } catch(e) {
+      console.error("Error copying expenses", e);
+      toast({ title: "Error", description: "No se pudieron copiar los gastos.", variant: "destructive" });
+    } finally {
+      setIsLoading(false);
+      setIsCopyDialogOpen(false);
+    }
+  }
 
   // --- Dialog Management ---
   const closeDialogs = () => {
@@ -313,12 +361,16 @@ export function PropertyExpenses({
           </CardHeader>
           <CardContent>
             <TabsContent value="overview">
-                <div className='flex justify-between items-center mb-4'>
+                <div className='flex justify-between items-center mb-4 gap-2 flex-wrap'>
                     <div>
                         <h3 className="text-lg font-semibold">Gastos Previstos</h3>
                         <p className="text-sm text-muted-foreground">Una descripción general de tus gastos previstos y su estado.</p>
                     </div>
                     <div className="flex items-center gap-2">
+                        <Button variant="outline" onClick={() => setIsCopyDialogOpen(true)} disabled={isLoading}>
+                            <Copy className="mr-2 h-4 w-4" />
+                            Copiar Mes
+                        </Button>
                         <Button onClick={() => { setEditingExpectedExpense(null); setIsAddExpectedExpenseOpen(true); }} disabled={isLoading}>
                             <PlusCircle className="mr-2 h-4 w-4" />
                             Añadir Gasto Previsto
@@ -510,6 +562,11 @@ export function PropertyExpenses({
         onConfirm={confirmDeleteExpected}
         title="¿Estás seguro de que deseas eliminar este gasto previsto?"
         description="Esta acción no se puede deshacer. Esto eliminará permanentemente el gasto previsto de tus registros."
+      />
+      <CopyExpectedExpensesDialog
+        isOpen={isCopyDialogOpen}
+        onOpenChange={setIsCopyDialogOpen}
+        onConfirm={handleCopyExpenses}
       />
     </>
   );

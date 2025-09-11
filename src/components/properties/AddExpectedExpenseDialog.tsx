@@ -35,7 +35,7 @@ import { type ExpenseCategory, type ExpectedExpense } from '@/lib/types';
 
 const expectedExpenseSchema = z.object({
   subcategoryId: z.string().min(1, 'La categoría es obligatoria.'),
-  amount: z.coerce.number().min(0.01, 'El monto debe ser mayor que cero.'),
+  amount: z.coerce.number().min(0, 'El monto no puede ser negativo.'),
   currency: z.enum(['ARS', 'USD'], {
     required_error: 'La moneda es obligatoria.',
   }),
