@@ -21,6 +21,7 @@ import {
   ArrowLeftRight,
   Settings2,
   Home,
+  Wallet,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -28,6 +29,7 @@ const navItems = [
   { href: '/', label: 'Panel de Control', icon: LayoutDashboard },
   { href: '/properties', label: 'Propiedades', icon: Building2 },
   { href: '/transfers', label: 'Transferencias', icon: ArrowLeftRight },
+  { href: '/settings/wallets', label: 'Billeteras', icon: Wallet },
   { href: '/settings', label: 'Configuración', icon: Settings2 },
 ];
 

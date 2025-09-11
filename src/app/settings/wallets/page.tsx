@@ -19,6 +19,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { type Wallet } from '@/lib/types';
 import { ConfirmDeleteDialog } from '@/components/shared/ConfirmDeleteDialog';
+import { cn } from '@/lib/utils';
 
 export default function WalletsSettingsPage() {
   const { toast } = useToast();
@@ -109,7 +110,11 @@ export default function WalletsSettingsPage() {
                   </DropdownMenu>
                   </CardHeader>
                   <CardContent>
-                  <div className="text-2xl font-bold">
+                  <div className={cn("text-2xl font-bold", {
+                    'text-green-500': wallet.balance > 0,
+                    'text-red-500': wallet.balance < 0,
+                    'text-foreground': wallet.balance === 0,
+                  })}>
                       {new Intl.NumberFormat('es-AR', { style: 'currency', currency: wallet.currency, minimumFractionDigits: 2 }).format(wallet.balance)}
                   </div>
                   </CardContent>
