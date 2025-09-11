@@ -17,7 +17,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Loader, AlertTriangle, Filter, Calendar as CalendarIcon, Sparkles, Lightbulb, TrendingUp, TrendingDown, Forward, LineChart as LineChartIcon } from 'lucide-react';
+import { Loader, AlertTriangle, Filter, Calendar as CalendarIcon, Sparkles, Lightbulb, TrendingDown, Forward, LineChart as LineChartIcon } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 
@@ -140,7 +140,7 @@ export default function ReportsPage() {
 
 
   const financialSummaryData = React.useMemo(() => {
-    const data = new Map<string, { period: string, income: number, expense: number }>();
+    const data = new Map<string, { period: string, income: number, expense: number, net: number }>();
     
     const process = (transactions: Transaction[], type: 'income' | 'expense') => {
         transactions.forEach(t => {
@@ -148,7 +148,7 @@ export default function ReportsPage() {
             const periodLabel = groupBy === 'month' ? format(new Date(t.date), 'MMM yyyy', { locale: es }) : format(new Date(t.date), 'yyyy');
 
             if (!data.has(key)) {
-                data.set(key, { period: periodLabel, income: 0, expense: 0 });
+                data.set(key, { period: periodLabel, income: 0, expense: 0, net: 0 });
             }
 
             const entry = data.get(key)!;
@@ -234,10 +234,17 @@ export default function ReportsPage() {
     }
 
     try {
+        const historicalDataForAI = financialSummaryData.map(d => ({
+            period: d.period,
+            income: d.income,
+            expense: d.expense,
+            net: d.net,
+        }));
+
         const summary = await generateFinancialSummary({
             currency,
             currentPeriod: currentPeriodData.period,
-            historicalData: financialSummaryData,
+            historicalData: historicalDataForAI,
             expenseBreakdown: expenseBreakdownData.pieData,
         });
         setAiSummary(summary);
