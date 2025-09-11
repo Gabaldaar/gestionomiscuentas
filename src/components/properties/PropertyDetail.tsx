@@ -6,8 +6,6 @@ import { notFound } from 'next/navigation';
 import Image from 'next/image';
 import { doc, getDoc, collection, getDocs, Timestamp, query, orderBy, updateDoc } from 'firebase/firestore';
 import Link from 'next/link';
-import { format } from 'date-fns';
-import { es } from 'date-fns/locale';
 
 import { PageHeader } from '@/components/shared/PageHeader';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
@@ -21,7 +19,6 @@ import { FinancialSummary } from './FinancialSummary';
 import { RecentActivity } from './RecentActivity';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { DateNavigator } from '@/components/shared/DateNavigator';
 
 
 export function PropertyDetail({ id }: { id: string }) {
@@ -184,18 +181,6 @@ export function PropertyDetail({ id }: { id: string }) {
           </Link>
         </Button>
       </PageHeader>
-      
-       <Card>
-        <CardHeader>
-          <div className="flex items-center justify-center">
-            <DateNavigator
-                currentDate={displayDate}
-                onDateChange={setDisplayDate}
-            />
-          </div>
-        </CardHeader>
-      </Card>
-
 
       <div className="grid gap-8 lg:grid-cols-3">
         <div className="lg:col-span-2 space-y-8">
@@ -254,6 +239,8 @@ export function PropertyDetail({ id }: { id: string }) {
               selectedYear={selectedYear}
               incomes={incomes}
               onTransactionUpdate={fetchPageData}
+              currentDate={displayDate}
+              onDateChange={setDisplayDate}
             />
 
             <PropertyExpenses
@@ -265,6 +252,8 @@ export function PropertyDetail({ id }: { id: string }) {
               actualExpenses={actualExpenses}
               expectedExpenses={expectedExpenses}
               onTransactionUpdate={fetchPageData}
+              currentDate={displayDate}
+              onDateChange={setDisplayDate}
             />
 
         </div>

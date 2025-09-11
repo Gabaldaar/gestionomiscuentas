@@ -16,6 +16,7 @@ import { AddExpectedExpenseDialog } from './AddExpectedExpenseDialog';
 import { ConfirmDeleteDialog } from '../shared/ConfirmDeleteDialog';
 import { cn } from '@/lib/utils';
 import { CopyExpectedExpensesDialog } from './CopyExpectedExpensesDialog';
+import { DateNavigator } from '../shared/DateNavigator';
 
 type PropertyExpensesProps = {
   propertyId: string;
@@ -26,6 +27,8 @@ type PropertyExpensesProps = {
   actualExpenses: ActualExpense[];
   expectedExpenses: ExpectedExpense[];
   onTransactionUpdate: () => void;
+  currentDate: Date;
+  onDateChange: (newDate: Date) => void;
 };
 
 const formatCurrency = (amount: number, currency: Currency) => {
@@ -42,6 +45,8 @@ export function PropertyExpenses({
   actualExpenses,
   expectedExpenses,
   onTransactionUpdate,
+  currentDate,
+  onDateChange,
 }: PropertyExpensesProps) {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = React.useState(false);
@@ -366,7 +371,13 @@ export function PropertyExpenses({
     <>
       <Card>
         <CardHeader>
-            <CardTitle>Gastos</CardTitle>
+             <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                <CardTitle>Gastos</CardTitle>
+                <DateNavigator
+                    currentDate={currentDate}
+                    onDateChange={onDateChange}
+                />
+            </div>
         </CardHeader>
         <Tabs defaultValue="overview">
           <CardContent className="space-y-4">
@@ -603,5 +614,4 @@ export function PropertyExpenses({
     </>
   );
 }
-
     

@@ -14,6 +14,7 @@ import { AddIncomeDialog } from './AddIncomeDialog';
 import { ConfirmDeleteDialog } from '../shared/ConfirmDeleteDialog';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
+import { DateNavigator } from '../shared/DateNavigator';
 
 type PropertyIncomeProps = {
   propertyId: string;
@@ -23,9 +24,11 @@ type PropertyIncomeProps = {
   selectedYear: string;
   incomes: Income[];
   onTransactionUpdate: () => void;
+  currentDate: Date;
+  onDateChange: (newDate: Date) => void;
 };
 
-export function PropertyIncome({ propertyId, wallets, incomeCategories, selectedMonth, selectedYear, incomes, onTransactionUpdate }: PropertyIncomeProps) {
+export function PropertyIncome({ propertyId, wallets, incomeCategories, selectedMonth, selectedYear, incomes, onTransactionUpdate, currentDate, onDateChange }: PropertyIncomeProps) {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = React.useState(false);
   const [isAddIncomeOpen, setIsAddIncomeOpen] = React.useState(false);
@@ -175,11 +178,15 @@ export function PropertyIncome({ propertyId, wallets, incomeCategories, selected
     <>
       <Card>
         <CardHeader>
-          <div className="flex flex-row items-center justify-between">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
               <CardTitle>Ingresos</CardTitle>
-              <Button onClick={() => { setEditingIncome(null); setIsAddIncomeOpen(true); }} disabled={isLoading}>
-              <PlusCircle className="mr-2 h-4 w-4" />
-              Añadir Ingreso
+              <DateNavigator
+                currentDate={currentDate}
+                onDateChange={onDateChange}
+              />
+              <Button onClick={() => { setEditingIncome(null); setIsAddIncomeOpen(true); }} disabled={isLoading} className="w-full sm:w-auto">
+                <PlusCircle className="mr-2 h-4 w-4" />
+                Añadir Ingreso
               </Button>
           </div>
         </CardHeader>
