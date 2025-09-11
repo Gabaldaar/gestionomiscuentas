@@ -47,6 +47,7 @@ const walletSchema = z.object({
   currency: z.enum(['ARS', 'USD'], {
     required_error: 'La moneda es obligatoria.',
   }),
+  balance: z.coerce.number({invalid_type_error: 'El saldo debe ser un número.'}),
   icon: z.string().optional(),
 });
 
@@ -80,6 +81,7 @@ export default function EditWalletPage() {
           form.reset({
             name: walletData.name,
             currency: walletData.currency,
+            balance: walletData.balance,
             icon: walletData.icon || 'Wallet',
           });
         } else {
@@ -153,7 +155,7 @@ export default function EditWalletPage() {
         <CardHeader>
           <CardTitle>Detalles de la Billetera</CardTitle>
           <CardDescription>
-            Modifica la información de la billetera.
+            Modifica la información de la billetera, incluyendo su saldo actual.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -172,27 +174,42 @@ export default function EditWalletPage() {
                   </FormItem>
                 )}
               />
-              <FormField
-                control={form.control}
-                name="currency"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Moneda</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                    control={form.control}
+                    name="balance"
+                    render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Saldo Actual</FormLabel>
                         <FormControl>
-                        <SelectTrigger>
-                            <SelectValue placeholder="Moneda" />
-                        </SelectTrigger>
+                        <Input type="number" step="0.01" {...field} />
                         </FormControl>
-                        <SelectContent>
-                        <SelectItem value="ARS">ARS</SelectItem>
-                        <SelectItem value="USD">USD</SelectItem>
-                        </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                        <FormMessage />
+                    </FormItem>
+                    )}
+                />
+                <FormField
+                    control={form.control}
+                    name="currency"
+                    render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Moneda</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value} disabled>
+                            <FormControl>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Moneda" />
+                            </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                            <SelectItem value="ARS">ARS</SelectItem>
+                            <SelectItem value="USD">USD</SelectItem>
+                            </SelectContent>
+                        </Select>
+                        <FormMessage />
+                    </FormItem>
+                    )}
+                />
+              </div>
               
               <FormField
                 control={form.control}
