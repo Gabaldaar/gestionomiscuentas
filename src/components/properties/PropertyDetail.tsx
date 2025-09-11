@@ -4,14 +4,13 @@
 import * as React from 'react';
 import { notFound } from 'next/navigation';
 import Image from 'next/image';
-import { doc, getDoc, collection, getDocs, Timestamp, query, orderBy } from 'firebase/firestore';
+import { doc, getDoc, collection, getDocs, Timestamp, query, orderBy, updateDoc } from 'firebase/firestore';
 import Link from 'next/link';
 
 import { PageHeader } from '@/components/shared/PageHeader';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Pencil, Loader } from 'lucide-react';
-import { PropertyNotes } from '@/components/properties/PropertyNotes';
 import { PropertyExpenses } from '@/components/properties/PropertyExpenses';
 import { PropertyIncome } from '@/components/properties/PropertyIncome';
 import { db } from '@/lib/firebase';
@@ -19,11 +18,15 @@ import { type Property, type ActualExpense, type Income, type ExpectedExpense, t
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { FinancialSummary } from './FinancialSummary';
 import { RecentActivity } from './RecentActivity';
+import { Textarea } from '@/components/ui/textarea';
+import { useToast } from '@/hooks/use-toast';
 
 
 export function PropertyDetail({ id }: { id: string }) {
+  const { toast } = useToast();
   const [property, setProperty] = React.useState<Property | null>(null);
   const [loading, setLoading] = React.useState(true);
+  const [isSavingNotes, setIsSavingNotes] = React.useState(false);
   const [selectedMonth, setSelectedMonth] = React.useState<string>((new Date().getMonth() + 1).toString());
   const [selectedYear, setSelectedYear] = React.useState<string>(new Date().getFullYear().toString());
 
@@ -134,8 +137,29 @@ export function PropertyDetail({ id }: { id: string }) {
         return yearMatch && monthMatch;
     });
   }, [actualExpenses, selectedMonth, selectedYear]);
-
   
+  const handleNotesChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    if (property) {
+        setProperty({...property, notes: e.target.value});
+    }
+  };
+
+  const handleSaveNotes = async () => {
+    if (!property) return;
+    setIsSavingNotes(true);
+    try {
+        const propertyRef = doc(db, 'properties', id);
+        await updateDoc(propertyRef, { notes: property.notes });
+        toast({ title: "Notas guardadas", description: "Las notas de la cuenta han sido actualizadas." });
+    } catch (error) {
+        console.error("Error saving notes:", error);
+        toast({ title: "Error", description: "No se pudieron guardar las notas.", variant: "destructive" });
+    } finally {
+        setIsSavingNotes(false);
+    }
+  };
+
+
   if (loading) {
     return (
       <div className="flex-1 space-y-4 p-4 md:p-8 pt-6 flex justify-center items-center">
@@ -198,15 +222,38 @@ export function PropertyDetail({ id }: { id: string }) {
       <div className="grid gap-8 lg:grid-cols-3">
         <div className="lg:col-span-2 space-y-8">
             <Card>
-                 <CardContent className="p-0">
-                     <Image
-                        src={property.imageUrl}
-                        alt={property.name}
-                        width={800}
-                        height={500}
-                        className="w-full h-auto object-cover rounded-t-lg"
-                        data-ai-hint="apartment building"
-                    />
+                <CardHeader>
+                    <CardTitle>Detalles de la Cuenta</CardTitle>
+                </CardHeader>
+                <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div className="md:col-span-1">
+                        <Image
+                            src={property.imageUrl}
+                            alt={property.name}
+                            width={250}
+                            height={250}
+                            className="w-full h-auto object-cover rounded-lg aspect-square"
+                            data-ai-hint="apartment building"
+                        />
+                    </div>
+                    <div className="md:col-span-2 space-y-4">
+                        <div>
+                            <h3 className="font-semibold text-lg">Descripción</h3>
+                            <p className="text-muted-foreground">{property.description}</p>
+                        </div>
+                         <div>
+                            <h3 className="font-semibold text-lg">Notas</h3>
+                            <Textarea 
+                                value={property.notes}
+                                onChange={handleNotesChange}
+                                rows={5}
+                            />
+                            <Button onClick={handleSaveNotes} disabled={isSavingNotes} size="sm" className="mt-2">
+                                {isSavingNotes && <Loader className="mr-2 h-4 w-4 animate-spin" />}
+                                Guardar Notas
+                            </Button>
+                        </div>
+                    </div>
                 </CardContent>
             </Card>
 
@@ -244,7 +291,6 @@ export function PropertyDetail({ id }: { id: string }) {
               onTransactionUpdate={fetchPageData}
             />
 
-            <PropertyNotes notes={property.notes} />
         </div>
 
         <div className="hidden lg:block space-y-8">
