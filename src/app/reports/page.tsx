@@ -6,7 +6,7 @@ import { collection, collectionGroup, getDocs, query, Timestamp } from 'firebase
 import { db } from '@/lib/firebase';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { Bar, BarChart, CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis, Pie, PieChart, Cell, Sector } from 'recharts';
+import { Bar, BarChart, CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis, Pie, PieChart, Cell } from 'recharts';
 
 import { PageHeader } from '@/components/shared/PageHeader';
 import { Button } from '@/components/ui/button';
@@ -17,13 +17,15 @@ import { Calendar } from '@/components/ui/calendar';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Loader, AlertTriangle, Filter, Calendar as CalendarIcon, X } from 'lucide-react';
+import { Loader, AlertTriangle, Filter, Calendar as CalendarIcon, Sparkles, Lightbulb, TrendingUp, TrendingDown } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 
 import { type ActualExpense, type Income, type Property, type Currency, type ExpenseCategory } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { type DateRange } from 'react-day-picker';
+import { generateFinancialSummary, type FinancialSummaryOutput } from '@/ai/flows/generate-financial-summary';
+import { Skeleton } from '@/components/ui/skeleton';
 
 type Transaction = Income | ActualExpense;
 
@@ -42,6 +44,11 @@ export default function ReportsPage() {
   const [allExpenses, setAllExpenses] = React.useState<ActualExpense[]>([]);
   const [properties, setProperties] = React.useState<Property[]>([]);
   const [expenseCategories, setExpenseCategories] = React.useState<ExpenseCategory[]>([]);
+  
+  // AI Summary State
+  const [aiSummary, setAiSummary] = React.useState<FinancialSummaryOutput | null>(null);
+  const [isGeneratingSummary, setIsGeneratingSummary] = React.useState(false);
+  const [aiError, setAiError] = React.useState<string | null>(null);
 
 
   // Filters
@@ -165,6 +172,11 @@ export default function ReportsPage() {
         });
 
   }, [filteredTransactions, groupBy]);
+  
+  const totalIncome = React.useMemo(() => financialSummaryData.reduce((acc, r) => acc + r.income, 0), [financialSummaryData]);
+  const totalExpense = React.useMemo(() => financialSummaryData.reduce((acc, r) => acc + r.expense, 0), [financialSummaryData]);
+  const netBalance = totalIncome - totalExpense;
+
 
   const monthsMap: {[key: string]: number} = {
     'ene': 0, 'feb': 1, 'mar': 2, 'abr': 3, 'may': 4, 'jun': 5,
@@ -174,7 +186,6 @@ export default function ReportsPage() {
   const expenseBreakdownData = React.useMemo(() => {
       const categoryMap = new Map<string, { name: string, value: number, subcategories: Map<string, {name: string, value: number}> }>();
 
-      const categoryIdToName = new Map(expenseCategories.map(c => [c.id, c.name]));
       const subcategoryIdToInfo = new Map();
       expenseCategories.forEach(cat => {
           cat.subcategories.forEach(sub => {
@@ -209,6 +220,27 @@ export default function ReportsPage() {
       return { pieData, tableData };
 
   }, [filteredTransactions.expenses, expenseCategories]);
+  
+  const handleGenerateSummary = async () => {
+    setIsGeneratingSummary(true);
+    setAiSummary(null);
+    setAiError(null);
+    try {
+        const summary = await generateFinancialSummary({
+            currency,
+            totalIncome,
+            totalExpense,
+            netBalance,
+            expenseBreakdown: expenseBreakdownData.pieData
+        });
+        setAiSummary(summary);
+    } catch (e) {
+        console.error("Error generating AI summary:", e);
+        setAiError("No se pudo generar el resumen. Inténtalo de nuevo.");
+    } finally {
+        setIsGeneratingSummary(false);
+    }
+  }
 
 
   if (loading) return <div className="flex-1 p-8 flex justify-center items-center"><Loader className="h-8 w-8 animate-spin" /></div>;
@@ -293,6 +325,7 @@ export default function ReportsPage() {
             <TabsList>
                 <TabsTrigger value="summary">Resumen Financiero</TabsTrigger>
                 <TabsTrigger value="expenses">Análisis de Gastos</TabsTrigger>
+                <TabsTrigger value="ai">Resumen Inteligente</TabsTrigger>
             </TabsList>
             <TabsContent value="summary">
                 {financialSummaryData.length > 0 ? (
@@ -320,9 +353,9 @@ export default function ReportsPage() {
                             ))}
                             <TableRow className="font-bold bg-muted/50">
                             <TableCell>Total</TableCell>
-                            <TableCell className="text-right text-green-600">{formatCurrency(financialSummaryData.reduce((acc, r) => acc + r.income, 0), currency)}</TableCell>
-                            <TableCell className="text-right text-red-600">{formatCurrency(financialSummaryData.reduce((acc, r) => acc + r.expense, 0), currency)}</TableCell>
-                            <TableCell className={cn("text-right font-bold", financialSummaryData.reduce((acc, r) => acc + r.net, 0) >= 0 ? "text-primary" : "text-destructive")}>{formatCurrency(financialSummaryData.reduce((acc, r) => acc + r.net, 0), currency)}</TableCell>
+                            <TableCell className="text-right text-green-600">{formatCurrency(totalIncome, currency)}</TableCell>
+                            <TableCell className="text-right text-red-600">{formatCurrency(totalExpense, currency)}</TableCell>
+                            <TableCell className={cn("text-right font-bold", netBalance >= 0 ? "text-primary" : "text-destructive")}>{formatCurrency(netBalance, currency)}</TableCell>
                             </TableRow>
                         </TableBody>
                         </Table>
@@ -383,7 +416,7 @@ export default function ReportsPage() {
                             <div>
                                 <ResponsiveContainer width="100%" height={300}>
                                     <PieChart>
-                                        <Pie data={expenseBreakdownData.pieData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={100} labelLine={false} label={({ cx, cy, midAngle, innerRadius, outerRadius, percent, index }) => {
+                                        <Pie data={expenseBreakdownData.pieData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={100} labelLine={false} label={({ cx, cy, midAngle, innerRadius, outerRadius, percent }) => {
                                             const RADIAN = Math.PI / 180;
                                             const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
                                             const x  = cx + radius * Math.cos(-midAngle * RADIAN);
@@ -392,7 +425,7 @@ export default function ReportsPage() {
                                                 {`${(percent * 100).toFixed(0)}%`}
                                             </text> : null;
                                         }}>
-                                            {expenseBreakdownData.pieData.map((entry, index) => <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />)}
+                                            {expenseBreakdownData.pieData.map((_entry, index) => <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />)}
                                         </Pie>
                                         <Tooltip formatter={(value: number) => formatCurrency(value, currency)} />
                                         <Legend />
@@ -464,10 +497,87 @@ export default function ReportsPage() {
                 </Card>
                 )}
             </TabsContent>
+            <TabsContent value="ai">
+                 <Card>
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                           <Sparkles className="h-5 w-5 text-primary" />
+                           Resumen Inteligente
+                        </CardTitle>
+                        <CardDescription>
+                            Obtén un análisis automático de tus finanzas para el período y los filtros seleccionados.
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        <Button onClick={handleGenerateSummary} disabled={isGeneratingSummary || financialSummaryData.length === 0}>
+                            {isGeneratingSummary && <Loader className="mr-2 h-4 w-4 animate-spin" />}
+                            Generar Análisis
+                        </Button>
+                        
+                        {isGeneratingSummary && (
+                            <div className="space-y-4">
+                                <Skeleton className="h-8 w-3/4" />
+                                <Skeleton className="h-6 w-full" />
+                                <Skeleton className="h-6 w-full" />
+                                <Skeleton className="h-6 w-4/5" />
+                            </div>
+                        )}
+                        
+                        {aiError && (
+                            <div className="text-destructive flex items-center gap-2">
+                                <AlertTriangle className="h-4 w-4" />
+                                {aiError}
+                            </div>
+                        )}
+                        
+                        {aiSummary && (
+                            <div className="space-y-6 text-sm">
+                                <div className="flex items-start gap-4 p-4 bg-primary/5 border border-primary/20 rounded-lg">
+                                    <div className="bg-primary text-primary-foreground p-2 rounded-full">
+                                        <Sparkles className="h-5 w-5" />
+                                    </div>
+                                    <div>
+                                        <h4 className="font-bold">Aspecto Destacado</h4>
+                                        <p>{aiSummary.highlight}</p>
+                                    </div>
+                                </div>
+                                
+                                <div className="flex items-start gap-4">
+                                    <div className="bg-green-100 text-green-700 p-2 rounded-full dark:bg-green-900 dark:text-green-300">
+                                        <TrendingUp className="h-5 w-5" />
+                                    </div>
+                                    <div>
+                                        <h4 className="font-bold">Análisis de Ingresos</h4>
+                                        <p className="text-muted-foreground">{aiSummary.incomeAnalysis}</p>
+                                    </div>
+                                </div>
+
+                                <div className="flex items-start gap-4">
+                                     <div className="bg-red-100 text-red-700 p-2 rounded-full dark:bg-red-900 dark:text-red-300">
+                                        <TrendingDown className="h-5 w-5" />
+                                    </div>
+                                    <div>
+                                        <h4 className="font-bold">Análisis de Gastos</h4>
+                                        <p className="text-muted-foreground">{aiSummary.expenseAnalysis}</p>
+                                    </div>
+                                </div>
+
+                                <div className="flex items-start gap-4 p-4 bg-accent/50 border border-accent/80 rounded-lg">
+                                    <div className="bg-accent text-accent-foreground p-2 rounded-full">
+                                        <Lightbulb className="h-5 w-5" />
+                                    </div>
+                                    <div>
+                                        <h4 className="font-bold">Recomendación</h4>
+                                        <p>{aiSummary.recommendation}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                    </CardContent>
+                 </Card>
+            </TabsContent>
         </Tabs>
     </div>
   );
 }
-
-
-    
