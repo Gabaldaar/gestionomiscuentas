@@ -14,6 +14,7 @@ import {
   SidebarMenuButton,
   SidebarInset,
   SidebarTrigger,
+  useSidebar,
 } from '@/components/ui/sidebar';
 import {
   LayoutDashboard,
@@ -33,8 +34,48 @@ const navItems = [
   { href: '/settings', label: 'Configuración', icon: Settings2 },
 ];
 
-export function AppShell({ children }: { children: React.ReactNode }) {
+function MainNav() {
   const pathname = usePathname();
+  const { isMobile, setOpenMobile } = useSidebar();
+
+  const handleLinkClick = () => {
+    if (isMobile) {
+      setOpenMobile(false);
+    }
+  };
+
+  const checkActive = (href: string) => {
+    if (href === '/') {
+      return pathname === '/';
+    }
+    if (href === '/settings') {
+      return pathname === '/settings';
+    }
+    return pathname.startsWith(href);
+  };
+  
+    return (
+     <SidebarMenu>
+        {navItems.map((item) => (
+          <SidebarMenuItem key={item.href}>
+            <SidebarMenuButton
+              asChild
+              isActive={checkActive(item.href)}
+              tooltip={item.label}
+              onClick={handleLinkClick}
+            >
+              <Link href={item.href}>
+                <item.icon />
+                <span>{item.label}</span>
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        ))}
+      </SidebarMenu>
+    )
+}
+
+export function AppShell({ children }: { children: React.ReactNode }) {
   const [isClient, setIsClient] = React.useState(false);
 
   React.useEffect(() => {
@@ -42,32 +83,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }, []);
 
   if (!isClient) {
-    return null;
+    // Render nothing on the server to avoid hydration mismatch
+    return null; 
   }
   
-  const checkActive = (href: string) => {
-    // Exact match for home page
-    if (href === '/' && pathname === '/') {
-        return true;
-    }
-    // For other routes, check if the pathname starts with the href,
-    // but is not just the href for parent routes like /settings.
-    if (href !== '/' && pathname.startsWith(href)) {
-        if (pathname === href) {
-            return true;
-        }
-        // Special case for /settings to avoid matching sub-routes
-        if (href === '/settings' && pathname !== '/settings') {
-            return false;
-        }
-        if (pathname.startsWith(`${href}/`)) {
-            return true;
-        }
-    }
-    return false;
-  }
-
-
   return (
     <SidebarProvider>
       <Sidebar>
@@ -82,22 +101,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </div>
         </SidebarHeader>
         <SidebarContent>
-          <SidebarMenu>
-            {navItems.map((item) => (
-              <SidebarMenuItem key={item.href}>
-                <SidebarMenuButton
-                  asChild
-                  isActive={checkActive(item.href)}
-                  tooltip={item.label}
-                >
-                  <Link href={item.href}>
-                    <item.icon />
-                    <span>{item.label}</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            ))}
-          </SidebarMenu>
+         <MainNav />
         </SidebarContent>
       </Sidebar>
       <SidebarInset>
