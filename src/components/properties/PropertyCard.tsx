@@ -45,7 +45,7 @@ function MiniFinancialSummary({ incomes, expenses }: MiniFinancialSummaryProps) 
     }, [incomes, expenses]);
 
     return (
-        <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-xs">
+        <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-xs flex-grow">
             {(Object.keys(summary) as Currency[]).map(currency => {
                 const data = summary[currency];
                 return (
@@ -82,25 +82,23 @@ type PropertyCardProps = {
 export function PropertyCard({ property, incomes, expenses }: PropertyCardProps) {
   return (
     <Link href={`/properties/${property.id}`} className="block transition-all hover:scale-[1.02]">
-        <Card className="overflow-hidden h-full flex flex-row p-0">
-            <div className="w-24 h-24 flex-shrink-0">
-                <Image
-                    src={property.imageUrl}
-                    alt={property.name}
-                    width={96}
-                    height={96}
-                    className="w-full h-full object-cover"
-                    data-ai-hint="apartment building"
-                />
-            </div>
-            <div className="flex-grow flex flex-col">
-                <CardHeader className="p-3 pb-2">
-                    <CardTitle className="font-headline text-base">{property.name}</CardTitle>
-                </CardHeader>
-                <CardContent className="p-3 pt-0">
-                   <MiniFinancialSummary incomes={incomes} expenses={expenses} />
-                </CardContent>
-            </div>
+        <Card className="overflow-hidden h-full flex flex-col p-0">
+            <CardHeader className="p-3 pb-2">
+                <CardTitle className="font-headline text-base">{property.name}</CardTitle>
+            </CardHeader>
+            <CardContent className="p-3 pt-0 flex flex-row items-center gap-4">
+                <div className="w-24 h-24 flex-shrink-0">
+                    <Image
+                        src={property.imageUrl}
+                        alt={property.name}
+                        width={96}
+                        height={96}
+                        className="w-full h-full object-cover rounded-md"
+                        data-ai-hint="apartment building"
+                    />
+                </div>
+                <MiniFinancialSummary incomes={incomes} expenses={expenses} />
+            </CardContent>
         </Card>
     </Link>
   );
