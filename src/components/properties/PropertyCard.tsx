@@ -50,7 +50,7 @@ function MiniFinancialSummary({ incomes, expenses }: MiniFinancialSummaryProps) 
     }
 
     return (
-        <div className="mt-4 space-y-2">
+        <div className="space-y-2">
             {(Object.keys(summary) as Currency[]).map(currency => {
                 const data = summary[currency];
                 if (data.income === 0 && data.expense === 0) return null;
@@ -97,24 +97,24 @@ export function PropertyCard({ property, incomes, expenses }: PropertyCardProps)
   return (
     <Link href={`/properties/${property.id}`} className="block transition-all hover:scale-[1.02]">
         <Card className="overflow-hidden h-full flex flex-row">
-            <div className="w-1/3">
+            <div className="w-32 h-32 flex-shrink-0">
                 <Image
                     src={property.imageUrl}
                     alt={property.name}
-                    width={300}
-                    height={300}
+                    width={128}
+                    height={128}
                     className="w-full h-full object-cover"
                     data-ai-hint="apartment building"
                 />
             </div>
-            <div className="w-2/3 flex flex-col">
-                <CardHeader>
-                    <CardTitle className="font-headline text-xl">{property.name}</CardTitle>
-                    <CardDescription className="line-clamp-2 h-[40px] pt-1">
+            <div className="flex-grow flex flex-col">
+                <CardHeader className="p-4">
+                    <CardTitle className="font-headline text-lg">{property.name}</CardTitle>
+                    <CardDescription className="line-clamp-2 h-[40px] pt-1 text-xs">
                         Resumen del mes en curso
                     </CardDescription>
                 </CardHeader>
-                <CardContent className="flex-grow">
+                <CardContent className="p-4 pt-0 flex-grow">
                    <MiniFinancialSummary incomes={incomes} expenses={expenses} />
                 </CardContent>
             </div>
@@ -122,5 +122,3 @@ export function PropertyCard({ property, incomes, expenses }: PropertyCardProps)
     </Link>
   );
 }
-
-
