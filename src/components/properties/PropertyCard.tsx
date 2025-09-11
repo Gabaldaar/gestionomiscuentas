@@ -96,8 +96,8 @@ type PropertyCardProps = {
 export function PropertyCard({ property, incomes, expenses }: PropertyCardProps) {
   return (
     <Link href={`/properties/${property.id}`} className="block transition-all hover:scale-[1.02]">
-        <Card className="overflow-hidden h-full flex flex-col md:flex-row">
-            <div className="md:w-1/3">
+        <Card className="overflow-hidden h-full flex flex-row">
+            <div className="w-1/3">
                 <Image
                     src={property.imageUrl}
                     alt={property.name}
@@ -107,7 +107,7 @@ export function PropertyCard({ property, incomes, expenses }: PropertyCardProps)
                     data-ai-hint="apartment building"
                 />
             </div>
-            <div className="md:w-2/3 flex flex-col">
+            <div className="w-2/3 flex flex-col">
                 <CardHeader>
                     <CardTitle className="font-headline text-xl">{property.name}</CardTitle>
                     <CardDescription className="line-clamp-2 h-[40px] pt-1">
@@ -122,4 +122,5 @@ export function PropertyCard({ property, incomes, expenses }: PropertyCardProps)
     </Link>
   );
 }
+
 
