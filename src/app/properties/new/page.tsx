@@ -159,7 +159,7 @@ export default function NewPropertyPage() {
                 )}
               />
               <div className="flex justify-end gap-2">
-                 <Button type="button" variant="ghost" onClick={() => router.back()}>
+                 <Button type="button" variant="ghost" onClick={() => router.push('/properties')}>
                     Cancelar
                 </Button>
                 <Button type="submit" disabled={isSubmitting}>
