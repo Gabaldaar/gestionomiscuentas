@@ -46,11 +46,20 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }
   
   const checkActive = (href: string) => {
-    if (href === '/') {
-        return pathname === '/';
+    // Exact match
+    if (pathname === href) {
+        return true;
     }
-    // Check for exact match or if it's a sub-route (e.g., /edit, /new)
-    return pathname.startsWith(href) && (pathname === href || pathname.charAt(href.length) === '/');
+    // Handle home page separately to avoid matching all paths
+    if (href === '/') {
+        return false;
+    }
+    // Check for sub-routes (e.g., /properties/new, /properties/[id]/edit)
+    // It should start with the href and be followed by a /
+    if (pathname.startsWith(`${href}/`)) {
+        return true;
+    }
+    return false;
   }
 
   return (
