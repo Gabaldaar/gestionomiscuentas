@@ -62,13 +62,13 @@ export default function ReportsPage() {
 
       const incomesList = incomesSnap.docs.map(doc => {
         const data = doc.data();
-        return { ...data, id: doc.id, date: (data.date as Timestamp).toDate().toISOString() } as Income;
+        return { ...data, id: doc.id, date: (data.date as Timestamp).toDate().toISOString(), propertyId: doc.ref.parent.parent?.id } as Income;
       });
       setAllIncomes(incomesList);
 
       const expensesList = expensesSnap.docs.map(doc => {
         const data = doc.data();
-        return { ...data, id: doc.id, date: (data.date as Timestamp).toDate().toISOString() } as ActualExpense;
+        return { ...data, id: doc.id, date: (data.date as Timestamp).toDate().toISOString(), propertyId: doc.ref.parent.parent?.id } as ActualExpense;
       });
       setAllExpenses(expensesList);
 
@@ -101,72 +101,42 @@ export default function ReportsPage() {
   }
 
   const reportData = React.useMemo(() => {
-    const filteredTransactions = [...allIncomes, ...allExpenses].filter(t => {
-      const transactionDate = new Date(t.date);
-      const isSelectedProperty = selectedProperties.includes(t.propertyId);
-      const isInDateRange = dateRange?.from && dateRange?.to 
-        ? transactionDate >= dateRange.from && transactionDate <= dateRange.to
-        : true;
-      const isCorrectCurrency = t.currency === currency;
-      return isSelectedProperty && isInDateRange && isCorrectCurrency;
-    });
+    const data = new Map<string, { period: string, income: number, expense: number }>();
 
-    const groupedData: Record<string, { period: string, income: number, expense: number, net: number }> = {};
+    const processTransactions = (transactions: (Income[] | ActualExpense[]), type: 'income' | 'expense') => {
+        transactions.forEach(t => {
+            const transactionDate = new Date(t.date);
+            const isSelectedProperty = t.propertyId && selectedProperties.includes(t.propertyId);
+            const isInDateRange = dateRange?.from && dateRange?.to ? transactionDate >= dateRange.from && transactionDate <= dateRange.to : true;
+            const isCorrectCurrency = t.currency === currency;
 
-    filteredTransactions.forEach(t => {
-      const date = new Date(t.date);
-      const key = groupBy === 'month' ? format(date, 'yyyy-MM') : format(date, 'yyyy');
-      const periodLabel = groupBy === 'month' ? format(date, 'MMM yyyy', { locale: es }) : format(date, 'yyyy');
+            if (isSelectedProperty && isInDateRange && isCorrectCurrency) {
+                const key = groupBy === 'month' ? format(transactionDate, 'yyyy-MM') : format(transactionDate, 'yyyy');
+                const periodLabel = groupBy === 'month' ? format(transactionDate, 'MMM yyyy', { locale: es }) : format(transactionDate, 'yyyy');
 
-      if (!groupedData[key]) {
-        groupedData[key] = { period: periodLabel, income: 0, expense: 0, net: 0 };
-      }
+                if (!data.has(key)) {
+                    data.set(key, { period: periodLabel, income: 0, expense: 0 });
+                }
 
-      if ('notes' in t && t.propertyId) { // Heuristic check for Income/Expense
-          if ((t as ActualExpense).amount > 0) { // All transactions here are either income or expense
-            if ('walletId' in t) {
-                // This is a rough check. 'walletId' exists on both. The proper way is to have a 'type' field.
-                // For now, we assume if amount > 0 it is an income if it has walletId (which it will).
-                // A better approach would be to check if it came from the incomes or expenses collection.
-                // Let's check `subcategoryId` against income/expense categories if they were loaded.
-                // Since they are not, we will assume positive is income, negative is expense for this context.
-                // The provided data types have no 'type' field.
-                const isExpense = allExpenses.some(e => e.id === t.id);
-                if (isExpense) {
-                    groupedData[key].expense += t.amount;
+                const entry = data.get(key)!;
+                if (type === 'income') {
+                    entry.income += t.amount;
                 } else {
-                    groupedData[key].income += t.amount;
+                    entry.expense += t.amount;
                 }
             }
-          }
-      }
-    });
-
-    // We need to re-iterate because the above check is flawed.
-    // Let's do it properly.
-    Object.keys(groupedData).forEach(k => groupedData[k] = {period: groupedData[k].period, income: 0, expense: 0, net: 0});
-
-    allIncomes
-        .filter(t => selectedProperties.includes(t.propertyId) && t.currency === currency && dateRange?.from && dateRange.to && new Date(t.date) >= dateRange.from && new Date(t.date) <= dateRange.to)
-        .forEach(t => {
-            const date = new Date(t.date);
-            const key = groupBy === 'month' ? format(date, 'yyyy-MM') : format(date, 'yyyy');
-            if(groupedData[key]) groupedData[key].income += t.amount;
         });
+    }
 
-     allExpenses
-        .filter(t => selectedProperties.includes(t.propertyId) && t.currency === currency && dateRange?.from && dateRange.to && new Date(t.date) >= dateRange.from && new Date(t.date) <= dateRange.to)
-        .forEach(t => {
-            const date = new Date(t.date);
-            const key = groupBy === 'month' ? format(date, 'yyyy-MM') : format(date, 'yyyy');
-            if(groupedData[key]) groupedData[key].expense += t.amount;
-        });
+    processTransactions(allIncomes, 'income');
+    processTransactions(allExpenses, 'expense');
 
-
-    return Object.values(groupedData).map(d => ({
-      ...d,
-      net: d.income - d.expense,
-    })).sort((a,b) => a.period.localeCompare(b.period));
+    return Array.from(data.values())
+        .map(d => ({
+            ...d,
+            net: d.income - d.expense,
+        }))
+        .sort((a, b) => a.period.localeCompare(b.period));
 
   }, [allIncomes, allExpenses, selectedProperties, dateRange, groupBy, currency]);
 
@@ -329,5 +299,3 @@ export default function ReportsPage() {
     </div>
   );
 }
-
-    
