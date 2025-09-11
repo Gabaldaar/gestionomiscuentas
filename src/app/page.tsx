@@ -2,7 +2,7 @@
 import * as React from 'react';
 import { collectionGroup, getDocs, query, Timestamp, collection } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { type Income, type ActualExpense, type IncomeCategory, type ExpenseCategory, type Currency } from '@/lib/types';
+import { type Income, type ActualExpense, type IncomeCategory, type ExpenseCategory, type Currency, type Liability } from '@/lib/types';
 import { PageHeader } from "@/components/shared/PageHeader";
 import { DashboardStats } from "@/components/dashboard/DashboardStats";
 import { MonthlyComparisonChart } from "@/components/dashboard/MonthlyComparisonChart";
@@ -15,17 +15,20 @@ async function getDashboardData() {
   const expensesQuery = query(collectionGroup(db, 'actualExpenses'));
   const incomeCategoriesQuery = query(collection(db, 'incomeCategories'));
   const expenseCategoriesQuery = query(collection(db, 'expenseCategories'));
+  const liabilitiesQuery = query(collection(db, 'liabilities'));
 
   const [
     incomesSnapshot,
     expensesSnapshot,
     incomeCategoriesSnapshot,
     expenseCategoriesSnapshot,
+    liabilitiesSnapshot,
   ] = await Promise.all([
     getDocs(incomesQuery),
     getDocs(expensesQuery),
     getDocs(incomeCategoriesQuery),
     getDocs(expenseCategoriesQuery),
+    getDocs(liabilitiesQuery),
   ]);
 
   const incomes = incomesSnapshot.docs.map(doc => ({
@@ -51,13 +54,16 @@ async function getDashboardData() {
       const subcategoriesSnapshot = await getDocs(subcategoriesQuery);
       return { id: categoryDoc.id, name: categoryDoc.data().name, subcategories: subcategoriesSnapshot.docs.map(subDoc => ({ id: subDoc.id, name: subDoc.data().name })) };
   }));
+  
+  const liabilities = liabilitiesSnapshot.docs.map(doc => doc.data() as Liability);
 
-  return { incomes, expenses, incomeCategories, expenseCategories };
+
+  return { incomes, expenses, incomeCategories, expenseCategories, liabilities };
 }
 
 
 export default async function DashboardPage({ searchParams }: { searchParams: { month?: string, year?: string, currency?: string } }) {
-  const { incomes, expenses, incomeCategories, expenseCategories } = await getDashboardData();
+  const { incomes, expenses, incomeCategories, expenseCategories, liabilities } = await getDashboardData();
   
   const currentMonth = searchParams.month ? parseInt(searchParams.month) : new Date().getMonth() + 1;
   const currentYear = searchParams.year ? parseInt(searchParams.year) : new Date().getFullYear();
@@ -75,11 +81,13 @@ export default async function DashboardPage({ searchParams }: { searchParams: { 
 
   const statsByCurrency = (Object.keys(periodIncomes.reduce((acc, curr) => ({...acc, [curr.currency]: true}), {})) as Currency[])
   .concat(Object.keys(periodExpenses.reduce((acc, curr) => ({...acc, [curr.currency]: true}), {})) as Currency[])
+  .concat(Object.keys(liabilities.reduce((acc, curr) => ({...acc, [curr.currency]: true}), {})) as Currency[])
   .filter((value, index, self) => self.indexOf(value) === index)
   .map(currency => ({
       currency,
       incomes: periodIncomes.filter(i => i.currency === currency),
       expenses: periodExpenses.filter(e => e.currency === currency),
+      liabilities: liabilities.filter(l => l.currency === currency),
   })).filter(item => selectedCurrency === 'all' || item.currency === selectedCurrency);
 
 

@@ -1,5 +1,6 @@
 
 
+
 export type Currency = 'ARS' | 'USD';
 
 export type Property = {
@@ -59,6 +60,7 @@ export type ActualExpense = {
   currency: Currency;
   date: string; // ISO string
   notes?: string;
+  liabilityPaymentId?: string; // Links to a liability payment
 };
 
 export type Income = {
@@ -71,6 +73,7 @@ export type Income = {
   currency: Currency;
   date: string; // ISO string
   notes: string;
+  liabilityId?: string; // If this income came from a liability
 };
 
 export type Transfer = {
@@ -86,6 +89,27 @@ export type Transfer = {
   notes?: string;
 };
 
+export type Liability = {
+  id: string;
+  name: string;
+  totalAmount: number;
+  outstandingBalance: number;
+  currency: Currency;
+  creationDate: string; // ISO string
+  notes?: string;
+};
+
+export type LiabilityPayment = {
+  id: string;
+  liabilityId: string;
+  date: string; // ISO string
+  amount: number;
+  walletId: string;
+  currency: Currency;
+  notes?: string;
+  actualExpenseId: string; // The corresponding expense entry
+};
+
 
 export type Transaction = {
   id: string;
@@ -97,5 +121,3 @@ export type Transaction = {
   notes?: string;
   relatedEntity: string;
 };
-
-    

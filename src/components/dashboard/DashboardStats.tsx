@@ -1,13 +1,14 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { DollarSign, TrendingDown, TrendingUp } from "lucide-react";
-import { type Income, type ActualExpense, type Currency } from "@/lib/types";
+import { DollarSign, TrendingDown, TrendingUp, HandCoins } from "lucide-react";
+import { type Income, type ActualExpense, type Currency, type Liability } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 type Stats = {
     currency: Currency;
     incomes: Income[];
     expenses: ActualExpense[];
+    liabilities: Liability[];
 }
 
 type DashboardStatsProps = {
@@ -32,10 +33,11 @@ export function DashboardStats({ statsByCurrency }: DashboardStatsProps) {
 
     return (
         <div className="grid gap-4 md:grid-cols-2">
-            {statsByCurrency.map(({ currency, incomes, expenses }) => {
+            {statsByCurrency.map(({ currency, incomes, expenses, liabilities }) => {
                 const totalIncome = incomes.reduce((acc, income) => acc + income.amount, 0);
                 const totalExpense = expenses.reduce((acc, expense) => acc + expense.amount, 0);
                 const netBalance = totalIncome - totalExpense;
+                const totalLiabilities = liabilities.reduce((acc, l) => acc + l.outstandingBalance, 0);
 
                 const currencyColors = {
                     'ARS': 'text-blue-800 dark:text-blue-400',
@@ -51,16 +53,20 @@ export function DashboardStats({ statsByCurrency }: DashboardStatsProps) {
                         </CardHeader>
                         <CardContent className="space-y-2">
                            <div className="flex items-center justify-between">
-                                <span className="text-sm text-muted-foreground flex items-center gap-2"><TrendingUp className="text-green-500"/> Ingresos</span>
+                                <span className="text-sm text-muted-foreground flex items-center gap-2"><TrendingUp className="text-green-500"/> Ingresos del Período</span>
                                 <span className="font-bold text-lg text-green-500">{formatCurrency(totalIncome, currency)}</span>
                            </div>
                            <div className="flex items-center justify-between">
-                                <span className="text-sm text-muted-foreground flex items-center gap-2"><TrendingDown className="text-red-500"/> Egresos</span>
+                                <span className="text-sm text-muted-foreground flex items-center gap-2"><TrendingDown className="text-red-500"/> Egresos del Período</span>
                                 <span className="font-bold text-lg text-red-500">{formatCurrency(totalExpense, currency)}</span>
                            </div>
                            <div className="flex items-center justify-between border-t pt-2 mt-2">
-                                <span className="text-sm font-medium flex items-center gap-2"><DollarSign className={netBalanceColor}/> Saldo Neto</span>
+                                <span className="text-sm font-medium flex items-center gap-2"><DollarSign className={netBalanceColor}/> Saldo Neto del Período</span>
                                 <span className={cn("font-bold text-xl", netBalanceColor)}>{formatCurrency(netBalance, currency)}</span>
+                           </div>
+                           <div className="flex items-center justify-between border-t pt-2 mt-2">
+                                <span className="text-sm font-medium flex items-center gap-2"><HandCoins className="text-orange-500"/> Total Pasivos</span>
+                                <span className="font-bold text-lg text-orange-500">{formatCurrency(totalLiabilities, currency)}</span>
                            </div>
                         </CardContent>
                     </Card>
