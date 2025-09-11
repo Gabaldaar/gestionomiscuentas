@@ -7,11 +7,12 @@ import { db } from '@/lib/firebase';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, Loader, Pencil, Trash2 } from "lucide-react";
+import { PlusCircle, Loader, Pencil, Trash2, FileText } from "lucide-react";
 import { type Income, type Wallet, type IncomeCategory } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
 import { AddIncomeDialog } from './AddIncomeDialog';
 import { ConfirmDeleteDialog } from '../shared/ConfirmDeleteDialog';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
 type PropertyIncomeProps = {
   propertyId: string;
@@ -150,7 +151,20 @@ export function PropertyIncome({ propertyId, wallets, incomeCategories, selected
                   <TableCell className="hidden md:table-cell">
                     {getWalletName(income.walletId)}
                   </TableCell>
-                  <TableCell className="text-muted-foreground max-w-[200px] truncate hidden md:table-cell">{income.notes}</TableCell>
+                  <TableCell className="hidden md:table-cell">
+                    {income.notes && (
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <FileText className="h-4 w-4" />
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-80">
+                          <p className="text-sm">{income.notes}</p>
+                        </PopoverContent>
+                      </Popover>
+                    )}
+                  </TableCell>
                   <TableCell className="text-right font-medium">
                     {new Intl.NumberFormat('es-AR', { style: 'currency', currency: income.currency }).format(income.amount)}
                   </TableCell>
