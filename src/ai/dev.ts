@@ -8,5 +8,5 @@
 import {config} from 'dotenv';
 config();
 
-import '@/ai/flows/categorize-expense-transactions.ts';
-import '@/ai/flows/generate-financial-summary.ts';
+// Flows are imported here for development purposes.
+// Do not add flow imports here for production.
