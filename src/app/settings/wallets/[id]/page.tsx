@@ -238,7 +238,10 @@ export default function WalletDetailPage() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <Card className="md:col-span-1">
                     <CardHeader className="flex flex-row items-center gap-4">
-                        <div className="p-3 bg-primary/10 text-primary rounded-lg">
+                        <div className={cn("p-3 rounded-lg", {
+                            'bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300': wallet.currency === 'USD',
+                            'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300': wallet.currency === 'ARS',
+                        })}>
                            {renderIcon(wallet)}
                         </div>
                         <div>

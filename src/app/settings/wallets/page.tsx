@@ -100,7 +100,10 @@ export default function WalletsSettingsPage() {
                     <Card className="h-full">
                         <CardHeader className="flex flex-row items-start justify-between">
                             <div className="flex items-center gap-3">
-                            <div className="bg-primary/10 text-primary p-3 rounded-md">
+                            <div className={cn("p-3 rounded-md", {
+                                'bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300': wallet.currency === 'USD',
+                                'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300': wallet.currency === 'ARS',
+                            })}>
                                 {renderIcon(wallet)}
                             </div>
                             <div>
@@ -152,5 +155,3 @@ export default function WalletsSettingsPage() {
     </>
   );
 }
-
-    
