@@ -382,11 +382,26 @@ export function PropertyExpenses({
             </TabsList>
           </CardHeader>
           <CardContent>
+            <div className="p-4 border rounded-lg mb-4 space-y-2">
+                <h4 className="text-md font-semibold text-center mb-2">Totales del Período</h4>
+                <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                    <div className='text-sm text-muted-foreground'>Previsto</div>
+                    <div className="font-bold text-blue-800 dark:text-blue-400 text-lg">{formatCurrency(totals.expected.ARS, 'ARS')}</div>
+                    <div className="font-bold text-green-800 dark:text-green-400 text-lg">{formatCurrency(totals.expected.USD, 'USD')}</div>
+                </div>
+                    <div className="space-y-1">
+                    <div className='text-sm text-muted-foreground'>Pagado</div>
+                    <div className="font-bold text-blue-800 dark:text-blue-400 text-lg">{formatCurrency(totals.paid.ARS, 'ARS')}</div>
+                    <div className="font-bold text-green-800 dark:text-green-400 text-lg">{formatCurrency(totals.paid.USD, 'USD')}</div>
+                </div>
+                </div>
+            </div>
             <TabsContent value="overview">
                 <div className='flex justify-between items-center mb-4 gap-2 flex-wrap'>
                     <div>
                         <h3 className="text-lg font-semibold">Gastos Previstos</h3>
-                        <p className="text-sm text-muted-foreground">Una descripción general de tus gastos previstos y su estado.</p>
+                        <p className="text-sm text-muted-foreground">Descripción general de tus gastos previstos y su estado.</p>
                     </div>
                     <div className="flex items-center gap-2">
                         <Button variant="outline" onClick={() => setIsCopyDialogOpen(true)} disabled={isLoading}>
@@ -398,22 +413,6 @@ export function PropertyExpenses({
                             Añadir Gasto Previsto
                         </Button>
                     </div>
-                </div>
-
-                <div className="p-4 border rounded-lg mb-4 space-y-2">
-                  <h4 className="text-md font-semibold text-center mb-2">Totales del Período</h4>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-1">
-                      <div className='text-sm text-muted-foreground'>Previsto</div>
-                      <div className="font-bold text-blue-800 dark:text-blue-400 text-lg">{formatCurrency(totals.expected.ARS, 'ARS')}</div>
-                      <div className="font-bold text-green-800 dark:text-green-400 text-lg">{formatCurrency(totals.expected.USD, 'USD')}</div>
-                    </div>
-                     <div className="space-y-1">
-                      <div className='text-sm text-muted-foreground'>Pagado</div>
-                      <div className="font-bold text-blue-800 dark:text-blue-400 text-lg">{formatCurrency(totals.paid.ARS, 'ARS')}</div>
-                      <div className="font-bold text-green-800 dark:text-green-400 text-lg">{formatCurrency(totals.paid.USD, 'USD')}</div>
-                    </div>
-                  </div>
                 </div>
 
                 {isLoading ? (
