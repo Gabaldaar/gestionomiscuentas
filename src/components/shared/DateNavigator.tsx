@@ -5,7 +5,7 @@ import * as React from 'react';
 import { format, addMonths, subMonths } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
-import { ChevronLeft, ChevronRight, CalendarToday } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Calendar } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 type DateNavigatorProps = {
@@ -58,11 +58,9 @@ export function DateNavigator({ currentDate, onDateChange }: DateNavigatorProps)
         disabled={isCurrentMonth}
         className={cn({ 'opacity-50 cursor-not-allowed': isCurrentMonth })}
       >
-        <CalendarToday className="mr-2 h-4 w-4" />
+        <Calendar className="mr-2 h-4 w-4" />
         Hoy
       </Button>
     </div>
   );
 }
-
-    
