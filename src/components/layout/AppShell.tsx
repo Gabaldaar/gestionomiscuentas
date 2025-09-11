@@ -101,7 +101,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               <Home />
             </Button>
             <h2 className="text-xl font-bold font-headline tracking-tight group-data-[collapsible=icon]:hidden">
-              PropertyWise
+              GestionoMisCuentas
             </h2>
           </div>
         </SidebarHeader>

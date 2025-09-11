@@ -4,7 +4,7 @@ import { AppShell } from '@/components/layout/AppShell';
 import { Toaster } from '@/components/ui/toaster';
 
 export const metadata: Metadata = {
-  title: 'PropertyWise',
+  title: 'GestionoMisCuentas',
   description: 'Administra tus cuentas con facilidad.',
 };
 
