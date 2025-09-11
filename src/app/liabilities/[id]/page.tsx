@@ -2,7 +2,7 @@
 'use client';
 
 import * as React from 'react';
-import { notFound, useRouter } from 'next/navigation';
+import { notFound, useRouter, useParams } from 'next/navigation';
 import { doc, getDoc, collection, getDocs, Timestamp, query, orderBy, writeBatch, addDoc } from 'firebase/firestore';
 import Link from 'next/link';
 import { format } from 'date-fns';
@@ -26,8 +26,9 @@ const formatCurrency = (amount: number, currency: string) => {
 };
 
 
-export default function LiabilityDetailPage({ params }: { params: { id: string } }) {
-  const { id } = params;
+export default function LiabilityDetailPage() {
+  const params = useParams();
+  const id = params.id as string;
   const { toast } = useToast();
   const router = useRouter();
 
