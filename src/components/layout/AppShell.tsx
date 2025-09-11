@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import * as React from 'react';
@@ -112,7 +111,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </Button>
             <div className="w-full group-data-[collapsible=icon]:hidden">
                 <Image
-                  src="/img/logo.png"
+                  src={`/img/logo.png?t=${new Date().getTime()}`}
                   alt="GestionoMisCuentas Logo"
                   width={150}
                   height={40}
@@ -144,5 +143,3 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     </SidebarProvider>
   );
 }
-
-    
