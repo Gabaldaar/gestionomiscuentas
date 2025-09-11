@@ -59,6 +59,7 @@ export type ActualExpense = {
   currency: Currency;
   date: string; // ISO string
   notes?: string;
+  liabilityId?: string; // If this expense is a payment for a liability
 };
 
 export type Income = {

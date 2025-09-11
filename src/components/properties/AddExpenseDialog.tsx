@@ -38,7 +38,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
-import { type ExpenseCategory, type ActualExpense, type Wallet, type Property } from '@/lib/types';
+import { type ExpenseCategory, type ActualExpense, type Wallet, type Property, type Liability } from '@/lib/types';
 import { Loader } from 'lucide-react';
 
 const expenseSchema = z.object({
@@ -53,6 +53,7 @@ const expenseSchema = z.object({
   }),
   notes: z.string().optional(),
   propertyId: z.string().optional(), // Optional here, but can be required by parent component
+  liabilityId: z.string().optional(),
 });
 
 export type ExpenseFormValues = z.infer<typeof expenseSchema>;
@@ -63,6 +64,7 @@ type AddExpenseDialogProps = {
   expenseCategories: ExpenseCategory[];
   wallets: Wallet[];
   properties?: Property[]; // Make properties optional
+  liabilities?: Liability[]; // Make liabilities optional
   onExpenseSubmit: (data: ExpenseFormValues) => void;
   isSubmitting?: boolean;
   expenseToEdit?: Omit<ActualExpense, 'propertyId' | 'propertyName'> | null;
@@ -82,6 +84,7 @@ export function AddExpenseDialog({
   expenseCategories,
   wallets,
   properties,
+  liabilities,
   onExpenseSubmit,
   isSubmitting = false,
   expenseToEdit,
@@ -120,6 +123,7 @@ export function AddExpenseDialog({
           currency: expenseToEdit.currency,
           notes: expenseToEdit.notes || '',
           propertyId: (expenseToEdit as any).propertyId || '', // Handle potential propertyId
+          liabilityId: (expenseToEdit as any).liabilityId || '',
         });
       } else if (initialData) {
         form.reset({
@@ -130,6 +134,7 @@ export function AddExpenseDialog({
             currency: initialData.currency || 'ARS',
             notes: initialData.notes || '',
             propertyId: initialData.propertyId || '',
+            liabilityId: initialData.liabilityId || '',
         })
       } else {
           form.reset({
@@ -140,6 +145,7 @@ export function AddExpenseDialog({
               currency: 'ARS',
               notes: '',
               propertyId: '',
+              liabilityId: '',
           });
       }
     }
@@ -149,6 +155,11 @@ export function AddExpenseDialog({
   const onSubmit = (data: ExpenseFormValues) => {
     onExpenseSubmit(data);
   };
+  
+  const selectedCurrency = form.watch('currency');
+  const availableWallets = wallets.filter(w => w.currency === selectedCurrency);
+  const availableLiabilities = liabilities?.filter(l => l.currency === selectedCurrency);
+
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -258,33 +269,6 @@ export function AddExpenseDialog({
                 </FormItem>
               )}
             />
-            <FormField
-              control={form.control}
-              name="walletId"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Billetera</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecciona una billetera" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {wallets.map((wallet) => (
-                        <SelectItem key={wallet.id} value={wallet.id}>
-                          <div className="flex justify-between w-full">
-                            <span>{wallet.name} ({wallet.currency})</span>
-                            <span className="text-muted-foreground ml-4">{formatCurrency(wallet.balance, wallet.currency)}</span>
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
             <div className="grid grid-cols-2 gap-4">
                 <FormField
                 control={form.control}
@@ -305,7 +289,7 @@ export function AddExpenseDialog({
                 render={({ field }) => (
                     <FormItem>
                     <FormLabel>Moneda</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value} defaultValue={field.value} disabled>
+                    <Select onValueChange={(value) => { field.onChange(value); form.setValue('walletId', ''); }} value={field.value} defaultValue={field.value}>
                         <FormControl>
                         <SelectTrigger>
                             <SelectValue placeholder="Moneda" />
@@ -321,6 +305,67 @@ export function AddExpenseDialog({
                 )}
                 />
             </div>
+             <FormField
+              control={form.control}
+              name="walletId"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Billetera</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value} defaultValue={field.value}>
+                    <FormControl>
+                      <SelectTrigger disabled={!selectedCurrency}>
+                        <SelectValue placeholder={selectedCurrency ? "Selecciona una billetera" : "Elige una moneda primero"} />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {availableWallets.map((wallet) => (
+                        <SelectItem key={wallet.id} value={wallet.id}>
+                          <div className="flex justify-between w-full">
+                            <span>{wallet.name}</span>
+                            <span className="text-muted-foreground ml-4">{formatCurrency(wallet.balance, wallet.currency)}</span>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            
+            {availableLiabilities && availableLiabilities.length > 0 && (
+                <FormField
+                control={form.control}
+                name="liabilityId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Vincular a Pasivo (Opcional)</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value} defaultValue={field.value} disabled={!!initialData?.liabilityId}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecciona un pasivo para vincular" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                         <SelectItem value="">Ninguno</SelectItem>
+                        {availableLiabilities.map((liability) => (
+                          <SelectItem key={liability.id} value={liability.id}>
+                             <div className="flex justify-between w-full">
+                                <span>{liability.name}</span>
+                                <span className="text-muted-foreground ml-4">
+                                    Saldo: {formatCurrency(liability.outstandingBalance, liability.currency)}
+                                </span>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
+
             <FormField
               control={form.control}
               name="notes"

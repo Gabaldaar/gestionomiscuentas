@@ -104,7 +104,7 @@ export default function LiabilityDetailPage() {
 
     try {
         const expenseRef = doc(collection(db, 'properties', propertyId, 'actualExpenses'));
-        const expenseData = { ...data, date: Timestamp.fromDate(data.date), propertyId };
+        const expenseData = { ...data, date: Timestamp.fromDate(data.date), propertyId, liabilityId: liability.id };
         batch.set(expenseRef, expenseData);
 
         const paymentRef = doc(collection(db, 'liabilities', id, 'payments'));
@@ -228,7 +228,9 @@ export default function LiabilityDetailPage() {
   };
   
   const handleOpenPaymentDialog = () => {
-    const matchingSubcategories = expenseCategories.flatMap(c => c.subcategories).filter(sc => sc.name.toLowerCase().includes('pago de crédito'));
+    const matchingSubcategories = expenseCategories
+        .flatMap(c => c.subcategories)
+        .filter(sc => sc.name.toLowerCase().includes('pago de crédito'));
     
     let defaultSubcategoryId: string | undefined = undefined;
     if (matchingSubcategories.length === 1) {
@@ -238,6 +240,7 @@ export default function LiabilityDetailPage() {
     setPaymentDialogInitialData({
         currency: liability?.currency,
         subcategoryId: defaultSubcategoryId,
+        liabilityId: liability?.id
     });
     setIsAddPaymentOpen(true);
   }
@@ -353,6 +356,7 @@ export default function LiabilityDetailPage() {
         expenseCategories={expenseCategories}
         wallets={wallets.filter(w => w.currency === liability?.currency)}
         properties={properties}
+        liabilities={liability ? [liability] : []}
         onExpenseSubmit={handlePaymentSubmit}
         isSubmitting={isSubmitting}
         initialData={paymentDialogInitialData}

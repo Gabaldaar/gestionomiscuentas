@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { PlusCircle, Pencil, Trash2, Loader, Copy } from "lucide-react";
-import { type ExpectedExpense, type ActualExpense, type ExpenseCategory, type Wallet, type Currency } from "@/lib/types";
+import { type ExpectedExpense, type ActualExpense, type ExpenseCategory, type Wallet, type Currency, type Liability } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
 import { AddExpenseDialog } from './AddExpenseDialog';
 import { AddExpectedExpenseDialog } from './AddExpectedExpenseDialog';
@@ -22,6 +22,7 @@ type PropertyExpensesProps = {
   propertyId: string;
   expenseCategories: ExpenseCategory[];
   wallets: Wallet[];
+  liabilities: Liability[];
   selectedMonth: string;
   selectedYear: string;
   actualExpenses: Omit<ActualExpense, 'propertyId' | 'propertyName'>[];
@@ -40,6 +41,7 @@ export function PropertyExpenses({
   propertyId, 
   expenseCategories, 
   wallets, 
+  liabilities,
   selectedMonth, 
   selectedYear,
   actualExpenses,
@@ -188,6 +190,29 @@ export function PropertyExpenses({
 
             batch.update(walletRef, { balance: newBalance });
             batch.set(expenseRef, { ...data, date: Timestamp.fromDate(data.date) });
+            
+            if (data.liabilityId) {
+                const liabilityRef = doc(db, 'liabilities', data.liabilityId);
+                const liabilitySnap = await getDoc(liabilityRef);
+                if (liabilitySnap.exists()) {
+                    const liabilityData = liabilitySnap.data() as Liability;
+                    batch.update(liabilityRef, { outstandingBalance: liabilityData.outstandingBalance - data.amount });
+
+                    const paymentRef = doc(collection(db, 'liabilities', data.liabilityId, 'payments'));
+                    const paymentData = {
+                        liabilityId: data.liabilityId,
+                        date: Timestamp.fromDate(data.date),
+                        amount: data.amount,
+                        walletId: data.walletId,
+                        currency: data.currency,
+                        notes: `Pago registrado desde la cuenta`,
+                        actualExpenseId: expenseRef.id,
+                        propertyId: propertyId,
+                    };
+                    batch.set(paymentRef, paymentData);
+                }
+            }
+            
             toast({ title: "Gasto añadido exitosamente" });
         }
         await batch.commit();
@@ -210,7 +235,7 @@ export function PropertyExpenses({
         subcategoryId: expense.subcategoryId,
         amount: remainingAmount > 0 ? remainingAmount : 0,
         currency: expense.currency,
-        date: new Date(expense.year, expense.month - 1, new Date().getDate()).toISOString(),
+        date: new Date(expense.year, expense.month - 1, new Date().getDate()),
     });
     setEditingExpense(null);
     setIsAddExpenseOpen(true);
@@ -246,6 +271,21 @@ export function PropertyExpenses({
             const walletData = walletSnap.data() as Wallet;
             const newBalance = walletData.balance + expenseToDelete.amount;
             batch.update(walletRef, { balance: newBalance });
+        }
+        
+        if (expenseToDelete.liabilityId) {
+            const liabilityRef = doc(db, 'liabilities', expenseToDelete.liabilityId);
+            const liabilitySnap = await getDoc(liabilityRef);
+            if (liabilitySnap.exists()) {
+                const liabilityData = liabilitySnap.data() as Liability;
+                batch.update(liabilityRef, { outstandingBalance: liabilityData.outstandingBalance + expenseToDelete.amount });
+
+                const paymentsQuery = query(collection(db, 'liabilities', expenseToDelete.liabilityId, 'payments'), where('actualExpenseId', '==', expenseToDelete.id));
+                const paymentsSnap = await getDocs(paymentsQuery);
+                paymentsSnap.forEach(paymentDoc => {
+                    batch.delete(paymentDoc.ref);
+                });
+            }
         }
 
         batch.delete(expenseRef);
@@ -598,6 +638,7 @@ export function PropertyExpenses({
         onOpenChange={closeDialogs}
         expenseCategories={expenseCategories}
         wallets={wallets}
+        liabilities={liabilities}
         onExpenseSubmit={handleActualExpenseSubmit}
         expenseToEdit={editingExpense}
         initialData={initialExpenseData}

@@ -14,7 +14,7 @@ import { Pencil, Loader } from 'lucide-react';
 import { PropertyExpenses } from '@/components/properties/PropertyExpenses';
 import { PropertyIncome } from '@/components/properties/PropertyIncome';
 import { db } from '@/lib/firebase';
-import { type Property, type ActualExpense, type Income, type ExpectedExpense, type Wallet, type ExpenseCategory, type IncomeCategory } from '@/lib/types';
+import { type Property, type ActualExpense, type Income, type ExpectedExpense, type Wallet, type ExpenseCategory, type IncomeCategory, type Liability } from '@/lib/types';
 import { FinancialSummary } from './FinancialSummary';
 import { RecentActivity } from './RecentActivity';
 import { Textarea } from '@/components/ui/textarea';
@@ -35,6 +35,7 @@ export function PropertyDetail({ id }: { id: string }) {
   const [wallets, setWallets] = React.useState<Wallet[]>([]);
   const [expenseCategories, setExpenseCategories] = React.useState<ExpenseCategory[]>([]);
   const [incomeCategories, setIncomeCategories] = React.useState<IncomeCategory[]>([]);
+  const [liabilities, setLiabilities] = React.useState<Liability[]>([]);
 
 
   const fetchPageData = React.useCallback(async () => {
@@ -80,36 +81,32 @@ export function PropertyDetail({ id }: { id: string }) {
         setExpectedExpenses(expectedExpensesList);
         
         // --- Global Data ---
-        const walletsCol = collection(db, 'wallets');
-        const walletsSnapshot = await getDocs(walletsCol);
-        const walletsList = walletsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Wallet));
+        const [walletsSnap, expenseCatSnap, incomeCatSnap, liabilitiesSnap] = await Promise.all([
+            getDocs(collection(db, 'wallets')),
+            getDocs(query(collection(db, 'expenseCategories'), orderBy('name'))),
+            getDocs(query(collection(db, 'incomeCategories'), orderBy('name'))),
+            getDocs(query(collection(db, 'liabilities'), orderBy('name'))),
+        ]);
+
+        const walletsList = walletsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Wallet));
         setWallets(walletsList);
 
-        const expenseCategoriesQuery = query(collection(db, 'expenseCategories'), orderBy('name'));
-        const expenseCategoriesSnapshot = await getDocs(expenseCategoriesQuery);
-        const expenseCategoriesList = await Promise.all(expenseCategoriesSnapshot.docs.map(async (categoryDoc) => {
+        const expenseCategoriesList = await Promise.all(expenseCatSnap.docs.map(async (categoryDoc) => {
             const subcategoriesQuery = query(collection(db, 'expenseCategories', categoryDoc.id, 'subcategories'), orderBy('name'));
             const subcategoriesSnapshot = await getDocs(subcategoriesQuery);
-            return {
-            id: categoryDoc.id,
-            name: categoryDoc.data().name,
-            subcategories: subcategoriesSnapshot.docs.map(subDoc => ({ id: subDoc.id, name: subDoc.data().name })),
-            } as ExpenseCategory;
+            return { id: categoryDoc.id, name: categoryDoc.data().name, subcategories: subcategoriesSnapshot.docs.map(subDoc => ({ id: subDoc.id, name: subDoc.data().name })) };
         }));
         setExpenseCategories(expenseCategoriesList);
         
-        const incomeCategoriesQuery = query(collection(db, 'incomeCategories'), orderBy('name'));
-        const incomeCategoriesSnapshot = await getDocs(incomeCategoriesQuery);
-        const incomeCategoriesList = await Promise.all(incomeCategoriesSnapshot.docs.map(async (categoryDoc) => {
+        const incomeCategoriesList = await Promise.all(incomeCatSnap.docs.map(async (categoryDoc) => {
             const subcategoriesQuery = query(collection(db, 'incomeCategories', categoryDoc.id, 'subcategories'), orderBy('name'));
             const subcategoriesSnapshot = await getDocs(subcategoriesQuery);
-            return {
-            id: categoryDoc.id,
-            name: categoryDoc.data().name,
-            subcategories: subcategoriesSnapshot.docs.map(subDoc => ({ id: subDoc.id, name: subDoc.data().name })),
-            } as IncomeCategory;
+            return { id: categoryDoc.id, name: categoryDoc.data().name, subcategories: subcategoriesSnapshot.docs.map(subDoc => ({ id: subDoc.id, name: subDoc.data().name })) };
         }));
         setIncomeCategories(incomeCategoriesList);
+        
+        const liabilitiesList = liabilitiesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Liability));
+        setLiabilities(liabilitiesList);
 
 
     } catch (error) {
@@ -240,6 +237,7 @@ export function PropertyDetail({ id }: { id: string }) {
               propertyId={property.id}
               expenseCategories={expenseCategories}
               wallets={wallets}
+              liabilities={liabilities}
               selectedMonth={selectedMonth}
               selectedYear={selectedYear}
               actualExpenses={actualExpenses}
