@@ -1,3 +1,7 @@
+
+'use client';
+
+import * as React from 'react';
 import { collectionGroup, getDocs, query, Timestamp, collection } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { type Income, type ActualExpense, type IncomeCategory, type ExpenseCategory, type Currency, type Liability } from '@/lib/types';
@@ -9,6 +13,7 @@ import { DashboardFilters } from '@/components/dashboard/DashboardFilters';
 import { Suspense } from 'react';
 import { Loader } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useSearchParams } from 'next/navigation';
 
 type DashboardData = {
   incomes: Income[];
@@ -18,72 +23,99 @@ type DashboardData = {
   liabilities: Liability[];
 };
 
-async function getDashboardData(): Promise<DashboardData> {
-  const incomesQuery = query(collectionGroup(db, 'incomes'));
-  const expensesQuery = query(collectionGroup(db, 'actualExpenses'));
-  const incomeCategoriesQuery = query(collection(db, 'incomeCategories'));
-  const expenseCategoriesQuery = query(collection(db, 'expenseCategories'));
-  const liabilitiesQuery = query(collection(db, 'liabilities'));
+function DashboardContent() {
+  const [data, setData] = React.useState<DashboardData | null>(null);
+  const [loading, setLoading] = React.useState(true);
+  const [error, setError] = React.useState<string | null>(null);
+  const searchParams = useSearchParams();
 
-  const [
-    incomesSnapshot,
-    expensesSnapshot,
-    incomeCategoriesSnapshot,
-    expenseCategoriesSnapshot,
-    liabilitiesSnapshot,
-  ] = await Promise.all([
-    getDocs(incomesQuery),
-    getDocs(expensesQuery),
-    getDocs(incomeCategoriesQuery),
-    getDocs(expenseCategoriesQuery),
-    getDocs(liabilitiesQuery),
-  ]);
+  React.useEffect(() => {
+    async function getDashboardData() {
+      setLoading(true);
+      setError(null);
+      try {
+        const incomesQuery = query(collectionGroup(db, 'incomes'));
+        const expensesQuery = query(collectionGroup(db, 'actualExpenses'));
+        const incomeCategoriesQuery = query(collection(db, 'incomeCategories'));
+        const expenseCategoriesQuery = query(collection(db, 'expenseCategories'));
+        const liabilitiesQuery = query(collection(db, 'liabilities'));
 
-  const incomes = incomesSnapshot.docs.map(doc => ({
-    ...doc.data(),
-    id: doc.id,
-    date: (doc.data().date as Timestamp).toDate().toISOString(),
-  } as Income));
+        const [
+          incomesSnapshot,
+          expensesSnapshot,
+          incomeCategoriesSnapshot,
+          expenseCategoriesSnapshot,
+          liabilitiesSnapshot,
+        ] = await Promise.all([
+          getDocs(incomesQuery),
+          getDocs(expensesQuery),
+          getDocs(incomeCategoriesQuery),
+          getDocs(expenseCategoriesQuery),
+          getDocs(liabilitiesQuery),
+        ]);
 
-  const expenses = expensesSnapshot.docs.map(doc => ({
-    ...doc.data(),
-    id: doc.id,
-    date: (doc.data().date as Timestamp).toDate().toISOString(),
-  } as ActualExpense));
+        const incomes = incomesSnapshot.docs.map(doc => ({
+          ...doc.data(),
+          id: doc.id,
+          date: (doc.data().date as Timestamp).toDate().toISOString(),
+        } as Income));
 
-  const incomeCategories: IncomeCategory[] = await Promise.all(incomeCategoriesSnapshot.docs.map(async (categoryDoc) => {
-    const subcategoriesQuery = query(collection(db, 'incomeCategories', categoryDoc.id, 'subcategories'));
-    const subcategoriesSnapshot = await getDocs(subcategoriesQuery);
-    return { id: categoryDoc.id, name: categoryDoc.data().name, subcategories: subcategoriesSnapshot.docs.map(subDoc => ({ id: subDoc.id, name: subDoc.data().name })) };
-  }));
+        const expenses = expensesSnapshot.docs.map(doc => ({
+          ...doc.data(),
+          id: doc.id,
+          date: (doc.data().date as Timestamp).toDate().toISOString(),
+        } as ActualExpense));
 
-  const expenseCategories: ExpenseCategory[] = await Promise.all(expenseCategoriesSnapshot.docs.map(async (categoryDoc) => {
-    const subcategoriesQuery = query(collection(db, 'expenseCategories', categoryDoc.id, 'subcategories'));
-    const subcategoriesSnapshot = await getDocs(subcategoriesQuery);
-    return { id: categoryDoc.id, name: categoryDoc.data().name, subcategories: subcategoriesSnapshot.docs.map(subDoc => ({ id: subDoc.id, name: subDoc.data().name })) };
-  }));
+        const incomeCategories: IncomeCategory[] = await Promise.all(incomeCategoriesSnapshot.docs.map(async (categoryDoc) => {
+          const subcategoriesQuery = query(collection(db, 'incomeCategories', categoryDoc.id, 'subcategories'));
+          const subcategoriesSnapshot = await getDocs(subcategoriesQuery);
+          return { id: categoryDoc.id, name: categoryDoc.data().name, subcategories: subcategoriesSnapshot.docs.map(subDoc => ({ id: subDoc.id, name: subDoc.data().name })) };
+        }));
 
-  const liabilities = liabilitiesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Liability));
+        const expenseCategories: ExpenseCategory[] = await Promise.all(expenseCategoriesSnapshot.docs.map(async (categoryDoc) => {
+          const subcategoriesQuery = query(collection(db, 'expenseCategories', categoryDoc.id, 'subcategories'));
+          const subcategoriesSnapshot = await getDocs(subcategoriesQuery);
+          return { id: categoryDoc.id, name: categoryDoc.data().name, subcategories: subcategoriesSnapshot.docs.map(subDoc => ({ id: subDoc.id, name: subDoc.data().name })) };
+        }));
 
-  return { incomes, expenses, incomeCategories, expenseCategories, liabilities };
-}
+        const liabilities = liabilitiesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Liability));
 
-async function DashboardContent({ searchParams }: { searchParams: { [key: string]: string | string[] | undefined } }) {
-  const data = await getDashboardData();
-  if (!data) {
+        setData({ incomes, expenses, incomeCategories, expenseCategories, liabilities });
+      } catch (e) {
+        console.error(e);
+        setError("No se pudieron cargar los datos del dashboard.");
+      } finally {
+        setLoading(false);
+      }
+    }
+    getDashboardData();
+  }, []);
+
+  if (loading) {
     return (
-      <Card>
-        <CardHeader><CardTitle>Error</CardTitle></CardHeader>
-        <CardContent><p>No se pudieron cargar los datos del dashboard.</p></CardContent>
-      </Card>
+      <div className="flex-1 space-y-4 p-4 md:p-8 pt-6 flex justify-center items-center">
+        <Loader className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
+
+  if (error || !data) {
+    return (
+      <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
+        <PageHeader title="Dashboard" />
+        <Card>
+          <CardHeader><CardTitle>Error</CardTitle></CardHeader>
+          <CardContent><p>{error || "No se pudieron cargar los datos."}</p></CardContent>
+        </Card>
+      </div>
     );
   }
 
   const { incomes, expenses, incomeCategories, expenseCategories, liabilities } = data;
 
-  const currentMonth = searchParams?.month ? parseInt(searchParams.month as string) : new Date().getMonth() + 1;
-  const currentYear = searchParams?.year ? parseInt(searchParams.year as string) : new Date().getFullYear();
-  const selectedCurrency = (searchParams?.currency as Currency | 'all') || 'all';
+  const currentMonth = searchParams?.get('month') ? parseInt(searchParams.get('month') as string) : new Date().getMonth() + 1;
+  const currentYear = searchParams?.get('year') ? parseInt(searchParams.get('year') as string) : new Date().getFullYear();
+  const selectedCurrency = (searchParams?.get('currency') as Currency | 'all') || 'all';
 
   const transactionsInPeriod = (transactions: (Income[] | ActualExpense[])) => {
     return transactions.filter(t => {
@@ -133,14 +165,14 @@ async function DashboardContent({ searchParams }: { searchParams: { [key: string
   );
 }
 
-export default function DashboardPage({ searchParams }: { searchParams: { [key: string]: string | string[] | undefined } }) {
+export default function DashboardPage() {
   return (
     <Suspense fallback={
       <div className="flex-1 space-y-4 p-4 md:p-8 pt-6 flex justify-center items-center">
         <Loader className="h-8 w-8 animate-spin" />
       </div>
     }>
-      <DashboardContent searchParams={searchParams} />
+      <DashboardContent />
     </Suspense>
   );
 }

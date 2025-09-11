@@ -3,7 +3,7 @@
 
 import * as React from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import {
   SidebarProvider,
@@ -15,7 +15,7 @@ import {
   SidebarMenuButton,
   SidebarInset,
   SidebarTrigger,
-  useSidebar,
+  SidebarFooter,
 } from '@/components/ui/sidebar';
 import {
   LayoutDashboard,
@@ -28,9 +28,15 @@ import {
   TrendingUp,
   PanelLeft,
   AreaChart,
-  HandCoins
+  HandCoins,
+  LogOut,
+  User as UserIcon,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useAuth } from '../auth/AuthProvider';
+import { auth } from '@/lib/firebase';
+import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '../ui/dropdown-menu';
 
 const navItems = [
   { href: '/', label: 'Dashboard', icon: LayoutDashboard },
@@ -40,7 +46,6 @@ const navItems = [
   { href: '/incomes', label: 'Historial de Ingresos', icon: TrendingUp },
   { href: '/transfers', label: 'Transferencias', icon: ArrowLeftRight },
   { href: '/reports', label: 'Informes', icon: AreaChart },
-  { href: '/settings/wallets', label: 'Billeteras', icon: Wallet },
   { href: '/settings', label: 'Configuración', icon: Settings2 },
 ];
 
@@ -91,16 +96,55 @@ function MainNav() {
     )
 }
 
+function UserProfile() {
+    const { user } = useAuth();
+    const router = useRouter();
+
+    const handleSignOut = async () => {
+        await auth.signOut();
+        router.push('/login');
+    };
+
+    if (!user) return null;
+
+    const getInitials = (name: string | null) => {
+        if (!name) return '?';
+        return name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+    }
+
+    return (
+        <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="flex items-center gap-2 p-2 h-auto w-full justify-start group-data-[collapsible=icon]:w-auto group-data-[collapsible=icon]:justify-center">
+                    <Avatar className="h-8 w-8">
+                        <AvatarImage src={user.photoURL || undefined} alt={user.displayName || 'Usuario'} />
+                        <AvatarFallback>{getInitials(user.displayName)}</AvatarFallback>
+                    </Avatar>
+                    <div className="group-data-[collapsible=icon]:hidden flex flex-col items-start">
+                      <span className="text-sm font-medium truncate">{user.displayName}</span>
+                      <span className="text-xs text-muted-foreground truncate">{user.email}</span>
+                    </div>
+                </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent side="right" align="start">
+                <DropdownMenuLabel>Mi Cuenta</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleSignOut} className="text-destructive">
+                    <LogOut className="mr-2 h-4 w-4" />
+                    <span>Cerrar Sesión</span>
+                </DropdownMenuItem>
+            </DropdownMenuContent>
+        </DropdownMenu>
+    );
+}
+
 export function AppShell({ children }: { children: React.ReactNode }) {
-  const [isClient, setIsClient] = React.useState(false);
+  const { user, loading } = useAuth();
 
-  React.useEffect(() => {
-    setIsClient(true);
-  }, []);
-
-  if (!isClient) {
-    // Render nothing on the server to avoid hydration mismatch
-    return null; 
+  if (loading || !user) {
+    // AuthProvider shows a loader or handles redirection,
+    // so we don't need to render the shell for unauthenticated users.
+    return <>{children}</>;
   }
   
   return (
@@ -108,16 +152,21 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <Sidebar>
         <SidebarHeader>
           <div className="flex items-center gap-2 p-2">
-            <Button variant="ghost" size="icon" className="md:hidden">
-              <Home />
-            </Button>
             <div className="w-full group-data-[collapsible=icon]:hidden">
                 <Image
-                  src={`/img/logo.png?t=${new Date().getTime()}`}
+                  src={`/img/logo.png`}
                   alt="GestionoMisCuentas Logo"
                   width={150}
                   height={40}
                   className="h-auto"
+                />
+            </div>
+             <div className="group-data-[collapsible=icon]:w-full group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:justify-center hidden">
+                <Image
+                  src={`/img/logo-sm.png`}
+                  alt="Logo"
+                  width={24}
+                  height={24}
                 />
             </div>
           </div>
@@ -125,6 +174,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <SidebarContent>
          <MainNav />
         </SidebarContent>
+         <SidebarFooter>
+            <UserProfile />
+        </SidebarFooter>
       </Sidebar>
       <SidebarInset>
         <header className="flex items-center justify-between p-4 border-b md:justify-end">

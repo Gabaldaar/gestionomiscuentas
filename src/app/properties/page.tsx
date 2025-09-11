@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Loader, PlusCircle } from "lucide-react";
 import { PropertyCard } from "@/components/properties/PropertyCard";
 import { db } from "@/lib/firebase";
-import { collection, getDocs, Timestamp } from "firebase/firestore";
+import { collection, getDocs, Timestamp, collectionGroup, query } from "firebase/firestore";
 import { type Property, type Income, type ActualExpense } from "@/lib/types";
 import Link from "next/link";
 import { useToast } from '@/hooks/use-toast';
@@ -28,36 +28,46 @@ export default function PropertiesPage() {
       try {
         const propertiesCol = collection(db, 'properties');
         const propertiesSnapshot = await getDocs(propertiesCol);
+        const propertiesList: Property[] = propertiesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Property));
         
-        const propertiesList: Property[] = [];
+        const incomesQuery = query(collectionGroup(db, 'incomes'));
+        const expensesQuery = query(collectionGroup(db, 'actualExpenses'));
+        
+        const [incomesSnapshot, expensesSnapshot] = await Promise.all([
+            getDocs(incomesQuery),
+            getDocs(expensesQuery)
+        ]);
+
         const allIncomes: Record<string, Income[]> = {};
         const allExpenses: Record<string, ActualExpense[]> = {};
-        
+
         const currentMonth = new Date().getMonth();
         const currentYear = new Date().getFullYear();
 
-        for (const doc of propertiesSnapshot.docs) {
-          const property = { id: doc.id, ...doc.data() } as Property;
-          propertiesList.push(property);
+        incomesSnapshot.docs.forEach(doc => {
+            const income = {...d.data(), id: doc.id, date: (doc.data().date as Timestamp).toDate().toISOString() } as Income;
+            const propertyId = doc.ref.parent.parent!.id;
+            const incomeDate = new Date(income.date);
+            if (incomeDate.getMonth() === currentMonth && incomeDate.getFullYear() === currentYear) {
+                if (!allIncomes[propertyId]) {
+                    allIncomes[propertyId] = [];
+                }
+                allIncomes[propertyId].push(income);
+            }
+        });
+        
+        expensesSnapshot.docs.forEach(doc => {
+            const expense = {...doc.data(), id: doc.id, date: (doc.data().date as Timestamp).toDate().toISOString() } as ActualExpense;
+            const propertyId = doc.ref.parent.parent!.id;
+            const expenseDate = new Date(expense.date);
+            if (expenseDate.getMonth() === currentMonth && expenseDate.getFullYear() === currentYear) {
+                if (!allExpenses[propertyId]) {
+                    allExpenses[propertyId] = [];
+                }
+                allExpenses[propertyId].push(expense);
+            }
+        });
 
-          const incomesCol = collection(db, 'properties', doc.id, 'incomes');
-          const incomesSnapshot = await getDocs(incomesCol);
-          allIncomes[doc.id] = incomesSnapshot.docs
-            .map(d => ({...d.data(), id: d.id, date: (d.data().date as Timestamp).toDate().toISOString() } as Income))
-            .filter(income => {
-                const incomeDate = new Date(income.date);
-                return incomeDate.getMonth() === currentMonth && incomeDate.getFullYear() === currentYear;
-            });
-
-          const expensesCol = collection(db, 'properties', doc.id, 'actualExpenses');
-          const expensesSnapshot = await getDocs(expensesCol);
-          allExpenses[doc.id] = expensesSnapshot.docs
-            .map(d => ({...d.data(), id: d.id, date: (d.data().date as Timestamp).toDate().toISOString() } as ActualExpense))
-            .filter(expense => {
-                const expenseDate = new Date(expense.date);
-                return expenseDate.getMonth() === currentMonth && expenseDate.getFullYear() === currentYear;
-            });
-        }
         setData({ properties: propertiesList, incomes: allIncomes, expenses: allExpenses });
       } catch (error) {
         console.error("Error fetching properties:", error);
