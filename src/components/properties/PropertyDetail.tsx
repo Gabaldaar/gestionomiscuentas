@@ -5,6 +5,7 @@ import * as React from 'react';
 import { notFound } from 'next/navigation';
 import Image from 'next/image';
 import { doc, getDoc, collection, getDocs, Timestamp, query, orderBy } from 'firebase/firestore';
+import Link from 'next/link';
 
 import { PageHeader } from '@/components/shared/PageHeader';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
@@ -158,9 +159,11 @@ export function PropertyDetail({ id }: { id: string }) {
   return (
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
       <PageHeader title={property.name}>
-        <Button>
-          <Pencil className="mr-2 h-4 w-4" />
-          Editar Cuenta
+        <Button asChild>
+          <Link href={`/properties/${id}/edit`}>
+            <Pencil className="mr-2 h-4 w-4" />
+            Editar Cuenta
+          </Link>
         </Button>
       </PageHeader>
 
