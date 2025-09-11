@@ -101,7 +101,7 @@ export function AddExpectedExpenseDialog({
         <DialogHeader>
           <DialogTitle>{isEditing ? 'Editar Gasto Previsto' : 'Añadir Gasto Previsto'}</DialogTitle>
           <DialogDescription>
-            {isEditing ? 'Actualiza los detalles de este gasto previsto.' : 'Registra un nuevo gasto previsto para esta propiedad.'}
+            {isEditing ? 'Actualiza los detalles de este gasto previsto.' : 'Registra un nuevo gasto previsto para esta cuenta.'}
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>

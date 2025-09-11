@@ -9,7 +9,7 @@ export function PropertyNotes({ notes }: { notes: string }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Notas de la Propiedad</CardTitle>
+        <CardTitle>Notas de la Cuenta</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <div>

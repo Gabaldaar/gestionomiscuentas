@@ -19,11 +19,11 @@ export default async function PropertiesPage() {
 
   return (
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
-      <PageHeader title="Propiedades">
+      <PageHeader title="Cuentas">
         <Button asChild>
           <Link href="/properties/new">
             <PlusCircle className="mr-2 h-4 w-4" />
-            Añadir Propiedad
+            Añadir Cuenta
           </Link>
         </Button>
       </PageHeader>

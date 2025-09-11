@@ -27,7 +27,7 @@ import { Button } from '@/components/ui/button';
 
 const navItems = [
   { href: '/', label: 'Panel de Control', icon: LayoutDashboard },
-  { href: '/properties', label: 'Propiedades', icon: Building2 },
+  { href: '/properties', label: 'Cuentas', icon: Building2 },
   { href: '/transfers', label: 'Transferencias', icon: ArrowLeftRight },
   { href: '/settings/wallets', label: 'Billeteras', icon: Wallet },
   { href: '/settings', label: 'Configuración', icon: Settings2 },
@@ -46,21 +46,27 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }
   
   const checkActive = (href: string) => {
-    // Exact match
-    if (pathname === href) {
+    // Exact match for home page
+    if (href === '/' && pathname === '/') {
         return true;
     }
-    // Handle home page separately to avoid matching all paths
-    if (href === '/') {
-        return false;
-    }
-    // Check for sub-routes (e.g., /properties/new, /properties/[id]/edit)
-    // It should start with the href and be followed by a /
-    if (pathname.startsWith(`${href}/`)) {
-        return true;
+    // For other routes, check if the pathname starts with the href,
+    // but is not just the href for parent routes like /settings.
+    if (href !== '/' && pathname.startsWith(href)) {
+        if (pathname === href) {
+            return true;
+        }
+        // Special case for /settings to avoid matching sub-routes
+        if (href === '/settings' && pathname !== '/settings') {
+            return false;
+        }
+        if (pathname.startsWith(`${href}/`)) {
+            return true;
+        }
     }
     return false;
   }
+
 
   return (
     <SidebarProvider>

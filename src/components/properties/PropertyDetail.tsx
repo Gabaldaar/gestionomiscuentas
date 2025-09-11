@@ -160,7 +160,7 @@ export function PropertyDetail({ id }: { id: string }) {
       <PageHeader title={property.name}>
         <Button>
           <Pencil className="mr-2 h-4 w-4" />
-          Editar Propiedad
+          Editar Cuenta
         </Button>
       </PageHeader>
 

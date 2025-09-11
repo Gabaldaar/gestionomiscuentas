@@ -68,15 +68,15 @@ export default function NewPropertyPage() {
 
       await addDoc(collection(db, 'properties'), propertyData);
       toast({
-        title: 'Propiedad creada',
-        description: 'La nueva propiedad ha sido añadida exitosamente.',
+        title: 'Cuenta creada',
+        description: 'La nueva cuenta ha sido añadida exitosamente.',
       });
       router.push('/properties');
     } catch (error) {
       console.error('Error adding document: ', error);
       toast({
         title: 'Error',
-        description: 'No se pudo crear la propiedad.',
+        description: 'No se pudo crear la cuenta.',
         variant: 'destructive',
       });
       setIsSubmitting(false);
@@ -85,13 +85,13 @@ export default function NewPropertyPage() {
 
   return (
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
-      <PageHeader title="Añadir Nueva Propiedad" />
+      <PageHeader title="Añadir Nueva Cuenta" />
 
       <Card className="max-w-2xl mx-auto">
         <CardHeader>
-          <CardTitle>Detalles de la Propiedad</CardTitle>
+          <CardTitle>Detalles de la Cuenta</CardTitle>
           <CardDescription>
-            Completa la información a continuación para registrar una nueva propiedad.
+            Completa la información a continuación para registrar una nueva cuenta.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -102,7 +102,7 @@ export default function NewPropertyPage() {
                 name="name"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Nombre de la Propiedad</FormLabel>
+                    <FormLabel>Nombre de la Cuenta</FormLabel>
                     <FormControl>
                       <Input placeholder="Ej: Apartamento Céntrico" {...field} />
                     </FormControl>
@@ -118,7 +118,7 @@ export default function NewPropertyPage() {
                     <FormLabel>Descripción</FormLabel>
                     <FormControl>
                       <Textarea
-                        placeholder="Describe la propiedad..."
+                        placeholder="Describe la cuenta..."
                         {...field}
                       />
                     </FormControl>
@@ -164,7 +164,7 @@ export default function NewPropertyPage() {
                 </Button>
                 <Button type="submit" disabled={isSubmitting}>
                   {isSubmitting && <Loader className="mr-2 h-4 w-4 animate-spin" />}
-                  Guardar Propiedad
+                  Guardar Cuenta
                 </Button>
               </div>
             </form>

@@ -85,10 +85,8 @@ export function AddExpenseDialog({
     resolver: zodResolver(expenseSchema),
   });
   
-  const selectedWalletId = form.watch('walletId');
-
   React.useEffect(() => {
-    const subscription = form.watch((value, { name, type }) => {
+    const subscription = form.watch((value, { name }) => {
       if (name === 'walletId') {
         const selectedWallet = wallets.find(w => w.id === value.walletId);
         if (selectedWallet && form.getValues('currency') !== selectedWallet.currency) {
@@ -144,7 +142,7 @@ export function AddExpenseDialog({
         <DialogHeader>
           <DialogTitle>{isEditing ? 'Editar Gasto' : 'Añadir Gasto'}</DialogTitle>
           <DialogDescription>
-            {isEditing ? 'Actualiza los detalles de este gasto.' : 'Registra un nuevo gasto para esta propiedad.'}
+            {isEditing ? 'Actualiza los detalles de este gasto.' : 'Registra un nuevo gasto para esta cuenta.'}
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>

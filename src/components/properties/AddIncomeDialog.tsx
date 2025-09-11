@@ -128,7 +128,7 @@ export function AddIncomeDialog({
         <DialogHeader>
           <DialogTitle>{isEditing ? 'Editar Ingreso' : 'Añadir Ingreso'}</DialogTitle>
           <DialogDescription>
-            {isEditing ? 'Actualiza los detalles de este ingreso.' : 'Registra un nuevo ingreso para esta propiedad.'}
+            {isEditing ? 'Actualiza los detalles de este ingreso.' : 'Registra un nuevo ingreso para esta cuenta.'}
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>

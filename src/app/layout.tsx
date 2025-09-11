@@ -5,7 +5,7 @@ import { Toaster } from '@/components/ui/toaster';
 
 export const metadata: Metadata = {
   title: 'PropertyWise',
-  description: 'Administra tus propiedades con facilidad.',
+  description: 'Administra tus cuentas con facilidad.',
 };
 
 export default function RootLayout({
