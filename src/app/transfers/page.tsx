@@ -3,7 +3,7 @@
 import * as React from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { collection, getDocs, orderBy, query, doc, deleteDoc, writeBatch } from 'firebase/firestore';
+import { collection, getDocs, orderBy, query, doc, deleteDoc, writeBatch, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -30,7 +30,7 @@ export default function TransfersHistoryPage() {
   const { toast } = useToast();
   const router = useRouter();
   const [transfers, setTransfers] = React.useState<Transfer[]>([]);
-  const [wallets, setWallets] = React.useState<Wallet[]>([]);
+  const [wallets, setWallets] = React.useState<Map<string, Wallet>>(new Map());
   const [loading, setLoading] = React.useState(true);
   const [deletingTransfer, setDeletingTransfer] = React.useState<Transfer | null>(null);
 
@@ -51,8 +51,11 @@ export default function TransfersHistoryPage() {
 
       const walletsCol = collection(db, 'wallets');
       const walletsSnapshot = await getDocs(walletsCol);
-      const walletsList = walletsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Wallet));
-      setWallets(walletsList);
+      const walletsMap = new Map<string, Wallet>();
+      walletsSnapshot.docs.forEach(doc => {
+          walletsMap.set(doc.id, { id: doc.id, ...doc.data() } as Wallet);
+      });
+      setWallets(walletsMap);
 
     } catch (error) {
       console.error("Error fetching data: ", error);
@@ -66,8 +69,6 @@ export default function TransfersHistoryPage() {
     fetchTransfersAndWallets();
   }, [fetchTransfersAndWallets]);
   
-  const walletMap = new Map(wallets.map(w => [w.id, w]));
-
   const handleDeleteClick = (transfer: Transfer) => {
     setDeletingTransfer(transfer);
   };
@@ -82,12 +83,15 @@ export default function TransfersHistoryPage() {
     const batch = writeBatch(db);
 
     try {
-        const fromWallet = wallets.find(w => w.id === deletingTransfer.fromWalletId);
-        const toWallet = wallets.find(w => w.id === deletingTransfer.toWalletId);
+        const fromWalletSnap = await getDoc(fromWalletRef);
+        const toWalletSnap = await getDoc(toWalletRef);
 
-        if (!fromWallet || !toWallet) {
+        if (!fromWalletSnap.exists() || !toWalletSnap.exists()) {
             throw new Error("Una o ambas billeteras no fueron encontradas.");
         }
+        
+        const fromWallet = fromWalletSnap.data() as Wallet;
+        const toWallet = toWalletSnap.data() as Wallet;
         
         // Revert balances
         const newFromBalance = fromWallet.balance + deletingTransfer.amountSent;
@@ -142,8 +146,8 @@ export default function TransfersHistoryPage() {
               </TableHeader>
               <TableBody>
                 {transfers.length > 0 ? transfers.map(transfer => {
-                    const fromWallet = walletMap.get(transfer.fromWalletId);
-                    const toWallet = walletMap.get(transfer.toWalletId);
+                    const fromWallet = wallets.get(transfer.fromWalletId);
+                    const toWallet = wallets.get(transfer.toWalletId);
                     return (
                       <TableRow key={transfer.id}>
                           <TableCell>{format(new Date(transfer.date), 'PP', { locale: es })}</TableCell>
