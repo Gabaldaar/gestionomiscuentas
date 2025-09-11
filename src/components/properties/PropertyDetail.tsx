@@ -230,19 +230,7 @@ export function PropertyDetail({ id }: { id: string }) {
                     incomeCategories={incomeCategories}
                 />
             </div>
-
-            <PropertyIncome
-              propertyId={property.id}
-              wallets={wallets}
-              incomeCategories={incomeCategories}
-              selectedMonth={selectedMonth}
-              selectedYear={selectedYear}
-              incomes={incomes}
-              onTransactionUpdate={fetchPageData}
-              currentDate={displayDate}
-              onDateChange={setDisplayDate}
-            />
-
+            
             <PropertyExpenses
               propertyId={property.id}
               expenseCategories={expenseCategories}
@@ -251,6 +239,18 @@ export function PropertyDetail({ id }: { id: string }) {
               selectedYear={selectedYear}
               actualExpenses={actualExpenses}
               expectedExpenses={expectedExpenses}
+              onTransactionUpdate={fetchPageData}
+              currentDate={displayDate}
+              onDateChange={setDisplayDate}
+            />
+
+            <PropertyIncome
+              propertyId={property.id}
+              wallets={wallets}
+              incomeCategories={incomeCategories}
+              selectedMonth={selectedMonth}
+              selectedYear={selectedYear}
+              incomes={incomes}
               onTransactionUpdate={fetchPageData}
               currentDate={displayDate}
               onDateChange={setDisplayDate}
@@ -274,5 +274,7 @@ export function PropertyDetail({ id }: { id: string }) {
     </div>
   );
 }
+
+    
 
     
