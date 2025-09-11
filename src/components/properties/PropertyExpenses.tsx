@@ -375,7 +375,7 @@ export function PropertyExpenses({
           </CardHeader>
           <CardContent>
             <TabsContent value="overview">
-                <div className="p-4 border rounded-lg mb-4">
+               <div className="p-4 border rounded-lg mb-4">
                   <h4 className="text-md font-semibold text-center mb-2">Totales del Período</h4>
                   <div className="grid grid-cols-3 gap-4 text-center">
                       <div className="space-y-1">
@@ -458,7 +458,7 @@ export function PropertyExpenses({
                                     {formatCurrency(paidAmount, expense.currency)}
                                 </TableCell>
                                 <TableCell 
-                                  className={cn("font-medium", balance > 0 ? "text-red-500" : "text-green-500")}
+                                  className={cn("font-medium cursor-pointer", balance > 0 ? "text-red-500" : "text-green-500")}
                                   onClick={() => handleAddActualFromExpected(expense)}
                                 >
                                   {formatCurrency(balance, expense.currency)}
