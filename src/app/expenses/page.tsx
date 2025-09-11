@@ -210,7 +210,7 @@ export default function ExpensesPage() {
 
     return (
         <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
-            <PageHeader title="Panel de Gastos" />
+            <PageHeader title="Historial de Gastos" />
             
             <Card>
                 <CardHeader>

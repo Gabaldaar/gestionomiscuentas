@@ -30,7 +30,7 @@ import { Button } from '@/components/ui/button';
 const navItems = [
   { href: '/', label: 'Panel de Control', icon: LayoutDashboard },
   { href: '/properties', label: 'Cuentas', icon: Building2 },
-  { href: '/expenses', label: 'Panel de Gastos', icon: TrendingDown },
+  { href: '/expenses', label: 'Historial de Gastos', icon: TrendingDown },
   { href: '/transfers', label: 'Transferencias', icon: ArrowLeftRight },
   { href: '/settings/wallets', label: 'Billeteras', icon: Wallet },
   { href: '/settings', label: 'Configuración', icon: Settings2 },
