@@ -226,13 +226,13 @@ export function PropertyDetail({ id }: { id: string }) {
                     <CardTitle>Detalles de la Cuenta</CardTitle>
                 </CardHeader>
                 <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div className="md:col-span-1">
+                    <div className="md:col-span-1 flex justify-center">
                         <Image
                             src={property.imageUrl}
                             alt={property.name}
-                            width={250}
-                            height={250}
-                            className="w-full h-auto object-cover rounded-lg aspect-square"
+                            width={150}
+                            height={150}
+                            className="w-[150px] h-[150px] object-cover rounded-lg aspect-square"
                             data-ai-hint="apartment building"
                         />
                     </div>
