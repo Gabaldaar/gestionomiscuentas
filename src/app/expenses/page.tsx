@@ -19,6 +19,7 @@ import { type ActualExpense, type Property, type ExpenseCategory, type Currency 
 import { cn } from '@/lib/utils';
 import { type DateRange } from 'react-day-picker';
 import { useToast } from '@/hooks/use-toast';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 
 const formatCurrency = (amount: number, currency: string) => {
@@ -136,6 +137,16 @@ export default function ExpensesPage() {
     React.useEffect(() => {
         setSelectedSubcategory('all');
     }, [selectedCategory])
+    
+    const areFiltersActive = React.useMemo(() => {
+        return (
+            !!activeFilters.dateRange?.from ||
+            activeFilters.property !== 'all' ||
+            activeFilters.category !== 'all' ||
+            activeFilters.subcategory !== 'all' ||
+            activeFilters.currency !== 'all'
+        );
+    }, [activeFilters]);
 
     const filteredExpenses = React.useMemo(() => {
         return allExpenses.filter(expense => {
@@ -283,6 +294,20 @@ export default function ExpensesPage() {
                     </Card>
                 ))}
             </div>
+
+            {areFiltersActive && (
+              <Alert>
+                <AlertTriangle className="h-4 w-4" />
+                <AlertTitle>Filtros Aplicados</AlertTitle>
+                <AlertDescription>
+                  Los resultados que se muestran a continuación están filtrados.{' '}
+                  <Button variant="link" onClick={handleClearFilters} className="p-0 h-auto font-semibold">
+                    Limpiar filtros
+                  </Button>{' '}
+                  para ver todos los gastos.
+                </AlertDescription>
+              </Alert>
+            )}
 
             <Card>
                 <CardHeader>
