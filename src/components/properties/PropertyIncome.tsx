@@ -2,7 +2,7 @@
 'use client';
 
 import * as React from 'react';
-import { collection, addDoc, getDocs, doc, updateDoc, deleteDoc, Timestamp } from 'firebase/firestore';
+import { collection, addDoc, getDocs, doc, updateDoc, deleteDoc, Timestamp, writeBatch, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -67,22 +67,63 @@ export function PropertyIncome({ propertyId, wallets, incomeCategories, selected
   };
 
   const handleIncomeSubmit = async (data: any) => {
-    const incomeData = { ...data, date: Timestamp.fromDate(data.date) };
+    const batch = writeBatch(db);
+    setIsLoading(true);
+
     try {
       if (editingIncome) {
+        // --- Editing existing income ---
         const incomeRef = doc(db, 'properties', propertyId, 'incomes', editingIncome.id);
-        await updateDoc(incomeRef, incomeData);
+        const oldWalletRef = doc(db, 'wallets', editingIncome.walletId);
+        const newWalletRef = doc(db, 'wallets', data.walletId);
+        
+        const oldWalletSnap = await getDoc(oldWalletRef);
+        if (!oldWalletSnap.exists()) throw new Error("La billetera original no fue encontrada.");
+        const oldWalletData = oldWalletSnap.data() as Wallet;
+
+        // Revert old amount
+        const revertedBalance = oldWalletData.balance - editingIncome.amount;
+        batch.update(oldWalletRef, { balance: revertedBalance });
+        
+        // Apply new amount to new/same wallet
+        if (editingIncome.walletId === data.walletId) {
+             batch.update(newWalletRef, { balance: revertedBalance + data.amount });
+        } else {
+            const newWalletSnap = await getDoc(newWalletRef);
+            if (!newWalletSnap.exists()) throw new Error("La nueva billetera no fue encontrada.");
+            const newWalletData = newWalletSnap.data() as Wallet;
+            batch.update(newWalletRef, { balance: newWalletData.balance + data.amount });
+        }
+
+        batch.update(incomeRef, { ...data, date: Timestamp.fromDate(data.date) });
         toast({ title: "Ingreso actualizado exitosamente" });
+
       } else {
-        const incomesCol = collection(db, 'properties', propertyId, 'incomes');
-        await addDoc(incomesCol, incomeData);
+        // --- Adding new income ---
+        const incomeRef = doc(collection(db, 'properties', propertyId, 'incomes'));
+        const walletRef = doc(db, 'wallets', data.walletId);
+
+        const walletSnap = await getDoc(walletRef);
+        if (!walletSnap.exists()) throw new Error("Billetera no encontrada.");
+        
+        const walletData = walletSnap.data() as Wallet;
+        const newBalance = walletData.balance + data.amount;
+
+        batch.update(walletRef, { balance: newBalance });
+        batch.set(incomeRef, { ...data, date: Timestamp.fromDate(data.date) });
+        
         toast({ title: "Ingreso añadido exitosamente" });
       }
+      
+      await batch.commit();
       onTransactionUpdate();
       closeDialogs();
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "No se pudo guardar el ingreso.";
       console.error("Error saving income:", error);
-      toast({ title: "Error", description: "No se pudo guardar el ingreso.", variant: "destructive" });
+      toast({ title: "Error", description: errorMessage, variant: "destructive" });
+    } finally {
+        setIsLoading(false);
     }
   };
 
@@ -96,17 +137,38 @@ export function PropertyIncome({ propertyId, wallets, incomeCategories, selected
   };
 
   const confirmDelete = async () => {
-    if (deletingIncomeId) {
-      try {
-        const incomeRef = doc(db, 'properties', propertyId, 'incomes', deletingIncomeId);
-        await deleteDoc(incomeRef);
+    if (!deletingIncomeId) return;
+
+    const incomeToDelete = incomes.find(i => i.id === deletingIncomeId);
+    if (!incomeToDelete) {
+        toast({ title: "Error", description: "No se encontró el ingreso a eliminar.", variant: "destructive" });
+        return;
+    }
+
+    setIsLoading(true);
+    const batch = writeBatch(db);
+    const incomeRef = doc(db, 'properties', propertyId, 'incomes', deletingIncomeId);
+    const walletRef = doc(db, 'wallets', incomeToDelete.walletId);
+    
+    try {
+        const walletSnap = await getDoc(walletRef);
+        if (walletSnap.exists()) {
+            const walletData = walletSnap.data() as Wallet;
+            const newBalance = walletData.balance - incomeToDelete.amount;
+            batch.update(walletRef, { balance: newBalance });
+        }
+        
+        batch.delete(incomeRef);
+        await batch.commit();
+
         toast({ title: "Elemento eliminado", variant: "destructive" });
         setDeletingIncomeId(null);
         onTransactionUpdate();
-      } catch (error) {
+    } catch (error) {
         console.error("Error deleting income:", error);
         toast({ title: "Error", description: "No se pudo eliminar el ingreso.", variant: "destructive" });
-      }
+    } finally {
+        setIsLoading(false);
     }
   };
 
@@ -117,7 +179,7 @@ export function PropertyIncome({ propertyId, wallets, incomeCategories, selected
         <CardHeader>
           <div className="flex flex-row items-center justify-between">
               <CardTitle>Ingresos</CardTitle>
-              <Button onClick={() => { setEditingIncome(null); setIsAddIncomeOpen(true); }}>
+              <Button onClick={() => { setEditingIncome(null); setIsAddIncomeOpen(true); }} disabled={isLoading}>
               <PlusCircle className="mr-2 h-4 w-4" />
               Añadir Ingreso
               </Button>
@@ -213,7 +275,7 @@ export function PropertyIncome({ propertyId, wallets, incomeCategories, selected
         onOpenChange={() => setDeletingIncomeId(null)}
         onConfirm={confirmDelete}
         title="¿Estás seguro de que deseas eliminar este ingreso?"
-        description="Esta acción no se puede deshacer. Esto eliminará permanentemente el ingreso de tus registros."
+        description="Esta acción no se puede deshacer. Esto eliminará permanentemente el ingreso y revertirá el monto en la billetera asociada."
        />
     </>
   );

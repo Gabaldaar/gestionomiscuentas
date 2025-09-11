@@ -2,7 +2,7 @@
 'use client';
 
 import * as React from 'react';
-import { collection, addDoc, doc, updateDoc, deleteDoc, Timestamp } from 'firebase/firestore';
+import { collection, addDoc, doc, updateDoc, deleteDoc, Timestamp, writeBatch, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -117,22 +117,64 @@ export function PropertyExpenses({
 
   // --- Actual Expense Handlers ---
   const handleActualExpenseSubmit = async (data: any) => {
-    const expenseData = { ...data, date: Timestamp.fromDate(data.date) };
+    const batch = writeBatch(db);
+    setIsLoading(true);
+
     try {
         if (editingExpense) { // Editing existing expense
             const expenseRef = doc(db, 'properties', propertyId, 'actualExpenses', editingExpense.id);
-            await updateDoc(expenseRef, expenseData);
+            const oldWalletRef = doc(db, 'wallets', editingExpense.walletId);
+            const newWalletRef = doc(db, 'wallets', data.walletId);
+
+            const oldWalletSnap = await getDoc(oldWalletRef);
+            if(!oldWalletSnap.exists()) throw new Error("La billetera original no fue encontrada.");
+            const oldWalletData = oldWalletSnap.data() as Wallet;
+
+            const revertedBalance = oldWalletData.balance + editingExpense.amount;
+            batch.update(oldWalletRef, { balance: revertedBalance });
+            
+            if (editingExpense.walletId === data.walletId) {
+                if (revertedBalance < data.amount) throw new Error("Fondos insuficientes en la billetera.");
+                batch.update(newWalletRef, { balance: revertedBalance - data.amount });
+            } else {
+                const newWalletSnap = await getDoc(newWalletRef);
+                if (!newWalletSnap.exists()) throw new Error("La nueva billetera no fue encontrada.");
+                const newWalletData = newWalletSnap.data() as Wallet;
+                if (newWalletData.balance < data.amount) throw new Error("Fondos insuficientes en la billetera.");
+                batch.update(newWalletRef, { balance: newWalletData.balance - data.amount });
+            }
+
+            batch.update(expenseRef, { ...data, date: Timestamp.fromDate(data.date) });
             toast({ title: "Gasto actualizado exitosamente" });
+
         } else { // Adding new expense
-            const expensesCol = collection(db, 'properties', propertyId, 'actualExpenses');
-            await addDoc(expensesCol, expenseData);
+            const expenseRef = doc(collection(db, 'properties', propertyId, 'actualExpenses'));
+            const walletRef = doc(db, 'wallets', data.walletId);
+            
+            const walletSnap = await getDoc(walletRef);
+            if (!walletSnap.exists()) throw new Error("Billetera no encontrada.");
+            
+            const walletData = walletSnap.data() as Wallet;
+            if (walletData.balance < data.amount) {
+                 toast({ title: "Fondos insuficientes", description: `La billetera ${walletData.name} no tiene suficiente saldo.`, variant: "destructive" });
+                 setIsLoading(false);
+                 return;
+            }
+            const newBalance = walletData.balance - data.amount;
+
+            batch.update(walletRef, { balance: newBalance });
+            batch.set(expenseRef, { ...data, date: Timestamp.fromDate(data.date) });
             toast({ title: "Gasto añadido exitosamente" });
         }
+        await batch.commit();
         onTransactionUpdate();
         closeDialogs();
     } catch(error) {
+        const errorMessage = error instanceof Error ? error.message : "No se pudo guardar el gasto.";
         console.error("Error saving actual expense:", error);
-        toast({ title: "Error", description: "No se pudo guardar el gasto.", variant: "destructive" });
+        toast({ title: "Error", description: errorMessage, variant: "destructive" });
+    } finally {
+        setIsLoading(false);
     }
   }
 
@@ -161,22 +203,44 @@ export function PropertyExpenses({
   };
 
   const confirmDeleteActual = async () => {
-    if (deletingExpenseId) {
-        try {
-            const expenseRef = doc(db, 'properties', propertyId, 'actualExpenses', deletingExpenseId);
-            await deleteDoc(expenseRef);
-            toast({ title: "Elemento eliminado", variant: "destructive" });
-            setDeletingExpenseId(null);
-            onTransactionUpdate();
-        } catch(error) {
-            console.error("Error deleting actual expense:", error);
-            toast({ title: "Error", description: "No se pudo eliminar el gasto.", variant: "destructive" });
+    if (!deletingExpenseId) return;
+
+    const expenseToDelete = actualExpenses.find(e => e.id === deletingExpenseId);
+    if (!expenseToDelete) {
+        toast({ title: "Error", description: "No se encontró el gasto a eliminar.", variant: "destructive" });
+        return;
+    }
+
+    setIsLoading(true);
+    const batch = writeBatch(db);
+    const expenseRef = doc(db, 'properties', propertyId, 'actualExpenses', deletingExpenseId);
+    const walletRef = doc(db, 'wallets', expenseToDelete.walletId);
+        
+    try {
+        const walletSnap = await getDoc(walletRef);
+        if (walletSnap.exists()) {
+            const walletData = walletSnap.data() as Wallet;
+            const newBalance = walletData.balance + expenseToDelete.amount;
+            batch.update(walletRef, { balance: newBalance });
         }
+
+        batch.delete(expenseRef);
+        await batch.commit();
+
+        toast({ title: "Elemento eliminado", variant: "destructive" });
+        setDeletingExpenseId(null);
+        onTransactionUpdate();
+    } catch(error) {
+        console.error("Error deleting actual expense:", error);
+        toast({ title: "Error", description: "No se pudo eliminar el gasto.", variant: "destructive" });
+    } finally {
+        setIsLoading(false);
     }
   }
 
   // --- Expected Expense Handlers ---
   const handleExpectedExpenseSubmit = async (data: any) => {
+    setIsLoading(true);
     try {
       if(editingExpectedExpense) { // Editing existing expected expense
         const expenseRef = doc(db, 'properties', propertyId, 'expectedExpenses', editingExpectedExpense.id);
@@ -192,6 +256,8 @@ export function PropertyExpenses({
     } catch(error) {
         console.error("Error saving expected expense:", error);
         toast({ title: "Error", description: "No se pudo guardar el gasto previsto.", variant: "destructive" });
+    } finally {
+        setIsLoading(false);
     }
   }
 
@@ -206,6 +272,7 @@ export function PropertyExpenses({
 
   const confirmDeleteExpected = async () => {
     if (deletingExpectedExpenseId) {
+        setIsLoading(true);
         try {
             const expenseRef = doc(db, 'properties', propertyId, 'expectedExpenses', deletingExpectedExpenseId);
             await deleteDoc(expenseRef);
@@ -215,6 +282,8 @@ export function PropertyExpenses({
         } catch(error) {
             console.error("Error deleting expected expense:", error);
             toast({ title: "Error", description: "No se pudo eliminar el gasto previsto.", variant: "destructive" });
+        } finally {
+            setIsLoading(false);
         }
     }
   }
@@ -249,7 +318,7 @@ export function PropertyExpenses({
                         <p className="text-sm text-muted-foreground">Una descripción general de tus gastos previstos y su estado.</p>
                     </div>
                     <div className="flex items-center gap-2">
-                        <Button onClick={() => { setEditingExpectedExpense(null); setIsAddExpectedExpenseOpen(true); }}>
+                        <Button onClick={() => { setEditingExpectedExpense(null); setIsAddExpectedExpenseOpen(true); }} disabled={isLoading}>
                             <PlusCircle className="mr-2 h-4 w-4" />
                             Añadir Gasto Previsto
                         </Button>
@@ -331,7 +400,7 @@ export function PropertyExpenses({
                         <p className="text-sm text-muted-foreground">Una lista de todos los gastos individuales registrados.</p>
                     </div>
                     <div className="flex items-center gap-2">
-                        <Button onClick={() => { setEditingExpense(null); setInitialExpenseData(null); setIsAddExpenseOpen(true); }}>
+                        <Button onClick={() => { setEditingExpense(null); setInitialExpenseData(null); setIsAddExpenseOpen(true); }} disabled={isLoading}>
                             <PlusCircle className="mr-2 h-4 w-4" />
                             Añadir Gasto
                         </Button>
@@ -410,7 +479,7 @@ export function PropertyExpenses({
         onOpenChange={() => setDeletingExpenseId(null)}
         onConfirm={confirmDeleteActual}
         title="¿Estás seguro de que deseas eliminar este gasto?"
-        description="Esta acción no se puede deshacer. Esto eliminará permanentemente el gasto de tus registros."
+        description="Esta acción no se puede deshacer. Esto eliminará permanentemente el gasto y revertirá el monto en la billetera asociada."
        />
 
       {/* Dialog for Expected Expenses */}
