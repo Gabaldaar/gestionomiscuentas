@@ -58,8 +58,8 @@ export function FinancialSummary({ incomes, expenses }: FinancialSummaryProps) {
               const netBalanceColor = data.net < 0 
                 ? 'text-destructive' 
                 : currency === 'USD' 
-                  ? 'text-green-800 dark:text-green-400' 
-                  : 'text-blue-800 dark:text-blue-400';
+                  ? 'text-green-600 dark:text-green-400' 
+                  : 'text-blue-600 dark:text-blue-400';
 
               return (
                 <div key={currency} className="space-y-3">
@@ -69,7 +69,10 @@ export function FinancialSummary({ incomes, expenses }: FinancialSummaryProps) {
                         <ArrowUpCircle className="h-5 w-5 text-green-500" />
                         <span className="text-muted-foreground">Ingresos</span>
                     </div>
-                    <span className="font-medium text-green-500">{formatCurrency(data.income, currency)}</span>
+                    <span className={cn("font-medium", {
+                        'text-green-600 dark:text-green-400': currency === 'USD',
+                        'text-blue-600 dark:text-blue-400': currency === 'ARS',
+                    })}>{formatCurrency(data.income, currency)}</span>
                   </div>
                   <div className="flex items-center justify-between">
                      <div className='flex items-center gap-2'>

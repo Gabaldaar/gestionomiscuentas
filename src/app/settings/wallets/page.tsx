@@ -71,10 +71,14 @@ export default function WalletsSettingsPage() {
   };
   
   const renderIcon = (wallet: Wallet) => {
+    const iconClass = cn('h-6 w-6', {
+        'text-green-700 dark:text-green-300': wallet.currency === 'USD',
+        'text-blue-700 dark:text-blue-300': wallet.currency === 'ARS',
+    });
     if (wallet.icon) {
-        return <WalletIcon name={wallet.icon as WalletIconName} className="h-6 w-6" />;
+        return <WalletIcon name={wallet.icon as WalletIconName} className={iconClass} />;
     }
-    return wallet.currency === 'USD' ? <DollarSign className="h-6 w-6" /> : <CircleDollarSign className="h-6 w-6" />;
+    return wallet.currency === 'USD' ? <DollarSign className={iconClass} /> : <CircleDollarSign className={iconClass} />;
   };
 
   return (
@@ -101,8 +105,8 @@ export default function WalletsSettingsPage() {
                         <CardHeader className="flex flex-row items-start justify-between">
                             <div className="flex items-center gap-3">
                             <div className={cn("p-3 rounded-md", {
-                                'bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300': wallet.currency === 'USD',
-                                'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300': wallet.currency === 'ARS',
+                                'bg-green-100 dark:bg-green-900': wallet.currency === 'USD',
+                                'bg-blue-100 dark:bg-blue-900': wallet.currency === 'ARS',
                             })}>
                                 {renderIcon(wallet)}
                             </div>
@@ -131,9 +135,9 @@ export default function WalletsSettingsPage() {
                         </CardHeader>
                         <CardContent>
                         <div className={cn("text-2xl font-bold", {
-                            'text-green-800 dark:text-green-400': wallet.currency === 'USD' && wallet.balance > 0,
-                            'text-blue-800 dark:text-blue-400': wallet.currency === 'ARS' && wallet.balance > 0,
-                            'text-red-500': wallet.balance < 0,
+                            'text-green-600 dark:text-green-400': wallet.currency === 'USD',
+                            'text-blue-600 dark:text-blue-400': wallet.currency === 'ARS',
+                            'text-destructive': wallet.balance < 0,
                         })}>
                             {new Intl.NumberFormat('es-AR', { style: 'currency', currency: wallet.currency, minimumFractionDigits: 2 }).format(wallet.balance)}
                         </div>

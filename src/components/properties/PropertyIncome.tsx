@@ -222,8 +222,8 @@ export function PropertyIncome({ propertyId, wallets, incomeCategories, selected
                       <span>
                         {wallet.name}{' '}
                         <span className={cn('font-semibold', {
-                          'text-green-800 dark:text-green-400': wallet.currency === 'USD',
-                          'text-blue-800 dark:text-blue-400': wallet.currency === 'ARS',
+                          'text-green-600 dark:text-green-400': wallet.currency === 'USD',
+                          'text-blue-600 dark:text-blue-400': wallet.currency === 'ARS',
                         })}>
                           ({wallet.currency})
                         </span>
@@ -253,8 +253,8 @@ export function PropertyIncome({ propertyId, wallets, incomeCategories, selected
                   <TableCell className={cn(
                     "text-right font-medium",
                     {
-                        'text-green-800 dark:text-green-400': income.currency === 'USD',
-                        'text-blue-800 dark:text-blue-400': income.currency === 'ARS',
+                        'text-green-600 dark:text-green-400': income.currency === 'USD',
+                        'text-blue-600 dark:text-blue-400': income.currency === 'ARS',
                     }
                   )}>
                     {new Intl.NumberFormat('es-AR', { style: 'currency', currency: income.currency }).format(income.amount)}
@@ -306,5 +306,3 @@ export function PropertyIncome({ propertyId, wallets, incomeCategories, selected
     </>
   );
 }
-
-    

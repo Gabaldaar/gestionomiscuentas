@@ -177,10 +177,15 @@ export default function WalletDetailPage() {
     }, [transactions, dateRange, descriptionFilter]);
 
     const renderIcon = (wallet: Wallet) => {
+        const iconClass = cn('h-8 w-8', {
+            'text-green-700 dark:text-green-300': wallet.currency === 'USD',
+            'text-blue-700 dark:text-blue-300': wallet.currency === 'ARS',
+        });
+
         if (wallet.icon) {
-            return <WalletIcon name={wallet.icon as WalletIconName} className="h-8 w-8" />;
+            return <WalletIcon name={wallet.icon as WalletIconName} className={iconClass} />;
         }
-        return wallet.currency === 'USD' ? <DollarSign className="h-8 w-8" /> : <CircleDollarSign className="h-8 w-8" />;
+        return wallet.currency === 'USD' ? <DollarSign className={iconClass} /> : <CircleDollarSign className={iconClass} />;
     };
     
     const transactionIcon = (type: Transaction['type']) => {
@@ -239,16 +244,17 @@ export default function WalletDetailPage() {
                 <Card className="md:col-span-1">
                     <CardHeader className="flex flex-row items-center gap-4">
                         <div className={cn("p-3 rounded-lg", {
-                            'bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300': wallet.currency === 'USD',
-                            'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300': wallet.currency === 'ARS',
+                            'bg-green-100 dark:bg-green-900': wallet.currency === 'USD',
+                            'bg-blue-100 dark:bg-blue-900': wallet.currency === 'ARS',
                         })}>
                            {renderIcon(wallet)}
                         </div>
                         <div>
                             <CardDescription>Saldo Actual</CardDescription>
                             <CardTitle className={cn("text-3xl", {
-                                'text-green-800 dark:text-green-400': wallet.currency === 'USD',
-                                'text-blue-800 dark:text-blue-400': wallet.currency === 'ARS',
+                                'text-green-600 dark:text-green-400': wallet.currency === 'USD',
+                                'text-blue-600 dark:text-blue-400': wallet.currency === 'ARS',
+                                'text-destructive': wallet.balance < 0,
                             })}>
                                 {formatCurrency(wallet.balance, wallet.currency)}
                             </CardTitle>
@@ -350,5 +356,3 @@ export default function WalletDetailPage() {
         </div>
     );
 }
-
-    
