@@ -10,13 +10,14 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { PlusCircle, Pencil, Trash2, Loader, Copy } from "lucide-react";
-import { type ExpectedExpense, type ActualExpense, type ExpenseCategory, type Wallet } from "@/lib/types";
+import { type ExpectedExpense, type ActualExpense, type ExpenseCategory, type Wallet, type Currency } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
 import { AddExpenseDialog } from './AddExpenseDialog';
 import { AddExpectedExpenseDialog } from './AddExpectedExpenseDialog';
 import { ConfirmDeleteDialog } from '../shared/ConfirmDeleteDialog';
 import { cn } from '@/lib/utils';
 import { CopyExpectedExpensesDialog } from './CopyExpectedExpensesDialog';
+import { Separator } from '../ui/separator';
 
 type PropertyExpensesProps = {
   propertyId: string;
@@ -28,6 +29,11 @@ type PropertyExpensesProps = {
   expectedExpenses: ExpectedExpense[];
   onTransactionUpdate: () => void;
 };
+
+const formatCurrency = (amount: number, currency: Currency) => {
+  return new Intl.NumberFormat('es-AR', { style: 'currency', currency }).format(amount);
+};
+
 
 export function PropertyExpenses({ 
   propertyId, 
@@ -75,6 +81,22 @@ export function PropertyExpenses({
         return yearMatch && monthMatch;
     }).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   }, [actualExpenses, selectedMonth, selectedYear]);
+
+
+  const totals = React.useMemo(() => {
+    const expected = { ARS: 0, USD: 0 };
+    const paid = { ARS: 0, USD: 0 };
+
+    filteredExpectedExpenses.forEach(exp => {
+      expected[exp.currency] += exp.amount;
+    });
+
+    filteredActualExpenses.forEach(exp => {
+      paid[exp.currency] += exp.amount;
+    });
+
+    return { expected, paid };
+  }, [filteredExpectedExpenses, filteredActualExpenses]);
 
 
   const getSubcategoryName = (id: string) => {
@@ -377,6 +399,23 @@ export function PropertyExpenses({
                         </Button>
                     </div>
                 </div>
+
+                <div className="p-4 border rounded-lg mb-4 space-y-2">
+                  <h4 className="text-md font-semibold text-center mb-2">Totales del Período</h4>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <div className='text-sm text-muted-foreground'>Previsto</div>
+                      <div className="font-bold text-blue-800 dark:text-blue-400 text-lg">{formatCurrency(totals.expected.ARS, 'ARS')}</div>
+                      <div className="font-bold text-green-800 dark:text-green-400 text-lg">{formatCurrency(totals.expected.USD, 'USD')}</div>
+                    </div>
+                     <div className="space-y-1">
+                      <div className='text-sm text-muted-foreground'>Pagado</div>
+                      <div className="font-bold text-blue-800 dark:text-blue-400 text-lg">{formatCurrency(totals.paid.ARS, 'ARS')}</div>
+                      <div className="font-bold text-green-800 dark:text-green-400 text-lg">{formatCurrency(totals.paid.USD, 'USD')}</div>
+                    </div>
+                  </div>
+                </div>
+
                 {isLoading ? (
                     <div className="flex justify-center items-center h-24">
                         <Loader className="h-6 w-6 animate-spin text-primary" />
@@ -411,7 +450,7 @@ export function PropertyExpenses({
                                         'text-blue-800 dark:text-blue-400': expense.currency === 'ARS',
                                     }
                                 )}>
-                                    {new Intl.NumberFormat('es-AR', { style: 'currency', currency: expense.currency }).format(expense.amount)}
+                                    {formatCurrency(expense.amount, expense.currency)}
                                 </TableCell>
                                 <TableCell className={cn(
                                     "text-right font-medium hidden md:table-cell",
@@ -420,7 +459,7 @@ export function PropertyExpenses({
                                         'text-blue-800 dark:text-blue-400': expense.currency === 'ARS',
                                     }
                                 )}>
-                                    {new Intl.NumberFormat('es-AR', { style: 'currency', currency: expense.currency }).format(paidAmount)}
+                                    {formatCurrency(paidAmount, expense.currency)}
                                 </TableCell>
                                 <TableCell>
                                     <Badge 
@@ -498,7 +537,7 @@ export function PropertyExpenses({
                         <TableCell className="hidden md:table-cell">{getWalletName(expense.walletId)}</TableCell>
                         <TableCell className="text-muted-foreground max-w-[200px] truncate hidden md:table-cell">{expense.notes}</TableCell>
                         <TableCell className="text-right font-medium">
-                            {new Intl.NumberFormat('es-AR', { style: 'currency', currency: expense.currency }).format(expense.amount)}
+                            {formatCurrency(expense.amount, expense.currency)}
                         </TableCell>
                         <TableCell className="text-right">
                             <div className="flex items-center justify-end gap-2">
@@ -571,3 +610,5 @@ export function PropertyExpenses({
     </>
   );
 }
+
+    
