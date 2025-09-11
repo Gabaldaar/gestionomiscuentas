@@ -6,6 +6,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { type Income, type ActualExpense, type Currency } from '@/lib/types';
 import { ArrowDownCircle, ArrowUpCircle, MinusCircle } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 type FinancialSummaryProps = {
   incomes: Income[];
@@ -54,6 +55,12 @@ export function FinancialSummary({ incomes, expenses }: FinancialSummaryProps) {
               const data = summary[currency];
               if (data.income === 0 && data.expense === 0) return null;
 
+              const netBalanceColor = data.net < 0 
+                ? 'text-destructive' 
+                : currency === 'USD' 
+                  ? 'text-green-800 dark:text-green-400' 
+                  : 'text-blue-800 dark:text-blue-400';
+
               return (
                 <div key={currency} className="space-y-3">
                   <h4 className="font-semibold text-lg">{currency}</h4>
@@ -74,10 +81,10 @@ export function FinancialSummary({ incomes, expenses }: FinancialSummaryProps) {
                   <Separator />
                   <div className="flex items-center justify-between">
                     <div className='flex items-center gap-2'>
-                        <MinusCircle className={`h-5 w-5 ${data.net >= 0 ? 'text-primary' : 'text-destructive'}`} />
+                        <MinusCircle className={cn('h-5 w-5', netBalanceColor)} />
                         <span className="font-semibold">Saldo Neto</span>
                     </div>
-                    <span className={`font-bold text-lg ${data.net >= 0 ? 'text-primary' : 'text-destructive'}`}>
+                    <span className={cn('font-bold text-lg', netBalanceColor)}>
                         {formatCurrency(data.net, currency)}
                     </span>
                   </div>
