@@ -2,7 +2,7 @@
 'use client';
 
 import * as React from 'react';
-import { collection, getDocs, Timestamp, query } from 'firebase/firestore';
+import { collection, getDocs, Timestamp, query, collectionGroup } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -54,25 +54,23 @@ export default function ExpensesPage() {
             const propsCol = collection(db, 'properties');
             const propsSnap = await getDocs(propsCol);
             const propsList = propsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Property));
+            const propsMap = new Map(propsList.map(p => [p.id, p.name]));
             setProperties(propsList);
 
-            // Fetch expenses for all properties
-            let expensesList: ExpenseWithProperty[] = [];
-            for (const prop of propsList) {
-                const expensesCol = collection(db, 'properties', prop.id, 'actualExpenses');
-                const expensesSnap = await getDocs(query(expensesCol));
-                const propExpenses = expensesSnap.docs.map(doc => {
-                    const data = doc.data();
-                    return {
-                        id: doc.id,
-                        ...data,
-                        date: (data.date as Timestamp).toDate().toISOString(),
-                        propertyId: prop.id,
-                        propertyName: prop.name,
-                    } as ExpenseWithProperty;
-                });
-                expensesList = [...expensesList, ...propExpenses];
-            }
+            // Fetch expenses using a collection group query
+            const expensesQuery = query(collectionGroup(db, 'actualExpenses'));
+            const expensesSnap = await getDocs(expensesQuery);
+            const expensesList = expensesSnap.docs.map(doc => {
+                const data = doc.data();
+                const propertyId = doc.ref.parent.parent!.id;
+                return {
+                    id: doc.id,
+                    ...data,
+                    date: (data.date as Timestamp).toDate().toISOString(),
+                    propertyId: propertyId,
+                    propertyName: propsMap.get(propertyId) || 'Cuenta Desconocida',
+                } as ExpenseWithProperty;
+            });
             setAllExpenses(expensesList.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
 
             // Fetch categories
@@ -131,6 +129,8 @@ export default function ExpensesPage() {
             if (dateRange?.to && expenseDate > dateRange.to) match = false;
             if (selectedProperty !== 'all' && expense.propertyId !== selectedProperty) match = false;
             if (selectedCurrency !== 'all' && expense.currency !== selectedCurrency) match = false;
+            
+            // Category filter needs to handle cases where subcategory might not be perfectly mapped.
             if (selectedCategory !== 'all') {
                 const category = categories.find(c => c.id === selectedCategory);
                 const subcategoryIds = category?.subcategories.map(s => s.id) || [];

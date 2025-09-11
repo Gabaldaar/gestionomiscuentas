@@ -2,7 +2,7 @@
 'use client';
 
 import * as React from 'react';
-import { collection, getDocs, Timestamp, query } from 'firebase/firestore';
+import { collection, getDocs, Timestamp, query, collectionGroup } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -54,25 +54,23 @@ export default function IncomesPage() {
             const propsCol = collection(db, 'properties');
             const propsSnap = await getDocs(propsCol);
             const propsList = propsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Property));
+            const propsMap = new Map(propsList.map(p => [p.id, p.name]));
             setProperties(propsList);
 
-            // Fetch incomes for all properties
-            let incomesList: IncomeWithProperty[] = [];
-            for (const prop of propsList) {
-                const incomesCol = collection(db, 'properties', prop.id, 'incomes');
-                const incomesSnap = await getDocs(query(incomesCol));
-                const propIncomes = incomesSnap.docs.map(doc => {
-                    const data = doc.data();
-                    return {
-                        id: doc.id,
-                        ...data,
-                        date: (data.date as Timestamp).toDate().toISOString(),
-                        propertyId: prop.id,
-                        propertyName: prop.name,
-                    } as IncomeWithProperty;
-                });
-                incomesList = [...incomesList, ...propIncomes];
-            }
+            // Fetch incomes for all properties using a collection group query
+            const incomesQuery = query(collectionGroup(db, 'incomes'));
+            const incomesSnap = await getDocs(incomesQuery);
+            const incomesList = incomesSnap.docs.map(doc => {
+                const data = doc.data();
+                const propertyId = doc.ref.parent.parent!.id;
+                return {
+                    id: doc.id,
+                    ...data,
+                    date: (data.date as Timestamp).toDate().toISOString(),
+                    propertyId: propertyId,
+                    propertyName: propsMap.get(propertyId) || 'Cuenta Desconocida',
+                } as IncomeWithProperty;
+            });
             setAllIncomes(incomesList.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
 
             // Fetch categories
