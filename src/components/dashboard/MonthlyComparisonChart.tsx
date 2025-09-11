@@ -18,6 +18,7 @@ export function MonthlyComparisonChart({ incomes, expenses, currency }: MonthlyC
     const last12Months: { name: string, month: number, year: number, income: number, expense: number }[] = [];
     let currentDate = new Date();
     
+    // Default to ARS if 'all' is selected, otherwise use the selected currency.
     const displayCurrency = currency === 'all' ? 'ARS' : currency;
 
     for (let i = 0; i < 12; i++) {
