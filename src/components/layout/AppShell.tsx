@@ -28,6 +28,7 @@ import {
   TrendingDown,
   TrendingUp,
   PanelLeft,
+  AreaChart,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -37,6 +38,7 @@ const navItems = [
   { href: '/expenses', label: 'Historial de Gastos', icon: TrendingDown },
   { href: '/incomes', label: 'Historial de Ingresos', icon: TrendingUp },
   { href: '/transfers', label: 'Transferencias', icon: ArrowLeftRight },
+  { href: '/reports', label: 'Informes', icon: AreaChart },
   { href: '/settings/wallets', label: 'Billeteras', icon: Wallet },
   { href: '/settings', label: 'Configuración', icon: Settings2 },
 ];
@@ -142,3 +144,5 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     </SidebarProvider>
   );
 }
+
+    
