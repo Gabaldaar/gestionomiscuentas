@@ -47,7 +47,7 @@ export function DashboardStats({ statsByCurrency }: DashboardStatsProps) {
                 return (
                     <Card key={currency} className="flex-1">
                         <CardHeader className="pb-2">
-                            <CardTitle className="text-base font-semibold">Resumen en {currency}</CardTitle>
+                            <CardTitle className="text-xl font-bold font-headline tracking-tight">Resumen en {currency}</CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-2">
                            <div className="flex items-center justify-between">

@@ -30,9 +30,9 @@ export function DashboardFilters() {
     }, [date, selectedCurrency, router]);
 
     return (
-        <div className="flex flex-col sm:flex-row items-center justify-between space-y-2 sm:space-y-0 sm:space-x-2">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
             <DateNavigator currentDate={date} onDateChange={setDate} />
-            <div className='flex items-center gap-2'>
+            <div className='flex items-center gap-2 w-full sm:w-auto'>
                 <Select value={selectedCurrency} onValueChange={setSelectedCurrency}>
                     <SelectTrigger className="w-full sm:w-[180px]">
                     <SelectValue placeholder="Todas las monedas" />

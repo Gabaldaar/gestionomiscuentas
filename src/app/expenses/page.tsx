@@ -14,7 +14,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader, AlertTriangle, Filter, Calendar as CalendarIcon, FileText, X } from 'lucide-react';
+import { Loader, AlertTriangle, Filter, Calendar as CalendarIcon, FileText, X, TrendingDown } from 'lucide-react';
 import { type ActualExpense, type Property, type ExpenseCategory, type Currency } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { type DateRange } from 'react-day-picker';
@@ -253,14 +253,15 @@ export default function ExpensesPage() {
                 </CardContent>
             </Card>
             
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {(Object.keys(expenseTotals) as Currency[]).map(currency => (
                     <Card key={currency}>
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                             <CardTitle className="text-sm font-medium">Total de Gastos ({currency})</CardTitle>
+                             <TrendingDown className="h-5 w-5 text-destructive" />
                         </CardHeader>
                         <CardContent>
-                            <div className="text-2xl font-bold">{formatCurrency(expenseTotals[currency], currency)}</div>
+                            <div className="text-2xl font-bold text-destructive">{formatCurrency(expenseTotals[currency], currency)}</div>
                             <p className="text-xs text-muted-foreground">{filteredExpenses.filter(e => e.currency === currency).length} transacciones</p>
                         </CardContent>
                     </Card>

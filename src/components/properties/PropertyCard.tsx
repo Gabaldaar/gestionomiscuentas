@@ -83,10 +83,10 @@ export function PropertyCard({ property, incomes, expenses }: PropertyCardProps)
   return (
     <Link href={`/properties/${property.id}`} className="block transition-all hover:scale-[1.02]">
         <Card className="overflow-hidden h-full flex flex-col p-0">
-            <CardHeader className="p-3 pb-2">
-                <CardTitle className="font-headline text-base">{property.name}</CardTitle>
+            <CardHeader className="p-4 pb-2">
+                <CardTitle className="font-headline text-lg">{property.name}</CardTitle>
             </CardHeader>
-            <CardContent className="p-3 pt-0 flex flex-row items-center gap-4">
+            <CardContent className="p-4 pt-0 flex flex-col sm:flex-row items-start gap-4">
                 <div className="w-24 h-24 flex-shrink-0">
                     <Image
                         src={property.imageUrl}

@@ -14,7 +14,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader, AlertTriangle, Filter, Calendar as CalendarIcon, FileText, X } from 'lucide-react';
+import { Loader, AlertTriangle, Filter, Calendar as CalendarIcon, FileText, X, TrendingUp } from 'lucide-react';
 import { type Income, type Property, type IncomeCategory, type Currency } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { type DateRange } from 'react-day-picker';
@@ -253,16 +253,20 @@ export default function IncomesPage() {
                 </CardContent>
             </Card>
             
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {(Object.keys(incomeTotals) as Currency[]).map(currency => (
                     <Card key={currency}>
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                             <CardTitle className="text-sm font-medium">Total de Ingresos ({currency})</CardTitle>
+                             <TrendingUp className={cn(
+                                'h-5 w-5 text-muted-foreground',
+                                { 'text-green-500': currency === 'USD', 'text-blue-500': currency === 'ARS' }
+                            )} />
                         </CardHeader>
                         <CardContent>
                             <div className={cn("text-2xl font-bold", {
-                                'text-green-800 dark:text-green-400': currency === 'USD',
-                                'text-blue-800 dark:text-blue-400': currency === 'ARS',
+                                'text-green-600 dark:text-green-400': currency === 'USD',
+                                'text-blue-600 dark:text-blue-400': currency === 'ARS',
                             })}>
                                 {formatCurrency(incomeTotals[currency], currency)}
                             </div>
@@ -326,8 +330,8 @@ export default function IncomesPage() {
                                         )}
                                     </TableCell>
                                     <TableCell className={cn("text-right font-semibold", {
-                                        'text-green-800 dark:text-green-400': income.currency === 'USD',
-                                        'text-blue-800 dark:text-blue-400': income.currency === 'ARS',
+                                        'text-green-600 dark:text-green-400': income.currency === 'USD',
+                                        'text-blue-600 dark:text-blue-400': income.currency === 'ARS',
                                     })}>
                                         {formatCurrency(income.amount, income.currency)}
                                     </TableCell>
