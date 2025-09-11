@@ -152,7 +152,7 @@ export function PropertyIncome({ propertyId, wallets, incomeCategories, selected
                     {getWalletName(income.walletId)}
                   </TableCell>
                   <TableCell className="hidden md:table-cell">
-                    {income.notes && (
+                    {income.notes ? (
                       <Popover>
                         <PopoverTrigger asChild>
                           <Button variant="ghost" size="icon" className="h-8 w-8">
@@ -163,6 +163,10 @@ export function PropertyIncome({ propertyId, wallets, incomeCategories, selected
                           <p className="text-sm">{income.notes}</p>
                         </PopoverContent>
                       </Popover>
+                    ) : (
+                      <Button variant="ghost" size="icon" className="h-8 w-8" disabled>
+                        <FileText className="h-4 w-4" />
+                      </Button>
                     )}
                   </TableCell>
                   <TableCell className="text-right font-medium">
