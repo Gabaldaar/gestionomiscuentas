@@ -44,8 +44,6 @@ function MiniFinancialSummary({ incomes, expenses }: MiniFinancialSummaryProps) 
         return totals;
     }, [incomes, expenses]);
     
-    const hasData = summary.ARS.income > 0 || summary.ARS.expense > 0 || summary.USD.income > 0 || summary.USD.expense > 0;
-
     return (
         <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-xs flex-grow">
             {(Object.keys(summary) as Currency[]).map(currency => {
@@ -60,15 +58,22 @@ function MiniFinancialSummary({ incomes, expenses }: MiniFinancialSummaryProps) 
                     <div key={currency}>
                         <div className="font-bold mb-1">{currency}</div>
                         <div className="space-y-1">
-                            <div className="flex justify-between items-center text-green-600 dark:text-green-400">
+                            <div className={cn("flex justify-between items-center", {
+                                'text-green-600 dark:text-green-400': currency === 'USD',
+                                'text-blue-600 dark:text-blue-400': currency === 'ARS',
+                            })}>
                                 <ArrowUp className="h-3 w-3" />
                                 <span>{formatCurrency(data.income, currency)}</span>
                             </div>
-                            <div className="flex justify-between items-center text-red-600 dark:text-red-400">
+                            <div className="flex justify-between items-center text-red-500">
                                 <ArrowDown className="h-3 w-3" />
                                 <span>{formatCurrency(data.expense, currency)}</span>
                             </div>
-                            <div className={cn("flex justify-between items-center font-semibold", data.net >= 0 ? 'text-primary' : 'text-destructive')}>
+                            <div className={cn("flex justify-between items-center font-semibold", {
+                                'text-destructive': data.net < 0,
+                                'text-green-600 dark:text-green-400': data.net >= 0 && currency === 'USD',
+                                'text-blue-600 dark:text-blue-400': data.net >= 0 && currency === 'ARS',
+                            })}>
                                 <Minus className="h-3 w-3" />
                                 <span>{formatCurrency(data.net, currency)}</span>
                             </div>
