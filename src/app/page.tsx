@@ -9,7 +9,6 @@ import { MonthlyComparisonChart } from "@/components/dashboard/MonthlyComparison
 import { RecentActivity } from '@/components/properties/RecentActivity';
 import { DashboardFilters } from '@/components/dashboard/DashboardFilters';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { InsecureRulesWarning } from '@/components/shared/InsecureRulesWarning';
 
 async function getDashboardData() {
   const incomesQuery = query(collectionGroup(db, 'incomes'));
@@ -94,7 +93,6 @@ export default async function DashboardPage({ searchParams }: { searchParams: { 
 
   return (
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
-      <InsecureRulesWarning />
       <PageHeader title="Dashboard" />
       
       <DashboardFilters />
