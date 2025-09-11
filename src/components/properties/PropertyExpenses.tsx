@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, Pencil, Trash2, Loader, Copy } from "lucide-react";
+import { PlusCircle, Pencil, Trash2, Loader, Copy, ClipboardList, ReceiptText } from "lucide-react";
 import { type ExpectedExpense, type ActualExpense, type ExpenseCategory, type Wallet, type Currency, type Liability } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
 import { AddExpenseDialog } from './AddExpenseDialog';
@@ -474,9 +474,12 @@ export function PropertyExpenses({
 
             <TabsContent value="overview">
                 <div className='flex justify-between items-center mb-4 gap-2 flex-wrap'>
-                    <div>
-                        <h3 className="text-lg font-semibold">Gastos Previstos</h3>
-                        <p className="text-sm text-muted-foreground">Descripción general de tus gastos previstos y su estado.</p>
+                    <div className="flex items-center gap-2">
+                        <ClipboardList className="h-5 w-5 text-muted-foreground" />
+                        <div>
+                            <h3 className="text-lg font-semibold">Gastos Previstos</h3>
+                            <p className="text-sm text-muted-foreground">Presupuesto de gastos y su estado de pago.</p>
+                        </div>
                     </div>
                     <div className="flex items-center gap-2">
                         <Button variant="outline" onClick={() => setIsCopyDialogOpen(true)} disabled={isLoading}>
@@ -485,7 +488,7 @@ export function PropertyExpenses({
                         </Button>
                         <Button onClick={() => { setEditingExpectedExpense(null); setIsAddExpectedExpenseOpen(true); }} disabled={isLoading}>
                             <PlusCircle className="mr-2 h-4 w-4" />
-                            Añadir Gasto Previsto
+                            Añadir Previsto
                         </Button>
                     </div>
                 </div>
@@ -498,11 +501,10 @@ export function PropertyExpenses({
                 <Table>
                     <TableHeader>
                     <TableRow>
-                        <TableHead>Período</TableHead>
                         <TableHead>Categoría</TableHead>
                         <TableHead className="text-right">Previsto</TableHead>
                         <TableHead className="text-right hidden md:table-cell">Pagado</TableHead>
-                        <TableHead>Saldo</TableHead>
+                        <TableHead className="text-right">Saldo</TableHead>
                         <TableHead className="w-[100px]"></TableHead>
                     </TableRow>
                     </TableHeader>
@@ -511,8 +513,7 @@ export function PropertyExpenses({
                         const paidAmount = getPaidAmount(expense);
                         const balance = expense.amount - paidAmount;
                         return (
-                            <TableRow key={expense.id}>
-                                <TableCell>{expense.month}/{expense.year}</TableCell>
+                            <TableRow key={expense.id} className="border-b-0 border-t border-dashed">
                                 <TableCell>
                                     <div className='font-medium'>{getSubcategoryName(expense.subcategoryId)}</div>
                                     <div className='text-xs text-muted-foreground'>{getCategoryName(expense.subcategoryId)}</div>
@@ -536,7 +537,7 @@ export function PropertyExpenses({
                                     {formatCurrency(paidAmount, expense.currency)}
                                 </TableCell>
                                 <TableCell 
-                                  className={cn("font-medium cursor-pointer", balance > 0 ? "text-red-500" : "text-green-500")}
+                                  className={cn("text-right font-medium cursor-pointer", balance > 0 ? "text-red-500" : "text-green-500")}
                                   onClick={() => handleAddActualFromExpected(expense)}
                                 >
                                   {formatCurrency(balance, expense.currency)}
@@ -569,9 +570,12 @@ export function PropertyExpenses({
 
             <TabsContent value="actual">
                 <div className='flex justify-between items-center mb-4'>
-                    <div>
-                        <h3 className="text-lg font-semibold">Gastos Realizados</h3>
-                        <p className="text-sm text-muted-foreground">Una lista de todos los gastos individuales registrados.</p>
+                    <div className="flex items-center gap-2">
+                        <ReceiptText className="h-5 w-5 text-muted-foreground" />
+                        <div>
+                            <h3 className="text-lg font-semibold">Gastos Realizados</h3>
+                            <p className="text-sm text-muted-foreground">Lista de todos los gastos individuales registrados.</p>
+                        </div>
                     </div>
                     <div className="flex items-center gap-2">
                         <Button onClick={() => { setEditingExpense(null); setInitialExpenseData(null); setIsAddExpenseOpen(true); }} disabled={isLoading}>
