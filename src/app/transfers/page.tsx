@@ -1,346 +1,102 @@
 
-'use client';
-
-import * as React from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
-import { collection, addDoc, doc, getDocs, getDoc, writeBatch, Timestamp } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
-import { useToast } from '@/hooks/use-toast';
-import { useRouter } from 'next/navigation';
-
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
-import { ArrowRightLeft, Loader } from "lucide-react";
-import { Form, FormControl, FormField, FormItem, FormMessage } from '@/components/ui/form';
-import { type Wallet } from '@/lib/types';
-import { Skeleton } from '@/components/ui/skeleton';
+import { PlusCircle } from "lucide-react";
+import Link from "next/link";
+import { collection, getDocs, orderBy, query } from "firebase/firestore";
+import { db } from "@/lib/firebase";
+import { type Transfer, type Wallet } from "@/lib/types";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Card, CardContent } from "@/components/ui/card";
+import { format } from "date-fns";
+import { es } from 'date-fns/locale';
 
-const transferSchema = z.object({
-  fromWalletId: z.string().min(1, 'La billetera de origen es obligatoria.'),
-  toWalletId: z.string().min(1, 'La billetera de destino es obligatoria.'),
-  amountSent: z.coerce.number().min(0.01, 'El monto enviado debe ser positivo.'),
-  amountReceived: z.coerce.number().min(0.01, 'El monto recibido debe ser positivo.'),
-  exchangeRate: z.coerce.number().optional(),
-  notes: z.string().optional(),
-}).refine(data => data.fromWalletId !== data.toWalletId, {
-  message: 'La billetera de origen y destino no pueden ser la misma.',
-  path: ['toWalletId'],
-});
-
-type TransferFormValues = z.infer<typeof transferSchema>;
-
-export default function TransfersPage() {
-  const { toast } = useToast();
-  const router = useRouter();
-  const [isSubmitting, setIsSubmitting] = React.useState(false);
-  const [wallets, setWallets] = React.useState<Wallet[]>([]);
-  const [loadingWallets, setLoadingWallets] = React.useState(true);
-
-  React.useEffect(() => {
-    const fetchWallets = async () => {
-      setLoadingWallets(true);
-      try {
-        const walletsCol = collection(db, 'wallets');
-        const walletsSnapshot = await getDocs(walletsCol);
-        const walletsList = walletsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Wallet));
-        setWallets(walletsList);
-      } catch (error) {
-        console.error("Error fetching wallets:", error);
-        toast({ title: "Error", description: "No se pudieron cargar las billeteras.", variant: "destructive" });
-      } finally {
-        setLoadingWallets(false);
-      }
-    };
-    fetchWallets();
-  }, [toast]);
-
-  const form = useForm<TransferFormValues>({
-    resolver: zodResolver(transferSchema),
-    defaultValues: {
-      fromWalletId: '',
-      toWalletId: '',
-      amountSent: 0,
-      amountReceived: 0,
-      exchangeRate: undefined,
-      notes: '',
-    },
+async function getTransfers(): Promise<Transfer[]> {
+  const transfersQuery = query(collection(db, 'transfers'), orderBy('date', 'desc'));
+  const transfersSnapshot = await getDocs(transfersQuery);
+  const transfersList = transfersSnapshot.docs.map(doc => {
+    const data = doc.data();
+    return { 
+      id: doc.id, 
+      ...data,
+      date: data.date.toDate().toISOString(),
+    } as Transfer;
   });
+  return transfersList;
+}
 
-  const fromWalletId = form.watch('fromWalletId');
-  const toWalletId = form.watch('toWalletId');
-  const amountSent = form.watch('amountSent');
-  const exchangeRate = form.watch('exchangeRate');
+async function getWallets(): Promise<Wallet[]> {
+    const walletsCol = collection(db, 'wallets');
+    const walletsSnapshot = await getDocs(walletsCol);
+    return walletsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Wallet));
+}
 
-  const fromWallet = React.useMemo(() => wallets.find(w => w.id === fromWalletId), [wallets, fromWalletId]);
-  const toWallet = React.useMemo(() => wallets.find(w => w.id === toWalletId), [wallets, toWalletId]);
+const formatCurrency = (amount: number, currency: string) => {
+  return new Intl.NumberFormat('es-AR', { style: 'currency', currency }).format(amount);
+};
 
-  const showExchangeRate = fromWallet && toWallet && fromWallet.currency !== toWallet.currency;
 
-  const updateAmounts = React.useCallback(() => {
-    const sent = form.getValues('amountSent');
-    const rate = form.getValues('exchangeRate');
-
-    if (showExchangeRate && sent > 0 && rate && rate > 0) {
-      if (fromWallet?.currency === 'USD' && toWallet?.currency === 'ARS') {
-        form.setValue('amountReceived', parseFloat((sent * rate).toFixed(2)));
-      } else if (fromWallet?.currency === 'ARS' && toWallet?.currency === 'USD') {
-        form.setValue('amountReceived', parseFloat((sent / rate).toFixed(2)));
-      }
-    } else if (fromWallet && toWallet && fromWallet.currency === toWallet.currency) {
-      form.setValue('amountReceived', sent);
-    }
-  }, [form, fromWallet, toWallet, showExchangeRate]);
-
-  React.useEffect(() => {
-    updateAmounts();
-  }, [amountSent, exchangeRate, fromWalletId, toWalletId, showExchangeRate, updateAmounts]);
-  
-  React.useEffect(() => {
-    const sent = form.getValues('amountSent');
-    if (fromWallet && toWallet && fromWallet.currency === toWallet.currency) {
-      form.setValue('amountReceived', sent);
-    }
-  }, [fromWalletId, toWalletId, form, fromWallet, toWallet]);
-
-  const onSubmit = async (data: TransferFormValues) => {
-    if (!fromWallet || !toWallet) {
-        toast({ title: "Error", description: "Billeteras no válidas.", variant: "destructive" });
-        return;
-    }
-    
-    setIsSubmitting(true);
-    
-    const batch = writeBatch(db);
-
-    try {
-        // 1. Get current wallet states from DB to ensure we have the latest balance
-        const fromWalletRef = doc(db, 'wallets', data.fromWalletId);
-        const toWalletRef = doc(db, 'wallets', data.toWalletId);
-        
-        const [fromWalletSnap, toWalletSnap] = await Promise.all([
-            getDoc(fromWalletRef),
-            getDoc(toWalletRef)
-        ]);
-
-        if (!fromWalletSnap.exists() || !toWalletSnap.exists()) {
-            throw new Error("Una de las billeteras no existe.");
-        }
-
-        const fromWalletData = fromWalletSnap.data() as Wallet;
-        const toWalletData = toWalletSnap.data() as Wallet;
-
-        // 2. Check for sufficient funds
-        if (fromWalletData.balance < data.amountSent) {
-            toast({ title: "Fondos Insuficientes", description: `La billetera ${fromWalletData.name} no tiene suficiente saldo.`, variant: "destructive" });
-            setIsSubmitting(false);
-            return;
-        }
-
-        // 3. Calculate new balances
-        const newFromBalance = fromWalletData.balance - data.amountSent;
-        const newToBalance = toWalletData.balance + data.amountReceived;
-        
-        // 4. Update wallet balances in the batch
-        batch.update(fromWalletRef, { balance: newFromBalance });
-        batch.update(toWalletRef, { balance: newToBalance });
-
-        // 5. Create transfer record in the batch
-        const transferRef = doc(collection(db, 'transfers'));
-        const transferData = {
-          ...data,
-          date: Timestamp.now(),
-          fromCurrency: fromWallet.currency,
-          toCurrency: toWallet.currency,
-          exchangeRate: showExchangeRate ? data.exchangeRate : null,
-        };
-        batch.set(transferRef, transferData);
-        
-        // 6. Commit the batch
-        await batch.commit();
-
-        toast({
-            title: 'Transferencia Exitosa',
-            description: 'La transferencia de fondos ha sido registrada y los saldos actualizados.',
-        });
-        form.reset();
-        router.push('/');
-        
-    } catch (error) {
-        console.error('Error creating transfer: ', error);
-        toast({
-            title: 'Error',
-            description: 'No se pudo registrar la transferencia.',
-            variant: 'destructive',
-        });
-    } finally {
-        setIsSubmitting(false);
-    }
-  };
-
-  if (loadingWallets) {
-    return (
-        <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
-            <PageHeader title="Transferencia de Fondos" />
-            <div className="flex justify-center">
-                <Card className="w-full max-w-2xl">
-                    <CardHeader><CardTitle>Cargando Billeteras...</CardTitle></CardHeader>
-                    <CardContent className='space-y-4'>
-                        <Skeleton className="h-10 w-full" />
-                        <Skeleton className="h-10 w-full" />
-                        <Skeleton className="h-10 w-full" />
-                    </CardContent>
-                </Card>
-            </div>
-        </div>
-    );
-  }
+export default async function TransfersHistoryPage() {
+  const [transfers, wallets] = await Promise.all([getTransfers(), getWallets()]);
+  const walletMap = new Map(wallets.map(w => [w.id, w]));
 
   return (
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
-      <PageHeader title="Transferencia de Fondos" />
-      <div className="flex justify-center">
-        <Card className="w-full max-w-2xl">
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)}>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <ArrowRightLeft className="h-5 w-5" />
-                  Nueva Transferencia
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="fromWalletId"
-                    render={({ field }) => (
-                      <FormItem>
-                        <Label>Desde la billetera</Label>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Selecciona una billetera" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {wallets.map(wallet => (
-                              <SelectItem key={wallet.id} value={wallet.id}>
-                                {wallet.name} ({wallet.currency})
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="toWalletId"
-                    render={({ field }) => (
-                      <FormItem>
-                        <Label>Hacia la billetera</Label>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Selecciona una billetera" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {wallets.map(wallet => (
-                              <SelectItem key={wallet.id} value={wallet.id} disabled={wallet.id === fromWalletId}>
-                                {wallet.name} ({wallet.currency})
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="amountSent"
-                    render={({ field }) => (
-                      <FormItem>
-                        <Label>Monto Enviado {fromWallet && `(${fromWallet.currency})`}</Label>
-                        <FormControl>
-                          <Input type="number" step="0.01" placeholder="0.00" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="amountReceived"
-                    render={({ field }) => (
-                      <FormItem>
-                        <Label>Monto Recibido {toWallet && `(${toWallet.currency})`}</Label>
-                        <FormControl>
-                          <Input type="number" step="0.01" placeholder="0.00" {...field} disabled={fromWallet?.currency !== toWallet?.currency} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
-                {showExchangeRate && (
-                  <FormField
-                    control={form.control}
-                    name="exchangeRate"
-                    render={({ field }) => (
-                      <FormItem>
-                        <Label>Tasa de Cambio (1 USD a ARS)</Label>
-                        <FormControl>
-                           <Input type="number" step="any" placeholder="Ej: 1000" {...field} value={field.value ?? ''} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                )}
-                
-                <FormField
-                    control={form.control}
-                    name="notes"
-                    render={({ field }) => (
-                        <FormItem>
-                            <Label>Notas (Opcional)</Label>
-                            <FormControl>
-                                <Textarea placeholder="Notas opcionales sobre la transferencia" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                        </FormItem>
-                    )}
-                />
-              </CardContent>
-              <CardFooter className='flex-col gap-4 items-stretch'>
-                <Button type="submit" className="w-full" disabled={isSubmitting}>
-                   {isSubmitting && <Loader className="mr-2 h-4 w-4 animate-spin" />}
-                   Completar Transferencia
-                </Button>
-                <Button type="button" variant="ghost" onClick={() => router.back()} disabled={isSubmitting}>
-                    Cancelar
-                </Button>
-              </CardFooter>
-            </form>
-          </Form>
-        </Card>
-      </div>
+      <PageHeader title="Historial de Transferencias">
+        <Button asChild>
+          <Link href="/transfers/new">
+            <PlusCircle className="mr-2 h-4 w-4" />
+            Nueva Transferencia
+          </Link>
+        </Button>
+      </PageHeader>
+      
+      <Card>
+        <CardContent className="p-0">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Fecha</TableHead>
+                <TableHead>Desde</TableHead>
+                <TableHead>Hacia</TableHead>
+                <TableHead className="text-right">Monto Enviado</TableHead>
+                <TableHead className="text-right">Monto Recibido</TableHead>
+                <TableHead>Tasa de Cambio</TableHead>
+                <TableHead>Notas</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {transfers.length > 0 ? transfers.map(transfer => {
+                  const fromWallet = walletMap.get(transfer.fromWalletId);
+                  const toWallet = walletMap.get(transfer.toWalletId);
+                  return (
+                    <TableRow key={transfer.id}>
+                        <TableCell>{format(new Date(transfer.date), 'PP', { locale: es })}</TableCell>
+                        <TableCell>{fromWallet?.name ?? 'Billetera no encontrada'}</TableCell>
+                        <TableCell>{toWallet?.name ?? 'Billetera no encontrada'}</TableCell>
+                        <TableCell className="text-right font-medium text-red-500">
+                            - {formatCurrency(transfer.amountSent, transfer.fromCurrency)}
+                        </TableCell>
+                        <TableCell className="text-right font-medium text-green-500">
+                            + {formatCurrency(transfer.amountReceived, transfer.toCurrency)}
+                        </TableCell>
+                        <TableCell>
+                            {transfer.exchangeRate ? `1 USD = ${formatCurrency(transfer.exchangeRate, 'ARS')}` : 'N/A'}
+                        </TableCell>
+                        <TableCell className="text-muted-foreground max-w-[200px] truncate">{transfer.notes}</TableCell>
+                    </TableRow>
+                  )
+                }) : (
+                <TableRow>
+                  <TableCell colSpan={7} className="text-center text-muted-foreground py-10">
+                    No hay transferencias para mostrar.
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
     </div>
   );
 }
-
-    
