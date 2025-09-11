@@ -53,8 +53,6 @@ function MiniFinancialSummary({ incomes, expenses }: MiniFinancialSummaryProps) 
         <div className="space-y-2">
             {(Object.keys(summary) as Currency[]).map(currency => {
                 const data = summary[currency];
-                if (data.income === 0 && data.expense === 0) return null;
-
                 return (
                     <div key={currency} className="text-sm">
                         <div className="font-bold text-base mb-1">{currency}</div>
@@ -97,24 +95,24 @@ export function PropertyCard({ property, incomes, expenses }: PropertyCardProps)
   return (
     <Link href={`/properties/${property.id}`} className="block transition-all hover:scale-[1.02]">
         <Card className="overflow-hidden h-full flex flex-row">
-            <div className="w-32 h-full flex-shrink-0">
+            <div className="w-24 h-full flex-shrink-0">
                 <Image
                     src={property.imageUrl}
                     alt={property.name}
-                    width={128}
-                    height={128}
+                    width={96}
+                    height={96}
                     className="w-full h-full object-cover"
                     data-ai-hint="apartment building"
                 />
             </div>
             <div className="flex-grow flex flex-col">
-                <CardHeader className="p-4">
+                <CardHeader className="p-4 pb-2">
                     <CardTitle className="font-headline text-lg">{property.name}</CardTitle>
-                    <CardDescription className="line-clamp-2 h-[20px] pt-1 text-xs">
+                    <CardDescription className="line-clamp-2 pt-1 text-xs">
                         Resumen del mes en curso
                     </CardDescription>
                 </CardHeader>
-                <CardContent className="p-4 pt-0 flex-grow flex flex-col justify-end">
+                <CardContent className="p-4 flex-grow flex flex-col justify-end">
                    <MiniFinancialSummary incomes={incomes} expenses={expenses} />
                 </CardContent>
             </div>
