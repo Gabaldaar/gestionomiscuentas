@@ -3,7 +3,7 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { type Property, type Income, type ActualExpense, type Currency } from '@/lib/types';
 import { ArrowUp, ArrowDown, Minus } from 'lucide-react';
 import * as React from 'react';
@@ -82,7 +82,7 @@ type PropertyCardProps = {
 export function PropertyCard({ property, incomes, expenses }: PropertyCardProps) {
   return (
     <Link href={`/properties/${property.id}`} className="block transition-all hover:scale-[1.02]">
-        <Card className="overflow-hidden h-full flex flex-row">
+        <Card className="overflow-hidden h-full flex flex-row p-0">
             <div className="w-24 h-24 flex-shrink-0">
                 <Image
                     src={property.imageUrl}
@@ -93,11 +93,11 @@ export function PropertyCard({ property, incomes, expenses }: PropertyCardProps)
                     data-ai-hint="apartment building"
                 />
             </div>
-            <div className="flex-grow flex flex-col justify-between">
-                <CardHeader className="p-3 pb-1">
+            <div className="flex-grow flex flex-col">
+                <CardHeader className="p-3 pb-2">
                     <CardTitle className="font-headline text-base">{property.name}</CardTitle>
                 </CardHeader>
-                <CardContent className="p-3">
+                <CardContent className="p-3 pt-0">
                    <MiniFinancialSummary incomes={incomes} expenses={expenses} />
                 </CardContent>
             </div>
