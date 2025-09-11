@@ -39,7 +39,7 @@ export function DateNavigator({ currentDate, onDateChange }: DateNavigatorProps)
       </Button>
 
       <div className="flex flex-col items-center">
-        <span className="text-xl md:text-2xl font-bold font-headline tracking-tight capitalize">
+        <span className="text-lg md:text-xl font-bold font-headline tracking-tight capitalize">
           {format(currentDate, 'MMMM', { locale: es })}
         </span>
         <span className="text-sm text-muted-foreground">
