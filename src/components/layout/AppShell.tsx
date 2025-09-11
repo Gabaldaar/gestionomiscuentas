@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -13,9 +14,6 @@ import {
   SidebarMenuButton,
   SidebarInset,
   SidebarTrigger,
-  SidebarSeparator,
-  SidebarGroup,
-  SidebarGroupLabel,
 } from '@/components/ui/sidebar';
 import {
   LayoutDashboard,
@@ -23,9 +21,6 @@ import {
   ArrowLeftRight,
   Settings2,
   Home,
-  Landmark,
-  Wallet,
-  TrendingUp,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -33,13 +28,8 @@ const navItems = [
   { href: '/', label: 'Panel de Control', icon: LayoutDashboard },
   { href: '/properties', label: 'Propiedades', icon: Building2 },
   { href: '/transfers', label: 'Transferencias', icon: ArrowLeftRight },
+  { href: '/settings', label: 'Configuración', icon: Settings2 },
 ];
-
-const settingsNavItems = [
-    { href: '/settings/expenses', label: 'Categorías de Gastos', icon: Landmark },
-    { href: '/settings/incomes', label: 'Categorías de Ingresos', icon: TrendingUp },
-    { href: '/settings/wallets', label: 'Billeteras', icon: Wallet },
-]
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -72,7 +62,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               <SidebarMenuItem key={item.href}>
                 <SidebarMenuButton
                   asChild
-                  isActive={pathname === item.href}
+                  isActive={pathname.startsWith(item.href) && (item.href !== '/' || pathname === '/')}
                   tooltip={item.label}
                 >
                   <Link href={item.href}>
@@ -83,26 +73,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               </SidebarMenuItem>
             ))}
           </SidebarMenu>
-            <SidebarSeparator />
-            <SidebarGroup>
-                <SidebarGroupLabel>Configuración</SidebarGroupLabel>
-                <SidebarMenu>
-                 {settingsNavItems.map((item) => (
-                    <SidebarMenuItem key={item.href}>
-                        <SidebarMenuButton
-                        asChild
-                        isActive={pathname.startsWith(item.href)}
-                        tooltip={item.label}
-                        >
-                        <Link href={item.href}>
-                            <item.icon />
-                            <span>{item.label}</span>
-                        </Link>
-                        </SidebarMenuButton>
-                    </SidebarMenuItem>
-                ))}
-                </SidebarMenu>
-            </SidebarGroup>
         </SidebarContent>
       </Sidebar>
       <SidebarInset>
