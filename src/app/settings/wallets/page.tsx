@@ -9,7 +9,7 @@ import { useRouter } from 'next/navigation';
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { PlusCircle, MoreVertical, Pencil, Trash2, Loader } from "lucide-react";
+import { PlusCircle, MoreVertical, Pencil, Trash2, Loader, DollarSign, CircleDollarSign } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -86,28 +86,33 @@ export default function WalletsSettingsPage() {
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
               {wallets.map((wallet) => (
               <Card key={wallet.id}>
-                  <CardHeader className="flex flex-row items-center justify-between">
-                  <div>
-                      <CardTitle>{wallet.name}</CardTitle>
-                      <CardDescription>{wallet.currency}</CardDescription>
-                  </div>
-                  <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon">
-                          <MoreVertical className="h-4 w-4" />
-                      </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent>
-                      <DropdownMenuItem onClick={() => router.push(`/settings/wallets/${wallet.id}/edit`)}>
-                          <Pencil className="mr-2 h-4 w-4" />
-                          Editar
-                      </DropdownMenuItem>
-                      <DropdownMenuItem className="text-destructive" onClick={() => handleDeleteClick(wallet)}>
-                          <Trash2 className="mr-2 h-4 w-4" />
-                          Eliminar
-                      </DropdownMenuItem>
-                      </DropdownMenuContent>
-                  </DropdownMenu>
+                  <CardHeader className="flex flex-row items-start justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="bg-primary/10 text-primary p-3 rounded-md">
+                        {wallet.currency === 'USD' ? <DollarSign className="h-6 w-6" /> : <CircleDollarSign className="h-6 w-6" />}
+                      </div>
+                      <div>
+                          <CardTitle>{wallet.name}</CardTitle>
+                          <CardDescription>{wallet.currency}</CardDescription>
+                      </div>
+                    </div>
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon">
+                            <MoreVertical className="h-4 w-4" />
+                        </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent>
+                        <DropdownMenuItem onClick={() => router.push(`/settings/wallets/${wallet.id}/edit`)}>
+                            <Pencil className="mr-2 h-4 w-4" />
+                            Editar
+                        </DropdownMenuItem>
+                        <DropdownMenuItem className="text-destructive" onClick={() => handleDeleteClick(wallet)}>
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Eliminar
+                        </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
                   </CardHeader>
                   <CardContent>
                   <div className={cn("text-2xl font-bold", {
