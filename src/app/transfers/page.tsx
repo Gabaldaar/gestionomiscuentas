@@ -6,11 +6,11 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { collection, getDocs, orderBy, query, doc, deleteDoc, writeBatch, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { format } from 'date-fns';
+import { format, isValid } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, MoreVertical, Pencil, Trash2, Loader } from "lucide-react";
+import { PlusCircle, MoreVertical, Pencil, Trash2, Loader, Calendar as CalendarIcon, Filter } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -20,8 +20,14 @@ import {
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { type Transfer, type Wallet } from "@/lib/types";
+import { type Transfer, type Wallet, type Currency } from "@/lib/types";
 import { ConfirmDeleteDialog } from '@/components/shared/ConfirmDeleteDialog';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { type DateRange } from 'react-day-picker';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { cn } from '@/lib/utils';
+
 
 const formatCurrency = (amount: number, currency: string) => {
   return new Intl.NumberFormat('es-AR', { style: 'currency', currency }).format(amount);
@@ -34,6 +40,12 @@ export default function TransfersHistoryPage() {
   const [wallets, setWallets] = React.useState<Map<string, Wallet>>(new Map());
   const [loading, setLoading] = React.useState(true);
   const [deletingTransfer, setDeletingTransfer] = React.useState<Transfer | null>(null);
+
+  // Filter state
+  const [dateRange, setDateRange] = React.useState<DateRange | undefined>(undefined);
+  const [selectedCurrency, setSelectedCurrency] = React.useState<Currency | 'all'>('all');
+  const [activeFilters, setActiveFilters] = React.useState<{dateRange: DateRange | undefined, currency: Currency | 'all'}>({dateRange: undefined, currency: 'all'});
+
 
   const fetchTransfersAndWallets = React.useCallback(async () => {
     setLoading(true);
@@ -73,6 +85,40 @@ export default function TransfersHistoryPage() {
   const handleDeleteClick = (transfer: Transfer) => {
     setDeletingTransfer(transfer);
   };
+  
+  const handleApplyFilters = () => {
+    setActiveFilters({ dateRange, currency: selectedCurrency });
+  };
+
+  const handleClearFilters = () => {
+    setDateRange(undefined);
+    setSelectedCurrency('all');
+    setActiveFilters({ dateRange: undefined, currency: 'all' });
+  };
+  
+  const filteredTransfers = React.useMemo(() => {
+    return transfers.filter(transfer => {
+      const transferDate = new Date(transfer.date);
+      const { dateRange: activeDateRange, currency: activeCurrency } = activeFilters;
+
+      // Date range filter
+      if (activeDateRange?.from && activeDateRange?.to) {
+        if (transferDate < activeDateRange.from || transferDate > activeDateRange.to) {
+          return false;
+        }
+      }
+
+      // Currency filter
+      if (activeCurrency !== 'all') {
+        if (transfer.fromCurrency !== activeCurrency && transfer.toCurrency !== activeCurrency) {
+          return false;
+        }
+      }
+
+      return true;
+    });
+  }, [transfers, activeFilters]);
+
 
   const confirmDelete = async () => {
     if (!deletingTransfer) return;
@@ -129,6 +175,67 @@ export default function TransfersHistoryPage() {
         </PageHeader>
         
         <Card>
+            <CardContent className="p-4 flex flex-wrap items-center gap-2">
+                <Popover>
+                    <PopoverTrigger asChild>
+                    <Button
+                        id="date"
+                        variant={"outline"}
+                        className={cn(
+                        "w-[260px] justify-start text-left font-normal",
+                        !dateRange && "text-muted-foreground"
+                        )}
+                    >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {dateRange?.from ? (
+                        dateRange.to ? (
+                            <>
+                            {format(dateRange.from, "LLL dd, y", { locale: es })} -{" "}
+                            {format(dateRange.to, "LLL dd, y", { locale: es })}
+                            </>
+                        ) : (
+                            format(dateRange.from, "LLL dd, y", { locale: es })
+                        )
+                        ) : (
+                        <span>Elige un rango de fechas</span>
+                        )}
+                    </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                        initialFocus
+                        mode="range"
+                        defaultMonth={dateRange?.from}
+                        selected={dateRange}
+                        onSelect={setDateRange}
+                        numberOfMonths={2}
+                        locale={es}
+                    />
+                    </PopoverContent>
+                </Popover>
+
+                <Select value={selectedCurrency} onValueChange={(value: Currency | 'all') => setSelectedCurrency(value)}>
+                    <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="Moneda" />
+                    </SelectTrigger>
+                    <SelectContent>
+                    <SelectItem value="all">Todas las monedas</SelectItem>
+                    <SelectItem value="ARS">ARS</SelectItem>
+                    <SelectItem value="USD">USD</SelectItem>
+                    </SelectContent>
+                </Select>
+                <Button onClick={handleApplyFilters}>
+                    <Filter className="mr-2 h-4 w-4" />
+                    Aplicar Filtros
+                </Button>
+                 <Button variant="ghost" onClick={handleClearFilters}>
+                    Limpiar
+                </Button>
+
+            </CardContent>
+        </Card>
+
+        <Card>
           <CardContent className="p-0">
             {loading ? (
                  <div className="flex justify-center items-center h-64">
@@ -149,12 +256,13 @@ export default function TransfersHistoryPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {transfers.length > 0 ? transfers.map(transfer => {
+                {filteredTransfers.length > 0 ? filteredTransfers.map(transfer => {
                     const fromWallet = wallets.get(transfer.fromWalletId);
                     const toWallet = wallets.get(transfer.toWalletId);
+                    const transferDate = new Date(transfer.date);
                     return (
                       <TableRow key={transfer.id}>
-                          <TableCell>{format(new Date(transfer.date), 'PP', { locale: es })}</TableCell>
+                          <TableCell>{isValid(transferDate) ? format(transferDate, 'PP', { locale: es }) : 'Fecha inválida'}</TableCell>
                           <TableCell>{fromWallet?.name ?? <span className="text-muted-foreground italic">Billetera no encontrada</span>}</TableCell>
                           <TableCell>{toWallet?.name ?? <span className="text-muted-foreground italic">Billetera no encontrada</span>}</TableCell>
                           <TableCell className="text-right font-medium text-red-500">
@@ -191,7 +299,7 @@ export default function TransfersHistoryPage() {
                   }) : (
                   <TableRow>
                     <TableCell colSpan={8} className="text-center text-muted-foreground py-10">
-                      No hay transferencias para mostrar.
+                      No hay transferencias para mostrar con los filtros seleccionados.
                     </TableCell>
                   </TableRow>
                 )}
