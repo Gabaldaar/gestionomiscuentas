@@ -93,7 +93,6 @@ export default function LiabilityDetailPage() {
   const handlePaymentSubmit = async (data: ExpenseFormValues) => {
     if (!liability) return;
 
-    // The propertyId must now be part of the form data
     const propertyId = (data as any).propertyId;
     if (!propertyId) {
         toast({ title: "Error", description: "Debes seleccionar una cuenta para registrar el gasto del pago.", variant: "destructive" });
@@ -104,12 +103,10 @@ export default function LiabilityDetailPage() {
     const batch = writeBatch(db);
 
     try {
-        // 1. Create the ActualExpense in the selected property
         const expenseRef = doc(collection(db, 'properties', propertyId, 'actualExpenses'));
         const expenseData = { ...data, date: Timestamp.fromDate(data.date), propertyId };
         batch.set(expenseRef, expenseData);
 
-        // 2. Create the LiabilityPayment
         const paymentRef = doc(collection(db, 'liabilities', id, 'payments'));
         const paymentData = {
             liabilityId: id,
@@ -119,11 +116,10 @@ export default function LiabilityDetailPage() {
             currency: data.currency,
             notes: data.notes,
             actualExpenseId: expenseRef.id,
-            propertyId: propertyId, // Store propertyId for easier deletion
+            propertyId: propertyId,
         };
         batch.set(paymentRef, paymentData);
 
-        // 3. Update wallet balance
         const walletRef = doc(db, 'wallets', data.walletId);
         const walletSnap = await getDoc(walletRef);
         if (!walletSnap.exists()) throw new Error("Billetera no encontrada");
@@ -131,7 +127,6 @@ export default function LiabilityDetailPage() {
         if (walletData.balance < data.amount) throw new Error("Fondos insuficientes en la billetera.");
         batch.update(walletRef, { balance: walletData.balance - data.amount });
         
-        // 4. Update liability outstanding balance
         const liabilityRef = doc(db, 'liabilities', id);
         batch.update(liabilityRef, { outstandingBalance: liability.outstandingBalance - data.amount });
 
@@ -154,22 +149,18 @@ export default function LiabilityDetailPage() {
     setIsSubmitting(true);
     const batch = writeBatch(db);
     try {
-        // 1. Get all refs
         const paymentRef = doc(db, 'liabilities', id, 'payments', deletingPayment.id);
         const expenseRef = doc(db, 'properties', deletingPayment.propertyId, 'actualExpenses', deletingPayment.actualExpenseId);
         const walletRef = doc(db, 'wallets', deletingPayment.walletId);
         const liabilityRef = doc(db, 'liabilities', id);
 
-        // 2. Revert wallet balance
         const walletSnap = await getDoc(walletRef);
         if(walletSnap.exists()){
             batch.update(walletRef, { balance: walletSnap.data().balance + deletingPayment.amount });
         }
         
-        // 3. Revert liability balance
         batch.update(liabilityRef, { outstandingBalance: liability.outstandingBalance + deletingPayment.amount });
 
-        // 4. Delete payment and expense records
         batch.delete(paymentRef);
         batch.delete(expenseRef);
 
@@ -203,7 +194,6 @@ export default function LiabilityDetailPage() {
     const batch = writeBatch(db);
 
     try {
-        // Find and delete the associated initial income if it exists
         const incomesRef = collectionGroup(db, 'incomes');
         const q = query(incomesRef, where("liabilityId", "==", liability.id));
         const incomeQuerySnapshot = await getDocs(q);
@@ -215,16 +205,13 @@ export default function LiabilityDetailPage() {
             const walletRef = doc(db, 'wallets', incomeData.walletId);
             const walletSnap = await getDoc(walletRef);
             
-            // Revert wallet balance
             if (walletSnap.exists()) {
                 const currentBalance = walletSnap.data().balance;
                 batch.update(walletRef, { balance: currentBalance - incomeData.amount });
             }
-            // Delete income record
             batch.delete(incomeDoc.ref);
         }
 
-        // Delete the liability itself
         const liabilityRef = doc(db, 'liabilities', liability.id);
         batch.delete(liabilityRef);
 
@@ -379,7 +366,7 @@ export default function LiabilityDetailPage() {
         isOpen={isDeleteLiabilityOpen}
         onOpenChange={setIsDeleteLiabilityOpen}
         onConfirm={handleDeleteLiability}
-        title={`¿Eliminar el pasivo "${liability.name}"?`}
+        title={`¿Eliminar el pasivo "${liability?.name}"?`}
         description="Esta acción es permanente y no se puede deshacer. Solo puedes eliminar un pasivo si no tiene pagos registrados. ¿Continuar?"
     />
     </>

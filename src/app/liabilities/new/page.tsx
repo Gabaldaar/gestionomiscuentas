@@ -109,7 +109,6 @@ export default function NewLiabilityPage() {
       };
       batch.set(newLiabilityRef, liabilityData);
 
-      // If an initial amount was received, create an income transaction
       if (data.initialAmountReceived && data.initialAmountReceived > 0 && data.walletId && data.propertyId) {
         const walletRef = doc(db, 'wallets', data.walletId);
         const walletSnap = await getDoc(walletRef);
@@ -128,7 +127,7 @@ export default function NewLiabilityPage() {
           date: Timestamp.now(),
           notes: `Monto inicial recibido del pasivo: ${data.name}`,
           propertyId: data.propertyId,
-          subcategoryId: creditSubcategory?.id || '', // Fallback to empty string
+          subcategoryId: creditSubcategory?.id || '',
           walletId: data.walletId,
           liabilityId: newLiabilityRef.id,
         });
