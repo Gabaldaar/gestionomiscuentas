@@ -340,14 +340,14 @@ export function AddExpenseDialog({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Vincular a Pasivo (Opcional)</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value} defaultValue={field.value} disabled={!!initialData?.liabilityId}>
+                    <Select onValueChange={field.onChange} value={field.value || 'none'} defaultValue={field.value} disabled={!!initialData?.liabilityId}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Selecciona un pasivo para vincular" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                         <SelectItem value="">Ninguno</SelectItem>
+                         <SelectItem value="none">Ninguno</SelectItem>
                         {availableLiabilities.map((liability) => (
                           <SelectItem key={liability.id} value={liability.id}>
                              <div className="flex justify-between w-full">

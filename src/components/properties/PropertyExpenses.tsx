@@ -2,7 +2,7 @@
 'use client';
 
 import * as React from 'react';
-import { collection, addDoc, doc, updateDoc, deleteDoc, Timestamp, writeBatch, getDoc } from 'firebase/firestore';
+import { collection, addDoc, doc, updateDoc, deleteDoc, Timestamp, writeBatch, getDoc, query, where, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -146,11 +146,16 @@ export function PropertyExpenses({
     const batch = writeBatch(db);
     setIsLoading(true);
 
+    const expenseData = { ...data };
+    if (expenseData.liabilityId === 'none') {
+        expenseData.liabilityId = null;
+    }
+
     try {
         if (editingExpense) { // Editing existing expense
             const expenseRef = doc(db, 'properties', propertyId, 'actualExpenses', editingExpense.id);
             const oldWalletRef = doc(db, 'wallets', editingExpense.walletId);
-            const newWalletRef = doc(db, 'wallets', data.walletId);
+            const newWalletRef = doc(db, 'wallets', expenseData.walletId);
 
             const oldWalletSnap = await getDoc(oldWalletRef);
             if(!oldWalletSnap.exists()) throw new Error("La billetera original no fue encontrada.");
@@ -158,53 +163,53 @@ export function PropertyExpenses({
 
             const revertedBalance = oldWalletData.balance + editingExpense.amount;
             
-            if (editingExpense.walletId === data.walletId) {
-                if (revertedBalance < data.amount) throw new Error("Fondos insuficientes en la billetera.");
-                batch.update(newWalletRef, { balance: revertedBalance - data.amount });
+            if (editingExpense.walletId === expenseData.walletId) {
+                if (revertedBalance < expenseData.amount) throw new Error("Fondos insuficientes en la billetera.");
+                batch.update(newWalletRef, { balance: revertedBalance - expenseData.amount });
             } else {
                 batch.update(oldWalletRef, { balance: revertedBalance });
                 const newWalletSnap = await getDoc(newWalletRef);
                 if (!newWalletSnap.exists()) throw new Error("La nueva billetera no fue encontrada.");
                 const newWalletData = newWalletSnap.data() as Wallet;
-                if (newWalletData.balance < data.amount) throw new Error("Fondos insuficientes en la billetera.");
-                batch.update(newWalletRef, { balance: newWalletData.balance - data.amount });
+                if (newWalletData.balance < expenseData.amount) throw new Error("Fondos insuficientes en la billetera.");
+                batch.update(newWalletRef, { balance: newWalletData.balance - expenseData.amount });
             }
 
-            batch.update(expenseRef, { ...data, date: Timestamp.fromDate(data.date) });
+            batch.update(expenseRef, { ...expenseData, date: Timestamp.fromDate(expenseData.date) });
             toast({ title: "Gasto actualizado exitosamente" });
 
         } else { // Adding new expense
             const expenseRef = doc(collection(db, 'properties', propertyId, 'actualExpenses'));
-            const walletRef = doc(db, 'wallets', data.walletId);
+            const walletRef = doc(db, 'wallets', expenseData.walletId);
             
             const walletSnap = await getDoc(walletRef);
             if (!walletSnap.exists()) throw new Error("Billetera no encontrada.");
             
             const walletData = walletSnap.data() as Wallet;
-            if (walletData.balance < data.amount) {
+            if (walletData.balance < expenseData.amount) {
                  toast({ title: "Fondos insuficientes", description: `La billetera ${walletData.name} no tiene suficiente saldo.`, variant: "destructive" });
                  setIsLoading(false);
                  return;
             }
-            const newBalance = walletData.balance - data.amount;
+            const newBalance = walletData.balance - expenseData.amount;
 
             batch.update(walletRef, { balance: newBalance });
-            batch.set(expenseRef, { ...data, date: Timestamp.fromDate(data.date) });
+            batch.set(expenseRef, { ...expenseData, date: Timestamp.fromDate(expenseData.date) });
             
-            if (data.liabilityId) {
-                const liabilityRef = doc(db, 'liabilities', data.liabilityId);
+            if (expenseData.liabilityId) {
+                const liabilityRef = doc(db, 'liabilities', expenseData.liabilityId);
                 const liabilitySnap = await getDoc(liabilityRef);
                 if (liabilitySnap.exists()) {
                     const liabilityData = liabilitySnap.data() as Liability;
-                    batch.update(liabilityRef, { outstandingBalance: liabilityData.outstandingBalance - data.amount });
+                    batch.update(liabilityRef, { outstandingBalance: liabilityData.outstandingBalance - expenseData.amount });
 
-                    const paymentRef = doc(collection(db, 'liabilities', data.liabilityId, 'payments'));
+                    const paymentRef = doc(collection(db, 'liabilities', expenseData.liabilityId, 'payments'));
                     const paymentData = {
-                        liabilityId: data.liabilityId,
-                        date: Timestamp.fromDate(data.date),
-                        amount: data.amount,
-                        walletId: data.walletId,
-                        currency: data.currency,
+                        liabilityId: expenseData.liabilityId,
+                        date: Timestamp.fromDate(expenseData.date),
+                        amount: expenseData.amount,
+                        walletId: expenseData.walletId,
+                        currency: expenseData.currency,
                         notes: `Pago registrado desde la cuenta`,
                         actualExpenseId: expenseRef.id,
                         propertyId: propertyId,
@@ -280,8 +285,9 @@ export function PropertyExpenses({
                 const liabilityData = liabilitySnap.data() as Liability;
                 batch.update(liabilityRef, { outstandingBalance: liabilityData.outstandingBalance + expenseToDelete.amount });
 
-                const paymentsQuery = query(collection(db, 'liabilities', expenseToDelete.liabilityId, 'payments'), where('actualExpenseId', '==', expenseToDelete.id));
-                const paymentsSnap = await getDocs(paymentsQuery);
+                const paymentsRef = collection(db, 'liabilities', expenseToDelete.liabilityId, 'payments');
+                const q = query(paymentsRef, where('actualExpenseId', '==', expenseToDelete.id));
+                const paymentsSnap = await getDocs(q);
                 paymentsSnap.forEach(paymentDoc => {
                     batch.delete(paymentDoc.ref);
                 });
