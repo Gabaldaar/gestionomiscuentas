@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -86,24 +87,27 @@ export default function TransfersHistoryPage() {
         const fromWalletSnap = await getDoc(fromWalletRef);
         const toWalletSnap = await getDoc(toWalletRef);
 
-        if (!fromWalletSnap.exists() || !toWalletSnap.exists()) {
-            throw new Error("Una o ambas billeteras no fueron encontradas.");
+        if (fromWalletSnap.exists() && toWalletSnap.exists()) {
+            const fromWallet = fromWalletSnap.data() as Wallet;
+            const toWallet = toWalletSnap.data() as Wallet;
+            
+            // Revert balances only if both wallets exist
+            const newFromBalance = fromWallet.balance + deletingTransfer.amountSent;
+            const newToBalance = toWallet.balance - deletingTransfer.amountReceived;
+
+            batch.update(fromWalletRef, { balance: newFromBalance });
+            batch.update(toWalletRef, { balance: newToBalance });
+            
+            toast({ title: "Transferencia eliminada", description: `Los saldos de las billeteras han sido revertidos.`, variant: "destructive" });
+        } else {
+             toast({ title: "Transferencia eliminada", description: `El registro de la transferencia ha sido eliminado. No se revirtieron saldos porque una o ambas billeteras ya no existen.`, variant: "destructive", duration: 5000 });
         }
         
-        const fromWallet = fromWalletSnap.data() as Wallet;
-        const toWallet = toWalletSnap.data() as Wallet;
-        
-        // Revert balances
-        const newFromBalance = fromWallet.balance + deletingTransfer.amountSent;
-        const newToBalance = toWallet.balance - deletingTransfer.amountReceived;
-
-        batch.update(fromWalletRef, { balance: newFromBalance });
-        batch.update(toWalletRef, { balance: newToBalance });
+        // Always delete the transfer record
         batch.delete(transferRef);
 
         await batch.commit();
 
-        toast({ title: "Transferencia eliminada", description: `La transferencia ha sido eliminada y los saldos han sido revertidos.`, variant: "destructive" });
         setDeletingTransfer(null);
         fetchTransfersAndWallets(); // Refresh list
     } catch (error) {
@@ -151,8 +155,8 @@ export default function TransfersHistoryPage() {
                     return (
                       <TableRow key={transfer.id}>
                           <TableCell>{format(new Date(transfer.date), 'PP', { locale: es })}</TableCell>
-                          <TableCell>{fromWallet?.name ?? 'Billetera no encontrada'}</TableCell>
-                          <TableCell>{toWallet?.name ?? 'Billetera no encontrada'}</TableCell>
+                          <TableCell>{fromWallet?.name ?? <span className="text-muted-foreground italic">Billetera no encontrada</span>}</TableCell>
+                          <TableCell>{toWallet?.name ?? <span className="text-muted-foreground italic">Billetera no encontrada</span>}</TableCell>
                           <TableCell className="text-right font-medium text-red-500">
                               - {formatCurrency(transfer.amountSent, transfer.fromCurrency)}
                           </TableCell>
@@ -202,7 +206,7 @@ export default function TransfersHistoryPage() {
         onOpenChange={() => setDeletingTransfer(null)}
         onConfirm={confirmDelete}
         title="¿Eliminar Transferencia?"
-        description="Esta acción revertirá los saldos en las billeteras afectadas y eliminará permanentemente la transferencia. ¿Estás seguro?"
+        description="Esta acción eliminará permanentemente la transferencia. Si las billeteras asociadas aún existen, sus saldos serán revertidos. ¿Estás seguro?"
       />
     </>
   );
