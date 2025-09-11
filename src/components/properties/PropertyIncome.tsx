@@ -13,6 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { AddIncomeDialog } from './AddIncomeDialog';
 import { ConfirmDeleteDialog } from '../shared/ConfirmDeleteDialog';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { cn } from '@/lib/utils';
 
 type PropertyIncomeProps = {
   propertyId: string;
@@ -231,7 +232,13 @@ export function PropertyIncome({ propertyId, wallets, incomeCategories, selected
                       </Button>
                     )}
                   </TableCell>
-                  <TableCell className="text-right font-medium">
+                  <TableCell className={cn(
+                    "text-right font-medium",
+                    {
+                        'text-green-800 dark:text-green-400': income.currency === 'USD',
+                        'text-blue-800 dark:text-blue-400': income.currency === 'ARS',
+                    }
+                  )}>
                     {new Intl.NumberFormat('es-AR', { style: 'currency', currency: income.currency }).format(income.amount)}
                   </TableCell>
                    <TableCell className="text-right">
