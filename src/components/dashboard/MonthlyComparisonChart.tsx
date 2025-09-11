@@ -1,21 +1,24 @@
+
 "use client"
 
 import * as React from 'react';
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip, Legend } from "recharts"
-import { type Income, type ActualExpense } from '@/lib/types';
+import { type Income, type ActualExpense, type Currency } from '@/lib/types';
 import { format, subMonths } from 'date-fns';
 import { es } from 'date-fns/locale';
 
 type MonthlyComparisonChartProps = {
   incomes: Income[];
   expenses: ActualExpense[];
-  currency: string;
+  currency: Currency | 'all';
 };
 
 export function MonthlyComparisonChart({ incomes, expenses, currency }: MonthlyComparisonChartProps) {
   const data = React.useMemo(() => {
     const last12Months: { name: string, month: number, year: number, income: number, expense: number }[] = [];
     let currentDate = new Date();
+    
+    const displayCurrency = currency === 'all' ? 'ARS' : currency;
 
     for (let i = 0; i < 12; i++) {
         const date = subMonths(currentDate, i);
@@ -32,7 +35,7 @@ export function MonthlyComparisonChart({ incomes, expenses, currency }: MonthlyC
         const date = new Date(inc.date);
         const month = date.getMonth() + 1;
         const year = date.getFullYear();
-        if (currency === 'all' || inc.currency === currency) {
+        if (inc.currency === displayCurrency) {
             const targetMonth = last12Months.find(m => m.month === month && m.year === year);
             if (targetMonth) {
                 targetMonth.income += inc.amount;
@@ -44,7 +47,7 @@ export function MonthlyComparisonChart({ incomes, expenses, currency }: MonthlyC
         const date = new Date(exp.date);
         const month = date.getMonth() + 1;
         const year = date.getFullYear();
-        if (currency === 'all' || exp.currency === currency) {
+        if (exp.currency === displayCurrency) {
             const targetMonth = last12Months.find(m => m.month === month && m.year === year);
             if (targetMonth) {
                 targetMonth.expense += exp.amount;

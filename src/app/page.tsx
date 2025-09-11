@@ -2,7 +2,7 @@
 import * as React from 'react';
 import { collectionGroup, getDocs, query, Timestamp, collection } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { type Income, type ActualExpense, type IncomeCategory, type ExpenseCategory } from '@/lib/types';
+import { type Income, type ActualExpense, type IncomeCategory, type ExpenseCategory, type Currency } from '@/lib/types';
 import { PageHeader } from "@/components/shared/PageHeader";
 import { DashboardStats } from "@/components/dashboard/DashboardStats";
 import { MonthlyComparisonChart } from "@/components/dashboard/MonthlyComparisonChart";
@@ -61,21 +61,26 @@ export default async function DashboardPage({ searchParams }: { searchParams: { 
   
   const currentMonth = searchParams.month ? parseInt(searchParams.month) : new Date().getMonth() + 1;
   const currentYear = searchParams.year ? parseInt(searchParams.year) : new Date().getFullYear();
-  const selectedCurrency = searchParams.currency || 'all';
+  const selectedCurrency = (searchParams.currency as Currency | 'all') || 'all';
 
-  const filteredIncomes = incomes.filter(i => {
-    const date = new Date(i.date);
-    const currencyMatch = selectedCurrency === 'all' || i.currency === selectedCurrency;
-    const dateMatch = date.getFullYear() === currentYear && (date.getMonth() + 1) === currentMonth;
-    return currencyMatch && dateMatch;
-  });
+  const transactionsInPeriod = (transactions: (Income[] | ActualExpense[])) => {
+    return transactions.filter(t => {
+      const date = new Date(t.date);
+      return date.getFullYear() === currentYear && (date.getMonth() + 1) === currentMonth;
+    }) as (Income[] & ActualExpense[]);
+  }
 
-  const filteredExpenses = expenses.filter(e => {
-    const date = new Date(e.date);
-    const currencyMatch = selectedCurrency === 'all' || e.currency === selectedCurrency;
-    const dateMatch = date.getFullYear() === currentYear && (date.getMonth() + 1) === currentMonth;
-    return currencyMatch && dateMatch;
-  });
+  const periodIncomes = transactionsInPeriod(incomes);
+  const periodExpenses = transactionsInPeriod(expenses);
+
+  const statsByCurrency = (Object.keys(periodIncomes.reduce((acc, curr) => ({...acc, [curr.currency]: true}), {})) as Currency[])
+  .concat(Object.keys(periodExpenses.reduce((acc, curr) => ({...acc, [curr.currency]: true}), {})) as Currency[])
+  .filter((value, index, self) => self.indexOf(value) === index)
+  .map(currency => ({
+      currency,
+      incomes: periodIncomes.filter(i => i.currency === currency),
+      expenses: periodExpenses.filter(e => e.currency === currency),
+  })).filter(item => selectedCurrency === 'all' || item.currency === selectedCurrency);
 
 
   return (
@@ -84,7 +89,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: { 
       
       <DashboardFilters />
 
-      <DashboardStats incomes={filteredIncomes} expenses={filteredExpenses} />
+      <DashboardStats statsByCurrency={statsByCurrency} />
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
         <Card className="col-span-4">
