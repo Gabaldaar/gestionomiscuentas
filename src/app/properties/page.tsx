@@ -1,5 +1,5 @@
 
-'use client';
+'use server';
 
 import * as React from 'react';
 import { PageHeader } from "@/components/shared/PageHeader";
@@ -11,6 +11,8 @@ import { collection, getDocs, Timestamp } from "firebase/firestore";
 import { type Property, type Income, type ActualExpense } from "@/lib/types";
 import Link from "next/link";
 import { Skeleton } from '@/components/ui/skeleton';
+import { unstable_noStore as noStore } from 'next/cache';
+
 
 type PropertiesData = {
   properties: Property[];
@@ -18,14 +20,9 @@ type PropertiesData = {
   expenses: Record<string, ActualExpense[]>;
 };
 
-export default function PropertiesPage() {
-  const [data, setData] = React.useState<PropertiesData | null>(null);
-  const [loading, setLoading] = React.useState(true);
-
-  React.useEffect(() => {
-    async function getPropertiesData() {
-      setLoading(true);
-      try {
+async function getPropertiesData(): Promise<PropertiesData | null> {
+    noStore();
+    try {
         const propertiesCol = collection(db, 'properties');
         const propertiesSnapshot = await getDocs(propertiesCol);
         
@@ -40,7 +37,6 @@ export default function PropertiesPage() {
           const property = { id: doc.id, ...doc.data() } as Property;
           propertiesList.push(property);
 
-          // Fetch incomes for the current month
           const incomesCol = collection(db, 'properties', doc.id, 'incomes');
           const incomesSnapshot = await getDocs(incomesCol);
           allIncomes[doc.id] = incomesSnapshot.docs
@@ -50,7 +46,6 @@ export default function PropertiesPage() {
                 return incomeDate.getMonth() === currentMonth && incomeDate.getFullYear() === currentYear;
             });
 
-          // Fetch expenses for the current month
           const expensesCol = collection(db, 'properties', doc.id, 'actualExpenses');
           const expensesSnapshot = await getDocs(expensesCol);
           allExpenses[doc.id] = expensesSnapshot.docs
@@ -60,15 +55,25 @@ export default function PropertiesPage() {
                 return expenseDate.getMonth() === currentMonth && expenseDate.getFullYear() === currentYear;
             });
         }
-        setData({ properties: propertiesList, incomes: allIncomes, expenses: allExpenses });
-      } catch (error) {
+        return { properties: propertiesList, incomes: allIncomes, expenses: allExpenses };
+    } catch (error) {
         console.error("Error fetching properties:", error);
-      } finally {
-        setLoading(false);
-      }
+        return null;
     }
-    getPropertiesData();
-  }, []);
+}
+
+
+export default async function PropertiesPage() {
+  const data = await getPropertiesData();
+
+  if (!data) {
+    return (
+        <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
+            <PageHeader title="Cuentas" />
+            <p>Error al cargar las cuentas.</p>
+        </div>
+    )
+  }
 
   return (
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
@@ -81,14 +86,6 @@ export default function PropertiesPage() {
         </Button>
       </PageHeader>
       
-      {loading || !data ? (
-        <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-2">
-          <Skeleton className="h-[120px] w-full" />
-          <Skeleton className="h-[120px] w-full" />
-          <Skeleton className="h-[120px] w-full" />
-          <Skeleton className="h-[120px] w-full" />
-        </div>
-      ) : (
         <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-2">
           {data.properties.map((property) => (
             <PropertyCard 
@@ -99,7 +96,6 @@ export default function PropertiesPage() {
             />
           ))}
         </div>
-      )}
     </div>
   );
 }
