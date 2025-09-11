@@ -14,7 +14,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader, AlertTriangle, Filter, Calendar as CalendarIcon, FileText } from 'lucide-react';
+import { Loader, AlertTriangle, Filter, Calendar as CalendarIcon, FileText, X } from 'lucide-react';
 import { type Income, type Property, type IncomeCategory, type Currency } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { type DateRange } from 'react-day-picker';
@@ -45,15 +45,6 @@ export default function IncomesPage() {
     const [selectedCategory, setSelectedCategory] = React.useState('all');
     const [selectedSubcategory, setSelectedSubcategory] = React.useState('all');
     const [selectedCurrency, setSelectedCurrency] = React.useState<Currency | 'all'>('all');
-    
-    // Active filters
-    const [activeFilters, setActiveFilters] = React.useState({
-        dateRange,
-        property: selectedProperty,
-        category: selectedCategory,
-        subcategory: selectedSubcategory,
-        currency: selectedCurrency,
-    });
     
     const fetchAllData = React.useCallback(async () => {
         setLoading(true);
@@ -108,29 +99,12 @@ export default function IncomesPage() {
         fetchAllData();
     }, [fetchAllData]);
 
-    const handleApplyFilters = () => {
-        setActiveFilters({
-            dateRange,
-            property: selectedProperty,
-            category: selectedCategory,
-            subcategory: selectedSubcategory,
-            currency: selectedCurrency,
-        });
-    };
-
     const handleClearFilters = () => {
         setDateRange(undefined);
         setSelectedProperty('all');
         setSelectedCategory('all');
         setSelectedSubcategory('all');
         setSelectedCurrency('all');
-        setActiveFilters({
-            dateRange: undefined,
-            property: 'all',
-            category: 'all',
-            subcategory: 'all',
-            currency: 'all',
-        });
     };
     
     // Reset subcategory when category changes
@@ -140,35 +114,35 @@ export default function IncomesPage() {
     
     const areFiltersActive = React.useMemo(() => {
         return (
-            !!activeFilters.dateRange?.from ||
-            activeFilters.property !== 'all' ||
-            activeFilters.category !== 'all' ||
-            activeFilters.subcategory !== 'all' ||
-            activeFilters.currency !== 'all'
+            !!dateRange?.from ||
+            selectedProperty !== 'all' ||
+            selectedCategory !== 'all' ||
+            selectedSubcategory !== 'all' ||
+            selectedCurrency !== 'all'
         );
-    }, [activeFilters]);
+    }, [dateRange, selectedProperty, selectedCategory, selectedSubcategory, selectedCurrency]);
 
     const filteredIncomes = React.useMemo(() => {
         return allIncomes.filter(income => {
             let match = true;
             const incomeDate = new Date(income.date);
 
-            if (activeFilters.dateRange?.from && incomeDate < activeFilters.dateRange.from) match = false;
-            if (activeFilters.dateRange?.to && incomeDate > activeFilters.dateRange.to) match = false;
-            if (activeFilters.property !== 'all' && income.propertyId !== activeFilters.property) match = false;
-            if (activeFilters.currency !== 'all' && income.currency !== activeFilters.currency) match = false;
-            if (activeFilters.category !== 'all') {
-                const category = categories.find(c => c.id === activeFilters.category);
+            if (dateRange?.from && incomeDate < dateRange.from) match = false;
+            if (dateRange?.to && incomeDate > dateRange.to) match = false;
+            if (selectedProperty !== 'all' && income.propertyId !== selectedProperty) match = false;
+            if (selectedCurrency !== 'all' && income.currency !== selectedCurrency) match = false;
+            if (selectedCategory !== 'all') {
+                const category = categories.find(c => c.id === selectedCategory);
                 const subcategoryIds = category?.subcategories.map(s => s.id) || [];
                 if (!subcategoryIds.includes(income.subcategoryId)) {
                     match = false;
                 }
             }
-            if (activeFilters.subcategory !== 'all' && income.subcategoryId !== activeFilters.subcategory) match = false;
+            if (selectedSubcategory !== 'all' && income.subcategoryId !== selectedSubcategory) match = false;
 
             return match;
         });
-    }, [allIncomes, activeFilters, categories]);
+    }, [allIncomes, dateRange, selectedProperty, selectedCurrency, selectedCategory, selectedSubcategory, categories]);
     
     const incomeTotals = React.useMemo(() => {
         return filteredIncomes.reduce((acc, income) => {
@@ -214,9 +188,12 @@ export default function IncomesPage() {
             
             <Card>
                 <CardHeader>
-                    <CardTitle>Filtros</CardTitle>
+                     <CardTitle className="flex items-center justify-between">
+                        <div className="flex items-center gap-2"><Filter className="h-5 w-5"/> Filtros</div>
+                        {areFiltersActive && <Button variant="ghost" size="sm" onClick={handleClearFilters}><X className="mr-2 h-4 w-4"/>Limpiar Filtros</Button>}
+                    </CardTitle>
                 </CardHeader>
-                <CardContent className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                <CardContent className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                     <Popover>
                         <PopoverTrigger asChild>
                         <Button
@@ -273,11 +250,6 @@ export default function IncomesPage() {
                             <SelectItem value="USD">USD</SelectItem>
                         </SelectContent>
                     </Select>
-                    
-                    <div className="flex gap-2 col-span-full md:col-span-1 md:col-start-3 lg:col-start-5">
-                       <Button onClick={handleApplyFilters} className="flex-1"><Filter className="mr-2 h-4 w-4" />Aplicar</Button>
-                       <Button variant="ghost" onClick={handleClearFilters} className="flex-1">Limpiar</Button>
-                    </div>
                 </CardContent>
             </Card>
             
@@ -374,5 +346,3 @@ export default function IncomesPage() {
         </div>
     );
 }
-
-    
