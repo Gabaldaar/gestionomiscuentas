@@ -37,7 +37,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
-import { type ExpenseCategory, type ActualExpense, type Wallet } from '@/lib/types';
+import { type ExpenseCategory, type ActualExpense, type Wallet, type Property } from '@/lib/types';
+import { Loader } from 'lucide-react';
 
 const expenseSchema = z.object({
   date: z.date({
@@ -50,6 +51,7 @@ const expenseSchema = z.object({
     required_error: 'La moneda es obligatoria.',
   }),
   notes: z.string().optional(),
+  propertyId: z.string().optional(), // Optional here, but can be required by parent component
 });
 
 export type ExpenseFormValues = z.infer<typeof expenseSchema>;
@@ -59,9 +61,13 @@ type AddExpenseDialogProps = {
   onOpenChange: (isOpen: boolean) => void;
   expenseCategories: ExpenseCategory[];
   wallets: Wallet[];
+  properties?: Property[]; // Make properties optional
   onExpenseSubmit: (data: ExpenseFormValues) => void;
+  isSubmitting?: boolean;
   expenseToEdit?: Omit<ActualExpense, 'propertyId' | 'propertyName'> | null;
-  initialData?: Partial<Omit<ActualExpense, 'propertyId' | 'propertyName'>> | null;
+  initialData?: Partial<ExpenseFormValues> | null;
+  title?: string;
+  description?: string;
 };
 
 const formatCurrency = (amount: number, currency: string) => {
@@ -74,9 +80,13 @@ export function AddExpenseDialog({
   onOpenChange,
   expenseCategories,
   wallets,
+  properties,
   onExpenseSubmit,
+  isSubmitting = false,
   expenseToEdit,
   initialData,
+  title = "Añadir Gasto",
+  description = "Registra un nuevo gasto para esta cuenta."
 }: AddExpenseDialogProps) {
 
   const isEditing = !!expenseToEdit;
@@ -108,15 +118,17 @@ export function AddExpenseDialog({
           amount: expenseToEdit.amount,
           currency: expenseToEdit.currency,
           notes: expenseToEdit.notes || '',
+          propertyId: (expenseToEdit as any).propertyId || '', // Handle potential propertyId
         });
       } else if (initialData) {
         form.reset({
-            date: initialData.date ? new Date(initialData.date) : new Date(),
+            date: initialData.date || new Date(),
             subcategoryId: initialData.subcategoryId || '',
             walletId: initialData.walletId || '',
             amount: initialData.amount || 0,
             currency: initialData.currency || 'ARS',
             notes: initialData.notes || '',
+            propertyId: initialData.propertyId || '',
         })
       } else {
           form.reset({
@@ -126,6 +138,7 @@ export function AddExpenseDialog({
               amount: 0,
               currency: 'ARS',
               notes: '',
+              propertyId: '',
           });
       }
     }
@@ -140,13 +153,39 @@ export function AddExpenseDialog({
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>{isEditing ? 'Editar Gasto' : 'Añadir Gasto'}</DialogTitle>
+          <DialogTitle>{isEditing ? `Editar ${title}` : title}</DialogTitle>
           <DialogDescription>
-            {isEditing ? 'Actualiza los detalles de este gasto.' : 'Registra un nuevo gasto para esta cuenta.'}
+            {isEditing ? `Actualiza los detalles de este gasto.` : description}
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
+            {properties && properties.length > 1 && (
+                 <FormField
+                    control={form.control}
+                    name="propertyId"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel>Cuenta</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value} defaultValue={field.value}>
+                            <FormControl>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Selecciona una cuenta" />
+                            </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                            {properties.map((prop) => (
+                                <SelectItem key={prop.id} value={prop.id}>
+                                    {prop.name}
+                                </SelectItem>
+                            ))}
+                            </SelectContent>
+                        </Select>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                />
+            )}
             <FormField
               control={form.control}
               name="date"
@@ -164,7 +203,7 @@ export function AddExpenseDialog({
                           )}
                         >
                           {field.value ? (
-                            format(field.value, 'PPP')
+                            format(field.value, 'PP', {locale: es})
                           ) : (
                             <span>Elige una fecha</span>
                           )}
@@ -181,6 +220,7 @@ export function AddExpenseDialog({
                           date > new Date() || date < new Date('1900-01-01')
                         }
                         initialFocus
+                        locale={es}
                       />
                     </PopoverContent>
                   </Popover>
@@ -252,7 +292,7 @@ export function AddExpenseDialog({
                     <FormItem>
                     <FormLabel>Monto</FormLabel>
                     <FormControl>
-                        <Input type="number" placeholder="0.00" {...field} />
+                        <Input type="number" step="0.01" placeholder="0.00" {...field} />
                     </FormControl>
                     <FormMessage />
                     </FormItem>
@@ -294,8 +334,11 @@ export function AddExpenseDialog({
               )}
             />
             <DialogFooter>
-              <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>Cancelar</Button>
-              <Button type="submit">{isEditing ? 'Guardar Cambios' : 'Guardar Gasto'}</Button>
+              <Button type="button" variant="ghost" onClick={() => onOpenChange(false)} disabled={isSubmitting}>Cancelar</Button>
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting && <Loader className="mr-2 h-4 w-4 animate-spin" />}
+                {isEditing ? 'Guardar Cambios' : 'Guardar Gasto'}
+                </Button>
             </DialogFooter>
           </form>
         </Form>
@@ -303,5 +346,4 @@ export function AddExpenseDialog({
     </Dialog>
   );
 }
-
     

@@ -1,7 +1,5 @@
 
 
-
-
 export type Currency = 'ARS' | 'USD';
 
 export type Property = {
@@ -61,7 +59,6 @@ export type ActualExpense = {
   currency: Currency;
   date: string; // ISO string
   notes?: string;
-  liabilityPaymentId?: string; // Links to a liability payment
 };
 
 export type Income = {
@@ -109,6 +106,7 @@ export type LiabilityPayment = {
   currency: Currency;
   notes?: string;
   actualExpenseId: string; // The corresponding expense entry
+  propertyId: string; // The property where the expense was booked
 };
 
 

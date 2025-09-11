@@ -3,7 +3,7 @@
 
 import * as React from 'react';
 import { notFound, useRouter, useParams } from 'next/navigation';
-import { doc, getDoc, collection, getDocs, Timestamp, query, orderBy, writeBatch, deleteDoc, where } from 'firebase/firestore';
+import { doc, getDoc, collection, getDocs, Timestamp, query, orderBy, writeBatch, deleteDoc, where, collectionGroup } from 'firebase/firestore';
 import Link from 'next/link';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -11,9 +11,9 @@ import { es } from 'date-fns/locale';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Pencil, Loader, FileText, PlusCircle, Trash2 } from 'lucide-react';
+import { Pencil, Loader, PlusCircle, Trash2 } from 'lucide-react';
 import { db } from '@/lib/firebase';
-import { type Liability, type LiabilityPayment, type Wallet, type ExpenseCategory, type Property, type ActualExpense, type Income } from '@/lib/types';
+import { type Liability, type LiabilityPayment, type Wallet, type ExpenseCategory, type Property, type Income } from '@/lib/types';
 import { Progress } from '@/components/ui/progress';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
@@ -44,6 +44,7 @@ export default function LiabilityDetailPage() {
 
   const [deletingPayment, setDeletingPayment] = React.useState<LiabilityPayment | null>(null);
   const [isDeleteLiabilityOpen, setIsDeleteLiabilityOpen] = React.useState(false);
+  const [paymentDialogInitialData, setPaymentDialogInitialData] = React.useState<Partial<ExpenseFormValues> | null>(null);
 
   const fetchPageData = React.useCallback(async () => {
     setLoading(true);
@@ -92,10 +93,10 @@ export default function LiabilityDetailPage() {
   const handlePaymentSubmit = async (data: ExpenseFormValues) => {
     if (!liability) return;
 
-    // Default to the first property if not selected (as there's no property context here)
-    const propertyId = properties[0]?.id; 
+    // The propertyId must now be part of the form data
+    const propertyId = (data as any).propertyId;
     if (!propertyId) {
-        toast({ title: "Error", description: "No hay cuentas configuradas para registrar el gasto.", variant: "destructive" });
+        toast({ title: "Error", description: "Debes seleccionar una cuenta para registrar el gasto del pago.", variant: "destructive" });
         return;
     }
 
@@ -103,7 +104,7 @@ export default function LiabilityDetailPage() {
     const batch = writeBatch(db);
 
     try {
-        // 1. Create the ActualExpense
+        // 1. Create the ActualExpense in the selected property
         const expenseRef = doc(collection(db, 'properties', propertyId, 'actualExpenses'));
         const expenseData = { ...data, date: Timestamp.fromDate(data.date), propertyId };
         batch.set(expenseRef, expenseData);
@@ -118,6 +119,7 @@ export default function LiabilityDetailPage() {
             currency: data.currency,
             notes: data.notes,
             actualExpenseId: expenseRef.id,
+            propertyId: propertyId, // Store propertyId for easier deletion
         };
         batch.set(paymentRef, paymentData);
 
@@ -154,7 +156,7 @@ export default function LiabilityDetailPage() {
     try {
         // 1. Get all refs
         const paymentRef = doc(db, 'liabilities', id, 'payments', deletingPayment.id);
-        const expenseRef = doc(db, 'properties', properties[0].id, 'actualExpenses', deletingPayment.actualExpenseId);
+        const expenseRef = doc(db, 'properties', deletingPayment.propertyId, 'actualExpenses', deletingPayment.actualExpenseId);
         const walletRef = doc(db, 'wallets', deletingPayment.walletId);
         const liabilityRef = doc(db, 'liabilities', id);
 
@@ -237,6 +239,15 @@ export default function LiabilityDetailPage() {
         setIsSubmitting(false);
     }
   };
+  
+  const handleOpenPaymentDialog = () => {
+    const paymentSubcategory = expenseCategories.flatMap(c => c.subcategories).find(sc => sc.name.toLowerCase().includes('pago de crédito'));
+    setPaymentDialogInitialData({
+        currency: liability?.currency,
+        subcategoryId: paymentSubcategory?.id,
+    });
+    setIsAddPaymentOpen(true);
+  }
 
 
   if (loading) {
@@ -251,7 +262,7 @@ export default function LiabilityDetailPage() {
     notFound();
   }
 
-  const percentagePaid = (liability.totalAmount - liability.outstandingBalance) / liability.totalAmount * 100;
+  const percentagePaid = liability.totalAmount > 0 ? (liability.totalAmount - liability.outstandingBalance) / liability.totalAmount * 100 : 0;
 
   return (
     <>
@@ -298,7 +309,7 @@ export default function LiabilityDetailPage() {
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Historial de Pagos</CardTitle>
-          <Button onClick={() => setIsAddPaymentOpen(true)}>
+          <Button onClick={handleOpenPaymentDialog}>
               <PlusCircle className="mr-2 h-4 w-4" />
               Registrar Pago
           </Button>
@@ -308,6 +319,7 @@ export default function LiabilityDetailPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>Fecha</TableHead>
+                <TableHead>Cuenta</TableHead>
                 <TableHead>Billetera</TableHead>
                 <TableHead>Notas</TableHead>
                 <TableHead className="text-right">Monto</TableHead>
@@ -318,6 +330,7 @@ export default function LiabilityDetailPage() {
               {payments.length > 0 ? payments.map(payment => (
                 <TableRow key={payment.id}>
                   <TableCell>{format(new Date(payment.date), 'PP', { locale: es })}</TableCell>
+                  <TableCell>{properties.find(p => p.id === payment.propertyId)?.name || 'N/A'}</TableCell>
                   <TableCell>{wallets.find(w => w.id === payment.walletId)?.name || 'N/A'}</TableCell>
                   <TableCell className="text-muted-foreground max-w-xs truncate">{payment.notes}</TableCell>
                   <TableCell className="text-right font-medium">{formatCurrency(payment.amount, payment.currency)}</TableCell>
@@ -329,7 +342,7 @@ export default function LiabilityDetailPage() {
                 </TableRow>
               )) : (
                 <TableRow>
-                  <TableCell colSpan={5} className="h-24 text-center">
+                  <TableCell colSpan={6} className="h-24 text-center">
                     No se han registrado pagos para este pasivo.
                   </TableCell>
                 </TableRow>
@@ -345,8 +358,13 @@ export default function LiabilityDetailPage() {
         isOpen={isAddPaymentOpen}
         onOpenChange={setIsAddPaymentOpen}
         expenseCategories={expenseCategories}
-        wallets={wallets.filter(w => w.currency === liability.currency)}
+        wallets={wallets.filter(w => w.currency === liability?.currency)}
+        properties={properties}
         onExpenseSubmit={handlePaymentSubmit}
+        isSubmitting={isSubmitting}
+        initialData={paymentDialogInitialData}
+        title="Registrar Pago de Pasivo"
+        description="Registra un pago que se asociará a este pasivo y se registrará como un gasto en la cuenta que elijas."
     />
 
     <ConfirmDeleteDialog 

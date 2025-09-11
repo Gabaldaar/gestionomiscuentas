@@ -1,4 +1,3 @@
-
 'use client';
 
 import * as React from 'react';
@@ -42,6 +41,12 @@ export default function EditLiabilityPage() {
 
   const form = useForm<LiabilityFormValues>({
     resolver: zodResolver(liabilitySchema),
+    defaultValues: {
+      name: '',
+      notes: '',
+      currency: 'ARS',
+      totalAmount: 0,
+    }
   });
 
   React.useEffect(() => {
@@ -58,7 +63,7 @@ export default function EditLiabilityPage() {
             name: data.name,
             totalAmount: data.totalAmount,
             currency: data.currency,
-            notes: data.notes,
+            notes: data.notes || '',
           });
         } else {
           toast({ title: "Error", description: "Pasivo no encontrado.", variant: "destructive" });
@@ -70,7 +75,9 @@ export default function EditLiabilityPage() {
         setLoading(false);
       }
     };
-    fetchLiability();
+    if (id) {
+        fetchLiability();
+    }
   }, [id, form, toast, router]);
 
   const onSubmit = async (data: LiabilityFormValues) => {

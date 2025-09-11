@@ -6,7 +6,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useRouter } from 'next/navigation';
-import { collection, addDoc, getDocs, doc, writeBatch, Timestamp, query, orderBy, getDoc } from 'firebase/firestore';
+import { collection, doc, writeBatch, Timestamp, query, orderBy, getDocs, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
 import { PageHeader } from '@/components/shared/PageHeader';
@@ -148,6 +148,7 @@ export default function NewLiabilityPage() {
         description: 'No se pudo crear el pasivo.',
         variant: 'destructive',
       });
+    } finally {
       setIsSubmitting(false);
     }
   };
