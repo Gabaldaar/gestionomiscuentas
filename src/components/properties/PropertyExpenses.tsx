@@ -15,6 +15,7 @@ import { useToast } from "@/hooks/use-toast";
 import { AddExpenseDialog } from './AddExpenseDialog';
 import { AddExpectedExpenseDialog } from './AddExpectedExpenseDialog';
 import { ConfirmDeleteDialog } from '../shared/ConfirmDeleteDialog';
+import { cn } from '@/lib/utils';
 
 type PropertyExpensesProps = {
   propertyId: string;
@@ -351,10 +352,22 @@ export function PropertyExpenses({
                                     <div className='font-medium'>{getSubcategoryName(expense.subcategoryId)}</div>
                                     <div className='text-xs text-muted-foreground'>{getCategoryName(expense.subcategoryId)}</div>
                                 </TableCell>
-                                <TableCell className="text-right font-medium">
+                                <TableCell className={cn(
+                                    "text-right font-medium",
+                                    {
+                                        'text-green-800 dark:text-green-400': expense.currency === 'USD',
+                                        'text-blue-800 dark:text-blue-400': expense.currency === 'ARS',
+                                    }
+                                )}>
                                     {new Intl.NumberFormat('es-AR', { style: 'currency', currency: expense.currency }).format(expense.amount)}
                                 </TableCell>
-                                <TableCell className="text-right font-medium hidden md:table-cell">
+                                <TableCell className={cn(
+                                    "text-right font-medium hidden md:table-cell",
+                                    {
+                                        'text-green-800 dark:text-green-400': expense.currency === 'USD',
+                                        'text-blue-800 dark:text-blue-400': expense.currency === 'ARS',
+                                    }
+                                )}>
                                     {new Intl.NumberFormat('es-AR', { style: 'currency', currency: expense.currency }).format(paidAmount)}
                                 </TableCell>
                                 <TableCell>
