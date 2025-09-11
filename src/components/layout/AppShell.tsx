@@ -44,6 +44,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   if (!isClient) {
     return null;
   }
+  
+  const checkActive = (href: string) => {
+    if (href === '/') {
+        return pathname === '/';
+    }
+    // Check for exact match or if it's a sub-route (e.g., /edit, /new)
+    return pathname.startsWith(href) && (pathname === href || pathname.charAt(href.length) === '/');
+  }
 
   return (
     <SidebarProvider>
@@ -64,7 +72,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               <SidebarMenuItem key={item.href}>
                 <SidebarMenuButton
                   asChild
-                  isActive={pathname.startsWith(item.href) && (item.href !== '/' || pathname === '/')}
+                  isActive={checkActive(item.href)}
                   tooltip={item.label}
                 >
                   <Link href={item.href}>
