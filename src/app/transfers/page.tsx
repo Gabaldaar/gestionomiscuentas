@@ -182,7 +182,7 @@ export default function TransfersHistoryPage() {
                         id="date"
                         variant={"outline"}
                         className={cn(
-                        "w-[260px] justify-start text-left font-normal",
+                        "w-full sm:w-[260px] justify-start text-left font-normal",
                         !dateRange && "text-muted-foreground"
                         )}
                     >
@@ -215,7 +215,7 @@ export default function TransfersHistoryPage() {
                 </Popover>
 
                 <Select value={selectedCurrency} onValueChange={(value: Currency | 'all') => setSelectedCurrency(value)}>
-                    <SelectTrigger className="w-[180px]">
+                    <SelectTrigger className="w-full sm:w-[180px]">
                     <SelectValue placeholder="Moneda" />
                     </SelectTrigger>
                     <SelectContent>
@@ -224,13 +224,15 @@ export default function TransfersHistoryPage() {
                     <SelectItem value="USD">USD</SelectItem>
                     </SelectContent>
                 </Select>
-                <Button onClick={handleApplyFilters}>
-                    <Filter className="mr-2 h-4 w-4" />
-                    Aplicar Filtros
-                </Button>
-                 <Button variant="ghost" onClick={handleClearFilters}>
-                    Limpiar
-                </Button>
+                <div className="flex w-full sm:w-auto gap-2">
+                    <Button onClick={handleApplyFilters} className="flex-1">
+                        <Filter className="mr-2 h-4 w-4" />
+                        Aplicar
+                    </Button>
+                    <Button variant="ghost" onClick={handleClearFilters} className="flex-1">
+                        Limpiar
+                    </Button>
+                </div>
 
             </CardContent>
         </Card>
@@ -250,8 +252,8 @@ export default function TransfersHistoryPage() {
                   <TableHead>Hacia</TableHead>
                   <TableHead className="text-right">Monto Enviado</TableHead>
                   <TableHead className="text-right">Monto Recibido</TableHead>
-                  <TableHead>Tasa</TableHead>
-                  <TableHead>Notas</TableHead>
+                  <TableHead className="hidden md:table-cell">Tasa</TableHead>
+                  <TableHead className="hidden md:table-cell">Notas</TableHead>
                   <TableHead className="w-[50px]"></TableHead>
                 </TableRow>
               </TableHeader>
@@ -271,10 +273,10 @@ export default function TransfersHistoryPage() {
                           <TableCell className="text-right font-medium text-green-500">
                               + {formatCurrency(transfer.amountReceived, transfer.toCurrency)}
                           </TableCell>
-                          <TableCell>
+                          <TableCell className="hidden md:table-cell">
                               {transfer.exchangeRate ? `1 USD = ${formatCurrency(transfer.exchangeRate, 'ARS')}` : 'N/A'}
                           </TableCell>
-                          <TableCell className="text-muted-foreground max-w-[200px] truncate">{transfer.notes}</TableCell>
+                          <TableCell className="text-muted-foreground max-w-[200px] truncate hidden md:table-cell">{transfer.notes}</TableCell>
                           <TableCell>
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
