@@ -2,7 +2,7 @@
 'use client';
 
 import * as React from 'react';
-import { Wallet, Landmark, CreditCard, Home, Briefcase, PiggyBank, type LucideIcon } from 'lucide-react';
+import { Wallet, Landmark, CreditCard, Home, Briefcase, PiggyBank, type LucideIcon, Building, Car, Plane, University } from 'lucide-react';
 
 export const walletIcons = {
     Wallet,
@@ -11,6 +11,10 @@ export const walletIcons = {
     Home,
     Briefcase,
     PiggyBank,
+    Building,
+    Car,
+    Plane,
+    University,
 } as const;
 
 export type WalletIconName = keyof typeof walletIcons;
