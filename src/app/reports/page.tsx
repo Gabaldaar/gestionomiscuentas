@@ -237,12 +237,7 @@ export default function ReportsPage() {
         const summary = await generateFinancialSummary({
             currency,
             currentPeriod: currentPeriodData.period,
-            historicalData: financialSummaryData.map(d => ({
-                period: d.period,
-                income: d.income,
-                expense: d.expense,
-                net: d.net,
-            })),
+            historicalData: financialSummaryData,
             expenseBreakdown: expenseBreakdownData.pieData,
         });
         setAiSummary(summary);
