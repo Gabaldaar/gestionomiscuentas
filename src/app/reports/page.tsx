@@ -17,7 +17,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Loader, AlertTriangle, Filter, Calendar as CalendarIcon, Sparkles, Lightbulb, TrendingUp, TrendingDown } from 'lucide-react';
+import { Loader, AlertTriangle, Filter, Calendar as CalendarIcon, Sparkles, Lightbulb, TrendingUp, TrendingDown, Forward, LineChart as LineChartIcon } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 
@@ -225,13 +225,25 @@ export default function ReportsPage() {
     setIsGeneratingSummary(true);
     setAiSummary(null);
     setAiError(null);
+
+    const currentPeriodData = financialSummaryData[financialSummaryData.length - 1];
+    if (!currentPeriodData) {
+        setAiError("No hay datos en el período actual para analizar.");
+        setIsGeneratingSummary(false);
+        return;
+    }
+
     try {
         const summary = await generateFinancialSummary({
             currency,
-            totalIncome,
-            totalExpense,
-            netBalance,
-            expenseBreakdown: expenseBreakdownData.pieData
+            currentPeriod: currentPeriodData.period,
+            historicalData: financialSummaryData.map(d => ({
+                period: d.period,
+                income: d.income,
+                expense: d.expense,
+                net: d.net,
+            })),
+            expenseBreakdown: expenseBreakdownData.pieData,
         });
         setAiSummary(summary);
     } catch (e) {
@@ -537,38 +549,48 @@ export default function ReportsPage() {
                                         <Sparkles className="h-5 w-5" />
                                     </div>
                                     <div>
-                                        <h4 className="font-bold">Aspecto Destacado</h4>
+                                        <h4 className="font-bold">Conclusión Principal</h4>
                                         <p>{aiSummary.highlight}</p>
                                     </div>
                                 </div>
                                 
                                 <div className="flex items-start gap-4">
-                                    <div className="bg-green-100 text-green-700 p-2 rounded-full dark:bg-green-900 dark:text-green-300">
-                                        <TrendingUp className="h-5 w-5" />
+                                    <div className="bg-blue-100 text-blue-700 p-2 rounded-full dark:bg-blue-900 dark:text-blue-300">
+                                        <LineChartIcon className="h-5 w-5" />
                                     </div>
                                     <div>
-                                        <h4 className="font-bold">Análisis de Ingresos</h4>
-                                        <p className="text-muted-foreground">{aiSummary.incomeAnalysis}</p>
+                                        <h4 className="font-bold">Análisis de Tendencias</h4>
+                                        <p className="text-muted-foreground">{aiSummary.trendAnalysis}</p>
                                     </div>
                                 </div>
 
                                 <div className="flex items-start gap-4">
-                                     <div className="bg-red-100 text-red-700 p-2 rounded-full dark:bg-red-900 dark:text-red-300">
+                                     <div className="bg-yellow-100 text-yellow-700 p-2 rounded-full dark:bg-yellow-900 dark:text-yellow-300">
                                         <TrendingDown className="h-5 w-5" />
                                     </div>
                                     <div>
-                                        <h4 className="font-bold">Análisis de Gastos</h4>
-                                        <p className="text-muted-foreground">{aiSummary.expenseAnalysis}</p>
+                                        <h4 className="font-bold">Análisis del Período Actual</h4>
+                                        <p className="text-muted-foreground">{aiSummary.currentPeriodAnalysis}</p>
                                     </div>
                                 </div>
-
-                                <div className="flex items-start gap-4 p-4 bg-accent/50 border border-accent/80 rounded-lg">
-                                    <div className="bg-accent text-accent-foreground p-2 rounded-full">
+                                
+                                <div className="flex items-start gap-4">
+                                    <div className="bg-green-100 text-green-700 p-2 rounded-full dark:bg-green-900 dark:text-green-300">
                                         <Lightbulb className="h-5 w-5" />
                                     </div>
                                     <div>
-                                        <h4 className="font-bold">Recomendación</h4>
-                                        <p>{aiSummary.recommendation}</p>
+                                        <h4 className="font-bold">Sugerencia Futura</h4>
+                                        <p className="text-muted-foreground">{aiSummary.futureSuggestion}</p>
+                                    </div>
+                                </div>
+
+                                <div className="flex items-start gap-4 p-4 bg-purple-100/50 dark:bg-purple-900/20 border border-purple-200/80 dark:border-purple-500/30 rounded-lg">
+                                    <div className="bg-purple-500 text-white p-2 rounded-full">
+                                        <Forward className="h-5 w-5" />
+                                    </div>
+                                    <div>
+                                        <h4 className="font-bold">Mirando Hacia Adelante</h4>
+                                        <p>{aiSummary.forwardLooking}</p>
                                     </div>
                                 </div>
                             </div>

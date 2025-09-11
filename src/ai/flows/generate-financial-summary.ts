@@ -1,3 +1,4 @@
+
 'use server';
 
 /**
@@ -5,7 +6,7 @@
  *
  * - generateFinancialSummary - La función que genera el análisis.
  * - FinancialSummaryInput - El tipo de entrada para la función.
- * - FinancialSummaryOutput - El tipo de retorno para la función.
+ * - FinancialSummaryOutput - El tipo de retorno para la la función.
  */
 
 import {ai} from '@/ai/genkit';
@@ -13,21 +14,26 @@ import {z} from 'genkit';
 
 const FinancialSummaryInputSchema = z.object({
   currency: z.string().describe('La moneda de los datos financieros.'),
-  totalIncome: z.number().describe('El total de ingresos para el período.'),
-  totalExpense: z.number().describe('El total de gastos para el período.'),
-  netBalance: z.number().describe('El saldo neto (ingresos - gastos).'),
+  currentPeriod: z.string().describe('El período actual que se está analizando (ej. "diciembre 2023").'),
+  historicalData: z.array(z.object({
+    period: z.string().describe('El período (mes o año).'),
+    income: z.number().describe('Total de ingresos para ese período.'),
+    expense: z.number().describe('Total de gastos para ese período.'),
+    net: z.number().describe('Saldo neto para ese período.'),
+  })).describe('Una serie de datos históricos para análisis de tendencias.'),
   expenseBreakdown: z.array(z.object({
     name: z.string().describe('El nombre de la categoría de gasto.'),
-    value: z.number().describe('El monto total para esa categoría.'),
-  })).describe('Un desglose de los gastos por categoría principal.'),
+    value: z.number().describe('El monto total para esa categoría en el período actual.'),
+  })).describe('Un desglose de los gastos por categoría principal para el período actual.'),
 });
 export type FinancialSummaryInput = z.infer<typeof FinancialSummaryInputSchema>;
 
 const FinancialSummaryOutputSchema = z.object({
-    highlight: z.string().describe('El aspecto más destacado o el titular principal del período (ej. "Saldo neto positivo", "Aumento de gastos").'),
-    incomeAnalysis: z.string().describe('Un breve análisis sobre los ingresos del período.'),
-    expenseAnalysis: z.string().describe('Un análisis detallado de los gastos, mencionando la categoría más alta.'),
-    recommendation: z.string().describe('Una recomendación o consejo accionable para el usuario basado en el análisis.'),
+    highlight: z.string().describe('El titular o conclusión más importante del análisis del período actual en relación con las tendencias.'),
+    trendAnalysis: z.string().describe('Un análisis de las tendencias observadas en los ingresos, gastos y saldo neto de los datos históricos.'),
+    currentPeriodAnalysis: z.string().describe('Un análisis detallado del período actual, mencionando la categoría de mayor gasto y comparándolo con las tendencias.'),
+    futureSuggestion: z.string().describe('Una sugerencia accionable para los próximos meses basada en las tendencias y el rendimiento actual.'),
+    forwardLooking: z.string().describe('Una perspectiva o posible tendencia para el resto del año si los patrones actuales continúan.'),
 });
 export type FinancialSummaryOutput = z.infer<typeof FinancialSummaryOutputSchema>;
 
@@ -41,26 +47,30 @@ const prompt = ai.definePrompt({
   name: 'financialSummaryPrompt',
   input: {schema: FinancialSummaryInputSchema},
   output: {schema: FinancialSummaryOutputSchema},
-  prompt: `Eres un asesor financiero experto. Tu tarea es analizar los datos financieros de un usuario para un período específico y proporcionar un resumen claro, conciso y útil.
-  Sé directo y amigable en tu tono. No uses más de una oración por cada campo de salida.
+  prompt: `Eres un asesor financiero experto y analista de datos. Tu tarea es analizar una serie de datos financieros históricos de un usuario para identificar tendencias, evaluar el rendimiento del período actual y proporcionar proyecciones y consejos.
+  Sé directo, perspicaz y amigable en tu tono. Utiliza una o dos oraciones como máximo para cada campo de salida.
 
-  Aquí están los datos financieros en {{{currency}}}:
-  - Total de Ingresos: {{{totalIncome}}}
-  - Total de Gastos: {{{totalExpense}}}
-  - Saldo Neto: {{{netBalance}}}
+  DATOS FINANCIEROS (Moneda: {{{currency}}})
 
-  Desglose de gastos por categoría:
+  Período de enfoque principal: {{{currentPeriod}}}
+
+  Datos Históricos (Ingresos, Gastos, Saldo Neto):
+  {{#each historicalData}}
+  - Período: {{period}}, Ingresos: {{income}}, Gastos: {{expense}}, Saldo Neto: {{net}}
+  {{/each}}
+
+  Desglose de Gastos para el Período Actual ({{{currentPeriod}}}):
   {{#each expenseBreakdown}}
   - Categoría: {{name}}, Monto: {{value}}
   {{/each}}
 
-  Basado en estos datos, genera el siguiente análisis:
-  - highlight: El titular más importante del período. Menciona el saldo neto.
-  - incomeAnalysis: Un breve comentario sobre los ingresos.
-  - expenseAnalysis: Analiza los gastos, identificando y mencionando la categoría con el mayor gasto.
-  - recommendation: Ofrece un consejo simple y accionable. Si el saldo es positivo, sugiere ahorrar o invertir. Si es negativo, sugiere revisar la categoría de mayor gasto.
+  Basado en TODOS los datos proporcionados, genera el siguiente análisis en formato JSON:
 
-  Responde en formato JSON.
+  - highlight: La conclusión más importante sobre el período actual ({{{currentPeriod}}}) a la luz de las tendencias históricas.
+  - trendAnalysis: Describe brevemente la tendencia general que observas en los ingresos, gastos y/o saldo neto durante los últimos meses.
+  - currentPeriodAnalysis: Analiza el período actual, identifica la categoría de mayor gasto y compáralo con las tendencias que identificaste. ¿Es un mes típico, mejor o peor que el promedio?
+  - futureSuggestion: Ofrece un consejo simple y accionable para los próximos 1-2 meses. Si la tendencia es buena, sugiere cómo mantenerla o mejorarla. Si es mala, sugiere un punto específico a vigilar.
+  - forwardLooking: Basado en las tendencias, ofrece una breve perspectiva o proyección para lo que queda del año.
   `,
 });
 
