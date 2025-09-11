@@ -86,6 +86,7 @@ export function PropertyExpenses({
   const totals = React.useMemo(() => {
     const expected = { ARS: 0, USD: 0 };
     const paid = { ARS: 0, USD: 0 };
+    const balance = { ARS: 0, USD: 0 };
 
     filteredExpectedExpenses.forEach(exp => {
       expected[exp.currency] += exp.amount;
@@ -95,7 +96,10 @@ export function PropertyExpenses({
       paid[exp.currency] += exp.amount;
     });
 
-    return { expected, paid };
+    balance.ARS = expected.ARS - paid.ARS;
+    balance.USD = expected.USD - paid.USD;
+
+    return { expected, paid, balance };
   }, [filteredExpectedExpenses, filteredActualExpenses]);
 
 
@@ -382,19 +386,24 @@ export function PropertyExpenses({
             </TabsList>
           </CardHeader>
           <CardContent>
-            <div className="p-4 border rounded-lg mb-4 space-y-2">
+             <div className="p-4 border rounded-lg mb-4">
                 <h4 className="text-md font-semibold text-center mb-2">Totales del Período</h4>
-                <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1">
-                    <div className='text-sm text-muted-foreground'>Previsto</div>
-                    <div className="font-bold text-blue-800 dark:text-blue-400 text-lg">{formatCurrency(totals.expected.ARS, 'ARS')}</div>
-                    <div className="font-bold text-green-800 dark:text-green-400 text-lg">{formatCurrency(totals.expected.USD, 'USD')}</div>
-                </div>
+                <div className="grid grid-cols-3 gap-4 text-center">
                     <div className="space-y-1">
-                    <div className='text-sm text-muted-foreground'>Pagado</div>
-                    <div className="font-bold text-blue-800 dark:text-blue-400 text-lg">{formatCurrency(totals.paid.ARS, 'ARS')}</div>
-                    <div className="font-bold text-green-800 dark:text-green-400 text-lg">{formatCurrency(totals.paid.USD, 'USD')}</div>
-                </div>
+                        <div className='text-sm text-muted-foreground'>Previsto</div>
+                        <div className="font-bold text-blue-800 dark:text-blue-400 text-lg">{formatCurrency(totals.expected.ARS, 'ARS')}</div>
+                        <div className="font-bold text-green-800 dark:text-green-400 text-lg">{formatCurrency(totals.expected.USD, 'USD')}</div>
+                    </div>
+                    <div className="space-y-1">
+                        <div className='text-sm text-muted-foreground'>Pagado</div>
+                        <div className="font-bold text-blue-800 dark:text-blue-400 text-lg">{formatCurrency(totals.paid.ARS, 'ARS')}</div>
+                        <div className="font-bold text-green-800 dark:text-green-400 text-lg">{formatCurrency(totals.paid.USD, 'USD')}</div>
+                    </div>
+                    <div className="space-y-1">
+                        <div className='text-sm text-muted-foreground'>Saldo</div>
+                         <div className={cn("font-bold text-lg", totals.balance.ARS < 0 ? "text-destructive" : "text-blue-800 dark:text-blue-400")}>{formatCurrency(totals.balance.ARS, 'ARS')}</div>
+                        <div className={cn("font-bold text-lg", totals.balance.USD < 0 ? "text-destructive" : "text-green-800 dark:text-green-400")}>{formatCurrency(totals.balance.USD, 'USD')}</div>
+                    </div>
                 </div>
             </div>
             <TabsContent value="overview">
@@ -609,5 +618,3 @@ export function PropertyExpenses({
     </>
   );
 }
-
-    
