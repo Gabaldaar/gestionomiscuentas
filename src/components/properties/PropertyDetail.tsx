@@ -225,8 +225,8 @@ export function PropertyDetail({ id }: { id: string }) {
                 <CardHeader>
                     <CardTitle>Detalles de la Cuenta</CardTitle>
                 </CardHeader>
-                <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div className="md:col-span-1 flex justify-center">
+                <CardContent className="flex flex-col md:flex-row gap-6">
+                    <div className="flex-shrink-0">
                         <Image
                             src={property.imageUrl}
                             alt={property.name}
@@ -236,7 +236,7 @@ export function PropertyDetail({ id }: { id: string }) {
                             data-ai-hint="apartment building"
                         />
                     </div>
-                    <div className="md:col-span-2 space-y-4">
+                    <div className="flex-grow space-y-4">
                         <div>
                             <h3 className="font-semibold text-lg">Descripción</h3>
                             <p className="text-muted-foreground">{property.description}</p>
