@@ -7,7 +7,6 @@ import { db } from '@/lib/firebase';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { PlusCircle, Pencil, Trash2, Loader, Copy } from "lucide-react";
 import { type ExpectedExpense, type ActualExpense, type ExpenseCategory, type Wallet, type Currency } from "@/lib/types";
@@ -17,7 +16,6 @@ import { AddExpectedExpenseDialog } from './AddExpectedExpenseDialog';
 import { ConfirmDeleteDialog } from '../shared/ConfirmDeleteDialog';
 import { cn } from '@/lib/utils';
 import { CopyExpectedExpensesDialog } from './CopyExpectedExpensesDialog';
-import { Separator } from '../ui/separator';
 
 type PropertyExpensesProps = {
   propertyId: string;
@@ -136,16 +134,6 @@ export function PropertyExpenses({
       .reduce((sum, current) => sum + current.amount, 0);
   };
   
-  const getStatus = (expectedAmount: number, paidAmount: number): { text: string; color: 'bg-green-500' | 'bg-yellow-500' | 'bg-red-500' } => {
-    if (paidAmount === 0) {
-      return { text: 'Pendiente', color: 'bg-red-500' };
-    }
-    if (paidAmount < expectedAmount) {
-      return { text: 'Parcial', color: 'bg-yellow-500' };
-    }
-    return { text: 'Pagado', color: 'bg-green-500' };
-  };
-
   // --- Actual Expense Handlers ---
   const handleActualExpenseSubmit = async (data: any) => {
     const batch = writeBatch(db);
@@ -386,27 +374,27 @@ export function PropertyExpenses({
             </TabsList>
           </CardHeader>
           <CardContent>
-             <div className="p-4 border rounded-lg mb-4">
-                <h4 className="text-md font-semibold text-center mb-2">Totales del Período</h4>
-                <div className="grid grid-cols-3 gap-4 text-center">
-                    <div className="space-y-1">
-                        <div className='text-sm text-muted-foreground'>Previsto</div>
-                        <div className="font-bold text-blue-800 dark:text-blue-400 text-lg">{formatCurrency(totals.expected.ARS, 'ARS')}</div>
-                        <div className="font-bold text-green-800 dark:text-green-400 text-lg">{formatCurrency(totals.expected.USD, 'USD')}</div>
-                    </div>
-                    <div className="space-y-1">
-                        <div className='text-sm text-muted-foreground'>Pagado</div>
-                        <div className="font-bold text-blue-800 dark:text-blue-400 text-lg">{formatCurrency(totals.paid.ARS, 'ARS')}</div>
-                        <div className="font-bold text-green-800 dark:text-green-400 text-lg">{formatCurrency(totals.paid.USD, 'USD')}</div>
-                    </div>
-                    <div className="space-y-1">
-                        <div className='text-sm text-muted-foreground'>Saldo</div>
-                         <div className={cn("font-bold text-lg", totals.balance.ARS < 0 ? "text-destructive" : "text-blue-800 dark:text-blue-400")}>{formatCurrency(totals.balance.ARS, 'ARS')}</div>
-                        <div className={cn("font-bold text-lg", totals.balance.USD < 0 ? "text-destructive" : "text-green-800 dark:text-green-400")}>{formatCurrency(totals.balance.USD, 'USD')}</div>
-                    </div>
-                </div>
-            </div>
             <TabsContent value="overview">
+                <div className="p-4 border rounded-lg mb-4">
+                  <h4 className="text-md font-semibold text-center mb-2">Totales del Período</h4>
+                  <div className="grid grid-cols-3 gap-4 text-center">
+                      <div className="space-y-1">
+                          <div className='text-sm text-muted-foreground'>Previsto</div>
+                          <div className="font-bold text-blue-800 dark:text-blue-400 text-lg">{formatCurrency(totals.expected.ARS, 'ARS')}</div>
+                          <div className="font-bold text-green-800 dark:text-green-400 text-lg">{formatCurrency(totals.expected.USD, 'USD')}</div>
+                      </div>
+                      <div className="space-y-1">
+                          <div className='text-sm text-muted-foreground'>Pagado</div>
+                          <div className="font-bold text-blue-800 dark:text-blue-400 text-lg">{formatCurrency(totals.paid.ARS, 'ARS')}</div>
+                          <div className="font-bold text-green-800 dark:text-green-400 text-lg">{formatCurrency(totals.paid.USD, 'USD')}</div>
+                      </div>
+                      <div className="space-y-1">
+                          <div className='text-sm text-muted-foreground'>Saldo</div>
+                          <div className={cn("font-bold text-lg", totals.balance.ARS < 0 ? "text-destructive" : "text-blue-800 dark:text-blue-400")}>{formatCurrency(totals.balance.ARS, 'ARS')}</div>
+                          <div className={cn("font-bold text-lg", totals.balance.USD < 0 ? "text-destructive" : "text-green-800 dark:text-green-400")}>{formatCurrency(totals.balance.USD, 'USD')}</div>
+                      </div>
+                  </div>
+              </div>
                 <div className='flex justify-between items-center mb-4 gap-2 flex-wrap'>
                     <div>
                         <h3 className="text-lg font-semibold">Gastos Previstos</h3>
@@ -436,14 +424,14 @@ export function PropertyExpenses({
                         <TableHead>Categoría</TableHead>
                         <TableHead className="text-right">Previsto</TableHead>
                         <TableHead className="text-right hidden md:table-cell">Pagado</TableHead>
-                        <TableHead>Estado</TableHead>
+                        <TableHead>Saldo</TableHead>
                         <TableHead className="w-[100px]"></TableHead>
                     </TableRow>
                     </TableHeader>
                     <TableBody>
                     {filteredExpectedExpenses.length > 0 ? filteredExpectedExpenses.map(expense => {
                         const paidAmount = getPaidAmount(expense);
-                        const status = getStatus(expense.amount, paidAmount);
+                        const balance = expense.amount - paidAmount;
                         return (
                             <TableRow key={expense.id}>
                                 <TableCell>{expense.month}/{expense.year}</TableCell>
@@ -469,15 +457,11 @@ export function PropertyExpenses({
                                 )}>
                                     {formatCurrency(paidAmount, expense.currency)}
                                 </TableCell>
-                                <TableCell>
-                                    <Badge 
-                                        variant="outline" 
-                                        className='flex items-center gap-2 cursor-pointer hover:bg-secondary'
-                                        onClick={() => handleAddActualFromExpected(expense)}
-                                    >
-                                        <span className={`h-2 w-2 rounded-full ${status.color}`}></span>
-                                        {status.text}
-                                    </Badge>
+                                <TableCell 
+                                  className={cn("font-medium", balance > 0 ? "text-red-500" : "text-green-500")}
+                                  onClick={() => handleAddActualFromExpected(expense)}
+                                >
+                                  {formatCurrency(balance, expense.currency)}
                                 </TableCell>
                                 <TableCell className="text-right">
                                     <div className="flex items-center justify-end gap-2">
