@@ -24,6 +24,7 @@ import {
   Home,
   Wallet,
   TrendingDown,
+  TrendingUp,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -31,6 +32,7 @@ const navItems = [
   { href: '/', label: 'Panel de Control', icon: LayoutDashboard },
   { href: '/properties', label: 'Cuentas', icon: Building2 },
   { href: '/expenses', label: 'Historial de Gastos', icon: TrendingDown },
+  { href: '/incomes', label: 'Historial de Ingresos', icon: TrendingUp },
   { href: '/transfers', label: 'Transferencias', icon: ArrowLeftRight },
   { href: '/settings/wallets', label: 'Billeteras', icon: Wallet },
   { href: '/settings', label: 'Configuración', icon: Settings2 },
