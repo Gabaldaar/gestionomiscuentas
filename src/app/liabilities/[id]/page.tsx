@@ -228,10 +228,16 @@ export default function LiabilityDetailPage() {
   };
   
   const handleOpenPaymentDialog = () => {
-    const paymentSubcategory = expenseCategories.flatMap(c => c.subcategories).find(sc => sc.name.toLowerCase().includes('pago de crédito'));
+    const matchingSubcategories = expenseCategories.flatMap(c => c.subcategories).filter(sc => sc.name.toLowerCase().includes('pago de crédito'));
+    
+    let defaultSubcategoryId: string | undefined = undefined;
+    if (matchingSubcategories.length === 1) {
+        defaultSubcategoryId = matchingSubcategories[0].id;
+    }
+
     setPaymentDialogInitialData({
         currency: liability?.currency,
-        subcategoryId: paymentSubcategory?.id,
+        subcategoryId: defaultSubcategoryId,
     });
     setIsAddPaymentOpen(true);
   }

@@ -119,7 +119,11 @@ export default function NewLiabilityPage() {
 
         const incomeRef = doc(collection(db, 'properties', data.propertyId, 'incomes'));
         
-        const creditSubcategory = incomeCategories.flatMap(c => c.subcategories).find(sc => sc.name.toLowerCase().includes('crédito'));
+        const matchingSubcategories = incomeCategories.flatMap(c => c.subcategories).filter(sc => sc.name.toLowerCase().includes('crédito'));
+        let creditSubcategoryId : string | undefined = undefined;
+        if (matchingSubcategories.length === 1) {
+            creditSubcategoryId = matchingSubcategories[0].id;
+        }
 
         batch.set(incomeRef, {
           amount: data.initialAmountReceived,
@@ -127,7 +131,7 @@ export default function NewLiabilityPage() {
           date: Timestamp.now(),
           notes: `Monto inicial recibido del pasivo: ${data.name}`,
           propertyId: data.propertyId,
-          subcategoryId: creditSubcategory?.id || '',
+          subcategoryId: creditSubcategoryId || '',
           walletId: data.walletId,
           liabilityId: newLiabilityRef.id,
         });
