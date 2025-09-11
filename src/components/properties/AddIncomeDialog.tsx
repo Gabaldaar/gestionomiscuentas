@@ -63,6 +63,10 @@ type AddIncomeDialogProps = {
   incomeToEdit?: Income | null;
 };
 
+const formatCurrency = (amount: number, currency: string) => {
+    return new Intl.NumberFormat('es-AR', { style: 'currency', currency, minimumFractionDigits: 2 }).format(amount);
+};
+
 export function AddIncomeDialog({
   isOpen,
   onOpenChange,
@@ -216,7 +220,10 @@ export function AddIncomeDialog({
                     <SelectContent>
                       {wallets.map((wallet) => (
                         <SelectItem key={wallet.id} value={wallet.id}>
-                          {wallet.name} ({wallet.currency})
+                           <div className="flex justify-between w-full">
+                            <span>{wallet.name} ({wallet.currency})</span>
+                            <span className="text-muted-foreground ml-4">{formatCurrency(wallet.balance, wallet.currency)}</span>
+                          </div>
                         </SelectItem>
                       ))}
                     </SelectContent>

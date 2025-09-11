@@ -36,6 +36,11 @@ const transferSchema = z.object({
 
 export type TransferFormValues = z.infer<typeof transferSchema>;
 
+const formatCurrency = (amount: number, currency: string) => {
+    return new Intl.NumberFormat('es-AR', { style: 'currency', currency, minimumFractionDigits: 2 }).format(amount);
+};
+
+
 export default function NewTransferPage() {
   const { toast } = useToast();
   const router = useRouter();
@@ -227,7 +232,10 @@ export default function NewTransferPage() {
                           <SelectContent>
                             {wallets.map(wallet => (
                               <SelectItem key={wallet.id} value={wallet.id}>
-                                {wallet.name} ({wallet.currency})
+                                <div className="flex justify-between w-full">
+                                  <span>{wallet.name} ({wallet.currency})</span>
+                                  <span className="text-muted-foreground ml-4">{formatCurrency(wallet.balance, wallet.currency)}</span>
+                                </div>
                               </SelectItem>
                             ))}
                           </SelectContent>
@@ -251,7 +259,10 @@ export default function NewTransferPage() {
                           <SelectContent>
                             {wallets.map(wallet => (
                               <SelectItem key={wallet.id} value={wallet.id} disabled={wallet.id === fromWalletId}>
-                                {wallet.name} ({wallet.currency})
+                                <div className="flex justify-between w-full">
+                                  <span>{wallet.name} ({wallet.currency})</span>
+                                  <span className="text-muted-foreground ml-4">{formatCurrency(wallet.balance, wallet.currency)}</span>
+                                </div>
                               </SelectItem>
                             ))}
                           </SelectContent>
