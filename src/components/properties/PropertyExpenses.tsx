@@ -365,15 +365,16 @@ export function PropertyExpenses({
   return (
     <>
       <Card>
-        <Tabs defaultValue="overview">
-          <CardHeader className="flex flex-row items-center justify-between">
+        <CardHeader>
             <CardTitle>Gastos</CardTitle>
-            <TabsList className="grid grid-cols-2 w-full max-w-[300px]">
+        </CardHeader>
+        <Tabs defaultValue="overview">
+          <CardContent className="space-y-4">
+            <TabsList className="grid grid-cols-2 w-full">
               <TabsTrigger value="overview">Presupuesto</TabsTrigger>
               <TabsTrigger value="actual">Gastos</TabsTrigger>
             </TabsList>
-          </CardHeader>
-          <CardContent>
+
             <TabsContent value="overview">
                <div className="p-4 border rounded-lg mb-4">
                   <h4 className="text-md font-semibold text-center mb-2">Totales del Período</h4>
@@ -602,3 +603,5 @@ export function PropertyExpenses({
     </>
   );
 }
+
+    

@@ -6,20 +6,22 @@ import { notFound } from 'next/navigation';
 import Image from 'next/image';
 import { doc, getDoc, collection, getDocs, Timestamp, query, orderBy, updateDoc } from 'firebase/firestore';
 import Link from 'next/link';
+import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
 
 import { PageHeader } from '@/components/shared/PageHeader';
-import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Pencil, Loader } from 'lucide-react';
 import { PropertyExpenses } from '@/components/properties/PropertyExpenses';
 import { PropertyIncome } from '@/components/properties/PropertyIncome';
 import { db } from '@/lib/firebase';
 import { type Property, type ActualExpense, type Income, type ExpectedExpense, type Wallet, type ExpenseCategory, type IncomeCategory } from '@/lib/types';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { FinancialSummary } from './FinancialSummary';
 import { RecentActivity } from './RecentActivity';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
+import { DateNavigator } from '@/components/shared/DateNavigator';
 
 
 export function PropertyDetail({ id }: { id: string }) {
@@ -27,8 +29,8 @@ export function PropertyDetail({ id }: { id: string }) {
   const [property, setProperty] = React.useState<Property | null>(null);
   const [loading, setLoading] = React.useState(true);
   const [isSavingNotes, setIsSavingNotes] = React.useState(false);
-  const [selectedMonth, setSelectedMonth] = React.useState<string>((new Date().getMonth() + 1).toString());
-  const [selectedYear, setSelectedYear] = React.useState<string>(new Date().getFullYear().toString());
+
+  const [displayDate, setDisplayDate] = React.useState(new Date());
 
   const [actualExpenses, setActualExpenses] = React.useState<ActualExpense[]>([]);
   const [expectedExpenses, setExpectedExpenses] = React.useState<ExpectedExpense[]>([]);
@@ -119,22 +121,22 @@ export function PropertyDetail({ id }: { id: string }) {
   React.useEffect(() => {
     fetchPageData();
   }, [fetchPageData]);
+  
+  const selectedMonth = (displayDate.getMonth() + 1).toString();
+  const selectedYear = displayDate.getFullYear().toString();
+
 
   const filteredIncomes = React.useMemo(() => {
     return incomes.filter(income => {
         const incomeDate = new Date(income.date);
-        const yearMatch = selectedYear === 'all' || incomeDate.getFullYear().toString() === selectedYear;
-        const monthMatch = selectedMonth === 'all' || (incomeDate.getMonth() + 1).toString() === selectedMonth;
-        return yearMatch && monthMatch;
+        return incomeDate.getFullYear().toString() === selectedYear && (incomeDate.getMonth() + 1).toString() === selectedMonth;
     });
   }, [incomes, selectedMonth, selectedYear]);
 
   const filteredActualExpenses = React.useMemo(() => {
     return actualExpenses.filter(expense => {
         const expenseDate = new Date(expense.date);
-        const yearMatch = selectedYear === 'all' || expenseDate.getFullYear().toString() === selectedYear;
-        const monthMatch = selectedMonth === 'all' || (expenseDate.getMonth() + 1).toString() === selectedMonth;
-        return yearMatch && monthMatch;
+        return expenseDate.getFullYear().toString() === selectedYear && (expenseDate.getMonth() + 1).toString() === selectedMonth;
     });
   }, [actualExpenses, selectedMonth, selectedYear]);
   
@@ -172,14 +174,6 @@ export function PropertyDetail({ id }: { id: string }) {
     notFound();
   }
   
-  const months = [
-    { value: '1', label: 'Enero' }, { value: '2', label: 'Febrero' }, { value: '3', label: 'Marzo' },
-    { value: '4', label: 'Abril' }, { value: '5', label: 'Mayo' }, { value: '6', label: 'Junio' },
-    { value: '7', label: 'Julio' }, { value: '8', label: 'Agosto' }, { value: '9', label: 'Septiembre' },
-    { value: '10', label: 'Octubre' }, { value: '11', label: 'Noviembre' }, { value: '12', label: 'Diciembre' }
-  ];
-  const years = Array.from({ length: 10 }, (_, i) => (new Date().getFullYear() - 5 + i).toString());
-
   return (
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
       <PageHeader title={property.name}>
@@ -190,30 +184,14 @@ export function PropertyDetail({ id }: { id: string }) {
           </Link>
         </Button>
       </PageHeader>
-
+      
        <Card>
-        <CardHeader className="py-4">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-            <CardTitle className="text-lg">Filtros Globales</CardTitle>
-            <div className="flex w-full md:w-auto items-center gap-2">
-              <Select value={selectedMonth} onValueChange={setSelectedMonth}>
-                <SelectTrigger className="w-full md:w-[180px]">
-                  <SelectValue placeholder="Seleccionar mes" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos los meses</SelectItem>
-                  {months.map(m => <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>)}
-                </SelectContent>
-              </Select>
-              <Select value={selectedYear} onValueChange={setSelectedYear}>
-                <SelectTrigger className="w-full md:w-[120px]">
-                  <SelectValue placeholder="Seleccionar año" />
-                </SelectTrigger>
-                <SelectContent>
-                  {years.map(y => <SelectItem key={y} value={y}>{y}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
+        <CardHeader>
+          <div className="flex items-center justify-center">
+            <DateNavigator
+                currentDate={displayDate}
+                onDateChange={setDisplayDate}
+            />
           </div>
         </CardHeader>
       </Card>
@@ -307,3 +285,5 @@ export function PropertyDetail({ id }: { id: string }) {
     </div>
   );
 }
+
+    

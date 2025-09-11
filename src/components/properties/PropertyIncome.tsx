@@ -77,14 +77,16 @@ export function PropertyIncome({ propertyId, wallets, incomeCategories, selected
         if (!oldWalletSnap.exists()) throw new Error("La billetera original no fue encontrada.");
         const oldWalletData = oldWalletSnap.data() as Wallet;
 
-        // Revert old amount
+        // Revert old amount from its wallet
         const revertedBalance = oldWalletData.balance - editingIncome.amount;
-        batch.update(oldWalletRef, { balance: revertedBalance });
-        
-        // Apply new amount to new/same wallet
+
         if (editingIncome.walletId === data.walletId) {
-             batch.update(newWalletRef, { balance: revertedBalance + data.amount });
+            // If wallet is the same, just update the balance with the new amount
+            batch.update(newWalletRef, { balance: revertedBalance + data.amount });
         } else {
+            // If wallet has changed, update old wallet and new wallet separately
+            batch.update(oldWalletRef, { balance: revertedBalance });
+            
             const newWalletSnap = await getDoc(newWalletRef);
             if (!newWalletSnap.exists()) throw new Error("La nueva billetera no fue encontrada.");
             const newWalletData = newWalletSnap.data() as Wallet;
@@ -297,3 +299,5 @@ export function PropertyIncome({ propertyId, wallets, incomeCategories, selected
     </>
   );
 }
+
+    
