@@ -288,7 +288,12 @@ export default function IncomesPage() {
                             <CardTitle className="text-sm font-medium">Total de Ingresos ({currency})</CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <div className="text-2xl font-bold">{formatCurrency(incomeTotals[currency], currency)}</div>
+                            <div className={cn("text-2xl font-bold", {
+                                'text-green-800 dark:text-green-400': currency === 'USD',
+                                'text-blue-800 dark:text-blue-400': currency === 'ARS',
+                            })}>
+                                {formatCurrency(incomeTotals[currency], currency)}
+                            </div>
                             <p className="text-xs text-muted-foreground">{filteredIncomes.filter(e => e.currency === currency).length} transacciones</p>
                         </CardContent>
                     </Card>
@@ -348,7 +353,12 @@ export default function IncomesPage() {
                                         <span className="text-muted-foreground text-xs italic">N/A</span>
                                         )}
                                     </TableCell>
-                                    <TableCell className="text-right font-semibold text-green-500">{formatCurrency(income.amount, income.currency)}</TableCell>
+                                    <TableCell className={cn("text-right font-semibold", {
+                                        'text-green-800 dark:text-green-400': income.currency === 'USD',
+                                        'text-blue-800 dark:text-blue-400': income.currency === 'ARS',
+                                    })}>
+                                        {formatCurrency(income.amount, income.currency)}
+                                    </TableCell>
                                 </TableRow>
                                 );
                             }) : (
@@ -364,3 +374,5 @@ export default function IncomesPage() {
         </div>
     );
 }
+
+    
