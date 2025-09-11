@@ -5,6 +5,7 @@
 import * as React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import Image from 'next/image';
 import {
   SidebarProvider,
   Sidebar,
@@ -100,9 +101,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <Button variant="ghost" size="icon" className="md:hidden">
               <Home />
             </Button>
-            <h2 className="text-xl font-bold font-headline tracking-tight group-data-[collapsible=icon]:hidden">
-              GestionoMisCuentas
-            </h2>
+            <div className="w-full group-data-[collapsible=icon]:hidden">
+                <Image
+                  src="/img/logo.png"
+                  alt="GestionoMisCuentas Logo"
+                  width={150}
+                  height={40}
+                  className="h-auto"
+                />
+            </div>
           </div>
         </SidebarHeader>
         <SidebarContent>
