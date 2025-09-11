@@ -406,7 +406,7 @@ export function PropertyExpenses({
             </TabsList>
             
             <div className="p-4 border rounded-lg">
-                  <h4 className="text-md font-semibold text-center mb-2">Totales del Período</h4>
+                  <h4 className="text-lg font-semibold text-center mb-2">Totales del Período</h4>
                   <div className="grid grid-cols-3 gap-4 text-center">
                       <div className="space-y-1">
                           <div className='text-sm text-muted-foreground'>Previsto</div>
