@@ -236,7 +236,7 @@ export function PropertyExpenses({
         <Tabs defaultValue="overview">
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Gastos</CardTitle>
-            <TabsList className="grid grid-cols-2 w-[300px]">
+            <TabsList className="grid grid-cols-2 w-full max-w-[300px]">
               <TabsTrigger value="overview">Presupuesto</TabsTrigger>
               <TabsTrigger value="actual">Gastos</TabsTrigger>
             </TabsList>
@@ -266,7 +266,7 @@ export function PropertyExpenses({
                         <TableHead>Período</TableHead>
                         <TableHead>Categoría</TableHead>
                         <TableHead className="text-right">Previsto</TableHead>
-                        <TableHead className="text-right">Pagado</TableHead>
+                        <TableHead className="text-right hidden md:table-cell">Pagado</TableHead>
                         <TableHead>Estado</TableHead>
                         <TableHead className="w-[100px]"></TableHead>
                     </TableRow>
@@ -285,7 +285,7 @@ export function PropertyExpenses({
                                 <TableCell className="text-right font-medium">
                                     {new Intl.NumberFormat('es-AR', { style: 'currency', currency: expense.currency }).format(expense.amount)}
                                 </TableCell>
-                                <TableCell className="text-right font-medium">
+                                <TableCell className="text-right font-medium hidden md:table-cell">
                                     {new Intl.NumberFormat('es-AR', { style: 'currency', currency: expense.currency }).format(paidAmount)}
                                 </TableCell>
                                 <TableCell>
@@ -347,8 +347,8 @@ export function PropertyExpenses({
                     <TableRow>
                         <TableHead>Fecha</TableHead>
                         <TableHead>Categoría</TableHead>
-                        <TableHead>Billetera</TableHead>
-                        <TableHead>Notas</TableHead>
+                        <TableHead className="hidden md:table-cell">Billetera</TableHead>
+                        <TableHead className="hidden md:table-cell">Notas</TableHead>
                         <TableHead className="text-right">Monto</TableHead>
                         <TableHead className="w-[100px]"></TableHead>
                     </TableRow>
@@ -361,8 +361,8 @@ export function PropertyExpenses({
                                 <div className='font-medium'>{getSubcategoryName(expense.subcategoryId)}</div>
                             <div className='text-xs text-muted-foreground'>{getCategoryName(expense.subcategoryId)}</div>
                         </TableCell>
-                        <TableCell>{getWalletName(expense.walletId)}</TableCell>
-                        <TableCell className="text-muted-foreground max-w-[200px] truncate">{expense.notes}</TableCell>
+                        <TableCell className="hidden md:table-cell">{getWalletName(expense.walletId)}</TableCell>
+                        <TableCell className="text-muted-foreground max-w-[200px] truncate hidden md:table-cell">{expense.notes}</TableCell>
                         <TableCell className="text-right font-medium">
                             {new Intl.NumberFormat('es-AR', { style: 'currency', currency: expense.currency }).format(expense.amount)}
                         </TableCell>

@@ -169,11 +169,11 @@ export function PropertyDetail({ id }: { id: string }) {
 
        <Card>
         <CardHeader className="py-4">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <CardTitle className="text-lg">Filtros Globales</CardTitle>
-            <div className="flex items-center gap-2">
+            <div className="flex w-full md:w-auto items-center gap-2">
               <Select value={selectedMonth} onValueChange={setSelectedMonth}>
-                <SelectTrigger className="w-[180px]">
+                <SelectTrigger className="w-full md:w-[180px]">
                   <SelectValue placeholder="Seleccionar mes" />
                 </SelectTrigger>
                 <SelectContent>
@@ -182,7 +182,7 @@ export function PropertyDetail({ id }: { id: string }) {
                 </SelectContent>
               </Select>
               <Select value={selectedYear} onValueChange={setSelectedYear}>
-                <SelectTrigger className="w-[120px]">
+                <SelectTrigger className="w-full md:w-[120px]">
                   <SelectValue placeholder="Seleccionar año" />
                 </SelectTrigger>
                 <SelectContent>
@@ -195,7 +195,7 @@ export function PropertyDetail({ id }: { id: string }) {
       </Card>
 
 
-      <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-8 lg:grid-cols-3">
         <div className="lg:col-span-2 space-y-8">
             <Card>
                  <CardContent className="p-0">
@@ -209,6 +209,19 @@ export function PropertyDetail({ id }: { id: string }) {
                     />
                 </CardContent>
             </Card>
+
+            <div className='lg:hidden space-y-8'>
+                <FinancialSummary 
+                    incomes={filteredIncomes}
+                    expenses={filteredActualExpenses}
+                />
+                <RecentActivity 
+                    incomes={incomes}
+                    expenses={actualExpenses}
+                    expenseCategories={expenseCategories}
+                    incomeCategories={incomeCategories}
+                />
+            </div>
 
             <PropertyIncome
               propertyId={property.id}
@@ -234,7 +247,7 @@ export function PropertyDetail({ id }: { id: string }) {
             <PropertyNotes notes={property.notes} />
         </div>
 
-        <div className="space-y-8">
+        <div className="hidden lg:block space-y-8">
           <FinancialSummary 
             incomes={filteredIncomes}
             expenses={filteredActualExpenses}

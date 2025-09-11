@@ -133,8 +133,8 @@ export function PropertyIncome({ propertyId, wallets, incomeCategories, selected
               <TableRow>
                 <TableHead>Fecha</TableHead>
                 <TableHead>Categoría</TableHead>
-                <TableHead>Billetera</TableHead>
-                <TableHead>Notas</TableHead>
+                <TableHead className="hidden md:table-cell">Billetera</TableHead>
+                <TableHead className="hidden md:table-cell">Notas</TableHead>
                 <TableHead className="text-right">Monto</TableHead>
                 <TableHead className="w-[100px]"></TableHead>
               </TableRow>
@@ -147,10 +147,10 @@ export function PropertyIncome({ propertyId, wallets, incomeCategories, selected
                     <div className='font-medium'>{getSubcategoryName(income.subcategoryId)}</div>
                     <div className='text-xs text-muted-foreground'>{getCategoryName(income.subcategoryId)}</div>
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="hidden md:table-cell">
                     {getWalletName(income.walletId)}
                   </TableCell>
-                  <TableCell className="text-muted-foreground max-w-[200px] truncate">{income.notes}</TableCell>
+                  <TableCell className="text-muted-foreground max-w-[200px] truncate hidden md:table-cell">{income.notes}</TableCell>
                   <TableCell className="text-right font-medium">
                     {new Intl.NumberFormat('es-AR', { style: 'currency', currency: income.currency }).format(income.amount)}
                   </TableCell>
