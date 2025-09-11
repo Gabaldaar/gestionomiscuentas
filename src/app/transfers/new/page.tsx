@@ -34,7 +34,7 @@ const transferSchema = z.object({
   path: ['toWalletId'],
 });
 
-type TransferFormValues = z.infer<typeof transferSchema>;
+export type TransferFormValues = z.infer<typeof transferSchema>;
 
 export default function NewTransferPage() {
   const { toast } = useToast();
@@ -135,8 +135,7 @@ export default function NewTransferPage() {
         }
 
         const fromWalletData = fromWalletSnap.data() as Wallet;
-        const toWalletData = toWalletSnap.data() as Wallet;
-
+        
         if (fromWalletData.balance < data.amountSent) {
             toast({ title: "Fondos Insuficientes", description: `La billetera ${fromWalletData.name} no tiene suficiente saldo.`, variant: "destructive" });
             setIsSubmitting(false);
@@ -144,7 +143,7 @@ export default function NewTransferPage() {
         }
 
         const newFromBalance = fromWalletData.balance - data.amountSent;
-        const newToBalance = toWalletData.balance + data.amountReceived;
+        const newToBalance = (toWalletSnap.data() as Wallet).balance + data.amountReceived;
         
         batch.update(fromWalletRef, { balance: newFromBalance });
         batch.update(toWalletRef, { balance: newToBalance });
