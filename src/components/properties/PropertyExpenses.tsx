@@ -24,7 +24,7 @@ type PropertyExpensesProps = {
   wallets: Wallet[];
   selectedMonth: string;
   selectedYear: string;
-  actualExpenses: ActualExpense[];
+  actualExpenses: Omit<ActualExpense, 'propertyId' | 'propertyName'>[];
   expectedExpenses: ExpectedExpense[];
   onTransactionUpdate: () => void;
   currentDate: Date;
@@ -53,9 +53,9 @@ export function PropertyExpenses({
   
   // State for Actual Expenses
   const [isAddExpenseOpen, setIsAddExpenseOpen] = React.useState(false);
-  const [editingExpense, setEditingExpense] = React.useState<ActualExpense | null>(null);
+  const [editingExpense, setEditingExpense] = React.useState<Omit<ActualExpense, 'propertyId' | 'propertyName'> | null>(null);
   const [deletingExpenseId, setDeletingExpenseId] = React.useState<string | null>(null);
-  const [initialExpenseData, setInitialExpenseData] = React.useState<Partial<ActualExpense> | null>(null);
+  const [initialExpenseData, setInitialExpenseData] = React.useState<Partial<Omit<ActualExpense, 'propertyId' | 'propertyName'>> | null>(null);
 
 
   // State for Expected Expenses
@@ -216,7 +216,7 @@ export function PropertyExpenses({
     setIsAddExpenseOpen(true);
   }
 
-  const handleEditActual = (expense: ActualExpense) => {
+  const handleEditActual = (expense: Omit<ActualExpense, 'propertyId' | 'propertyName'>) => {
     setEditingExpense(expense);
     setInitialExpenseData(null);
     setIsAddExpenseOpen(true);
@@ -634,4 +634,5 @@ export function PropertyExpenses({
     </>
   );
 }
+
     

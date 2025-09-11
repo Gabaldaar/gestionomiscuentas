@@ -45,29 +45,34 @@ export function PropertyDetail({ id }: { id: string }) {
         const docRef = doc(db, "properties", id);
         const docSnap = await getDoc(docRef);
         if (docSnap.exists()) {
-            setProperty({ id: docSnap.id, ...docSnap.data() } as Property);
+            const propertyData = { id: docSnap.id, ...docSnap.data() } as Property;
+            setProperty(propertyData);
+
+            // --- Transactions ---
+            const incomesCol = collection(db, 'properties', id, 'incomes');
+            const incomesSnapshot = await getDocs(incomesCol);
+            const incomesList = incomesSnapshot.docs.map(doc => ({ 
+                id: doc.id, 
+                propertyId: id,
+                propertyName: propertyData.name,
+                ...doc.data(),
+                date: (doc.data().date as Timestamp).toDate().toISOString(),
+            })) as Income[];
+            setIncomes(incomesList);
+            
+            const actualExpensesCol = collection(db, 'properties', id, 'actualExpenses');
+            const actualExpensesSnapshot = await getDocs(actualExpensesCol);
+            const actualExpensesList = actualExpensesSnapshot.docs.map(doc => ({ 
+                id: doc.id, 
+                propertyId: id,
+                propertyName: propertyData.name,
+                ...doc.data(),
+                date: (doc.data().date as Timestamp).toDate().toISOString(),
+            })) as ActualExpense[];
+            setActualExpenses(actualExpensesList);
         } else {
             setProperty(null); // Triggers notFound()
         }
-
-        // --- Transactions ---
-        const incomesCol = collection(db, 'properties', id, 'incomes');
-        const incomesSnapshot = await getDocs(incomesCol);
-        const incomesList = incomesSnapshot.docs.map(doc => ({ 
-            id: doc.id, 
-            ...doc.data(),
-            date: (doc.data().date as Timestamp).toDate().toISOString(),
-        })) as Income[];
-        setIncomes(incomesList);
-        
-        const actualExpensesCol = collection(db, 'properties', id, 'actualExpenses');
-        const actualExpensesSnapshot = await getDocs(actualExpensesCol);
-        const actualExpensesList = actualExpensesSnapshot.docs.map(doc => ({ 
-            id: doc.id, 
-            ...doc.data(),
-            date: (doc.data().date as Timestamp).toDate().toISOString(),
-        })) as ActualExpense[];
-        setActualExpenses(actualExpensesList);
 
         const expectedExpensesCol = collection(db, 'properties', id, 'expectedExpenses');
         const expectedExpensesSnapshot = await getDocs(expectedExpensesCol);
@@ -274,7 +279,5 @@ export function PropertyDetail({ id }: { id: string }) {
     </div>
   );
 }
-
-    
 
     

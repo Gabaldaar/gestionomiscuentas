@@ -1,4 +1,5 @@
 
+
 export type Currency = 'ARS' | 'USD';
 
 export type Property = {
@@ -36,7 +37,7 @@ export type IncomeCategory = {
 
 export type IncomeSubcategory = {
     id: string;
-    name: string;
+    name:string;
 };
 
 export type ExpectedExpense = {
@@ -50,6 +51,8 @@ export type ExpectedExpense = {
 
 export type ActualExpense = {
   id: string;
+  propertyId: string;
+  propertyName: string;
   subcategoryId: string;
   walletId: string;
   amount: number;
@@ -60,6 +63,8 @@ export type ActualExpense = {
 
 export type Income = {
   id: string;
+  propertyId: string;
+  propertyName: string;
   subcategoryId: string;
   walletId: string;
   amount: number;
@@ -80,3 +85,17 @@ export type Transfer = {
   date: string; // ISO string
   notes?: string;
 };
+
+
+export type Transaction = {
+  id: string;
+  date: Date;
+  type: 'income' | 'expense' | 'transfer_in' | 'transfer_out';
+  amount: number;
+  currency: Currency;
+  description: string;
+  notes?: string;
+  relatedEntity: string;
+};
+
+    

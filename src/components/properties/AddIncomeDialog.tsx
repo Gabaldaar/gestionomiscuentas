@@ -60,7 +60,7 @@ type AddIncomeDialogProps = {
   wallets: Wallet[];
   incomeCategories: IncomeCategory[];
   onIncomeSubmit: (data: IncomeFormValues) => void;
-  incomeToEdit?: Income | null;
+  incomeToEdit?: Omit<Income, 'propertyId' | 'propertyName'> | null;
 };
 
 const formatCurrency = (amount: number, currency: string) => {
@@ -291,3 +291,5 @@ export function AddIncomeDialog({
     </Dialog>
   );
 }
+
+    

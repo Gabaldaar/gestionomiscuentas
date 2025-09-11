@@ -50,7 +50,9 @@ export default function WalletsSettingsPage() {
     fetchWallets();
   }, [fetchWallets]);
 
-  const handleDeleteClick = (wallet: Wallet) => {
+  const handleDeleteClick = (e: React.MouseEvent, wallet: Wallet) => {
+    e.stopPropagation();
+    e.preventDefault();
     setDeletingWallet(wallet);
   };
 
@@ -94,45 +96,47 @@ export default function WalletsSettingsPage() {
         ) : (
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
               {wallets.map((wallet) => (
-              <Card key={wallet.id}>
-                  <CardHeader className="flex flex-row items-start justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="bg-primary/10 text-primary p-3 rounded-md">
-                        {renderIcon(wallet)}
-                      </div>
-                      <div>
-                          <CardTitle>{wallet.name}</CardTitle>
-                          <CardDescription>{wallet.currency}</CardDescription>
-                      </div>
-                    </div>
-                    <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon">
-                            <MoreVertical className="h-4 w-4" />
-                        </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent>
-                        <DropdownMenuItem onClick={() => router.push(`/settings/wallets/${wallet.id}/edit`)}>
-                            <Pencil className="mr-2 h-4 w-4" />
-                            Editar
-                        </DropdownMenuItem>
-                        <DropdownMenuItem className="text-destructive" onClick={() => handleDeleteClick(wallet)}>
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            Eliminar
-                        </DropdownMenuItem>
-                        </DropdownMenuContent>
-                    </DropdownMenu>
-                  </CardHeader>
-                  <CardContent>
-                  <div className={cn("text-2xl font-bold", {
-                    'text-green-800 dark:text-green-400': wallet.currency === 'USD' && wallet.balance > 0,
-                    'text-blue-800 dark:text-blue-400': wallet.currency === 'ARS' && wallet.balance > 0,
-                    'text-red-500': wallet.balance < 0,
-                  })}>
-                      {new Intl.NumberFormat('es-AR', { style: 'currency', currency: wallet.currency, minimumFractionDigits: 2 }).format(wallet.balance)}
-                  </div>
-                  </CardContent>
-              </Card>
+                <Link key={wallet.id} href={`/settings/wallets/${wallet.id}`} className="block transition-all hover:scale-[1.02]">
+                    <Card className="h-full">
+                        <CardHeader className="flex flex-row items-start justify-between">
+                            <div className="flex items-center gap-3">
+                            <div className="bg-primary/10 text-primary p-3 rounded-md">
+                                {renderIcon(wallet)}
+                            </div>
+                            <div>
+                                <CardTitle>{wallet.name}</CardTitle>
+                                <CardDescription>{wallet.currency}</CardDescription>
+                            </div>
+                            </div>
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon" onClick={(e) => {e.stopPropagation(); e.preventDefault();}}>
+                                    <MoreVertical className="h-4 w-4" />
+                                </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent>
+                                <DropdownMenuItem onClick={(e) => {e.stopPropagation(); e.preventDefault(); router.push(`/settings/wallets/${wallet.id}/edit`)}}>
+                                    <Pencil className="mr-2 h-4 w-4" />
+                                    Editar
+                                </DropdownMenuItem>
+                                <DropdownMenuItem className="text-destructive" onClick={(e) => handleDeleteClick(e, wallet)}>
+                                    <Trash2 className="mr-2 h-4 w-4" />
+                                    Eliminar
+                                </DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                        </CardHeader>
+                        <CardContent>
+                        <div className={cn("text-2xl font-bold", {
+                            'text-green-800 dark:text-green-400': wallet.currency === 'USD' && wallet.balance > 0,
+                            'text-blue-800 dark:text-blue-400': wallet.currency === 'ARS' && wallet.balance > 0,
+                            'text-red-500': wallet.balance < 0,
+                        })}>
+                            {new Intl.NumberFormat('es-AR', { style: 'currency', currency: wallet.currency, minimumFractionDigits: 2 }).format(wallet.balance)}
+                        </div>
+                        </CardContent>
+                    </Card>
+              </Link>
               ))}
           </div>
         )}
@@ -148,3 +152,5 @@ export default function WalletsSettingsPage() {
     </>
   );
 }
+
+    

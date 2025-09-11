@@ -22,7 +22,7 @@ type PropertyIncomeProps = {
   incomeCategories: IncomeCategory[];
   selectedMonth: string;
   selectedYear: string;
-  incomes: Income[];
+  incomes: Omit<Income, 'propertyId' | 'propertyName'>[];
   onTransactionUpdate: () => void;
   currentDate: Date;
   onDateChange: (newDate: Date) => void;
@@ -32,7 +32,7 @@ export function PropertyIncome({ propertyId, wallets, incomeCategories, selected
   const { toast } = useToast();
   const [isLoading, setIsLoading] = React.useState(false);
   const [isAddIncomeOpen, setIsAddIncomeOpen] = React.useState(false);
-  const [editingIncome, setEditingIncome] = React.useState<Income | null>(null);
+  const [editingIncome, setEditingIncome] = React.useState<Omit<Income, 'propertyId' | 'propertyName'> | null>(null);
   const [deletingIncomeId, setDeletingIncomeId] = React.useState<string | null>(null);
 
   const filteredIncomes = React.useMemo(() => {
@@ -128,7 +128,7 @@ export function PropertyIncome({ propertyId, wallets, incomeCategories, selected
     }
   };
 
-  const handleEdit = (income: Income) => {
+  const handleEdit = (income: Omit<Income, 'propertyId' | 'propertyName'>) => {
     setEditingIncome(income);
     setIsAddIncomeOpen(true);
   };

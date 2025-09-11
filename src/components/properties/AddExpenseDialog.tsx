@@ -52,7 +52,7 @@ const expenseSchema = z.object({
   notes: z.string().optional(),
 });
 
-type ExpenseFormValues = z.infer<typeof expenseSchema>;
+export type ExpenseFormValues = z.infer<typeof expenseSchema>;
 
 type AddExpenseDialogProps = {
   isOpen: boolean;
@@ -60,8 +60,8 @@ type AddExpenseDialogProps = {
   expenseCategories: ExpenseCategory[];
   wallets: Wallet[];
   onExpenseSubmit: (data: ExpenseFormValues) => void;
-  expenseToEdit?: ActualExpense | null;
-  initialData?: Partial<ActualExpense> | null;
+  expenseToEdit?: Omit<ActualExpense, 'propertyId' | 'propertyName'> | null;
+  initialData?: Partial<Omit<ActualExpense, 'propertyId' | 'propertyName'>> | null;
 };
 
 const formatCurrency = (amount: number, currency: string) => {
