@@ -43,11 +43,19 @@ function MiniFinancialSummary({ incomes, expenses }: MiniFinancialSummaryProps) 
 
         return totals;
     }, [incomes, expenses]);
+    
+    const hasData = summary.ARS.income > 0 || summary.ARS.expense > 0 || summary.USD.income > 0 || summary.USD.expense > 0;
 
     return (
         <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-xs flex-grow">
             {(Object.keys(summary) as Currency[]).map(currency => {
                 const data = summary[currency];
+                if (data.income === 0 && data.expense === 0) return (
+                  <div key={currency}>
+                    <div className="font-bold mb-1">{currency}</div>
+                     <div className="text-muted-foreground">Sin datos</div>
+                  </div>
+                );
                 return (
                     <div key={currency}>
                         <div className="font-bold mb-1">{currency}</div>

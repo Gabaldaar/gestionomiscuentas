@@ -1,54 +1,74 @@
+
+'use client';
+
+import * as React from 'react';
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Button } from "@/components/ui/button";
-import { PlusCircle } from "lucide-react";
+import { Loader, PlusCircle } from "lucide-react";
 import { PropertyCard } from "@/components/properties/PropertyCard";
 import { db } from "@/lib/firebase";
 import { collection, getDocs, Timestamp } from "firebase/firestore";
 import { type Property, type Income, type ActualExpense } from "@/lib/types";
 import Link from "next/link";
+import { Skeleton } from '@/components/ui/skeleton';
 
-async function getPropertiesData(): Promise<{properties: Property[], incomes: Record<string, Income[]>, expenses: Record<string, ActualExpense[]>}> {
-  const propertiesCol = collection(db, 'properties');
-  const propertiesSnapshot = await getDocs(propertiesCol);
-  
-  const propertiesList: Property[] = [];
-  const allIncomes: Record<string, Income[]> = {};
-  const allExpenses: Record<string, ActualExpense[]> = {};
-  
-  const currentMonth = new Date().getMonth();
-  const currentYear = new Date().getFullYear();
+type PropertiesData = {
+  properties: Property[];
+  incomes: Record<string, Income[]>;
+  expenses: Record<string, ActualExpense[]>;
+};
 
-  for (const doc of propertiesSnapshot.docs) {
-    const property = { id: doc.id, ...doc.data() } as Property;
-    propertiesList.push(property);
+export default function PropertiesPage() {
+  const [data, setData] = React.useState<PropertiesData | null>(null);
+  const [loading, setLoading] = React.useState(true);
 
-    // Fetch incomes for the current month
-    const incomesCol = collection(db, 'properties', doc.id, 'incomes');
-    const incomesSnapshot = await getDocs(incomesCol);
-    allIncomes[doc.id] = incomesSnapshot.docs
-      .map(d => ({...d.data(), id: d.id, date: (d.data().date as Timestamp).toDate().toISOString() } as Income))
-      .filter(income => {
-          const incomeDate = new Date(income.date);
-          return incomeDate.getMonth() === currentMonth && incomeDate.getFullYear() === currentYear;
-      });
+  React.useEffect(() => {
+    async function getPropertiesData() {
+      setLoading(true);
+      try {
+        const propertiesCol = collection(db, 'properties');
+        const propertiesSnapshot = await getDocs(propertiesCol);
+        
+        const propertiesList: Property[] = [];
+        const allIncomes: Record<string, Income[]> = {};
+        const allExpenses: Record<string, ActualExpense[]> = {};
+        
+        const currentMonth = new Date().getMonth();
+        const currentYear = new Date().getFullYear();
 
-    // Fetch expenses for the current month
-    const expensesCol = collection(db, 'properties', doc.id, 'actualExpenses');
-    const expensesSnapshot = await getDocs(expensesCol);
-    allExpenses[doc.id] = expensesSnapshot.docs
-      .map(d => ({...d.data(), id: d.id, date: (d.data().date as Timestamp).toDate().toISOString() } as ActualExpense))
-      .filter(expense => {
-          const expenseDate = new Date(expense.date);
-          return expenseDate.getMonth() === currentMonth && expenseDate.getFullYear() === currentYear;
-      });
-  }
+        for (const doc of propertiesSnapshot.docs) {
+          const property = { id: doc.id, ...doc.data() } as Property;
+          propertiesList.push(property);
 
-  return { properties: propertiesList, incomes: allIncomes, expenses: allExpenses };
-}
+          // Fetch incomes for the current month
+          const incomesCol = collection(db, 'properties', doc.id, 'incomes');
+          const incomesSnapshot = await getDocs(incomesCol);
+          allIncomes[doc.id] = incomesSnapshot.docs
+            .map(d => ({...d.data(), id: d.id, date: (d.data().date as Timestamp).toDate().toISOString() } as Income))
+            .filter(income => {
+                const incomeDate = new Date(income.date);
+                return incomeDate.getMonth() === currentMonth && incomeDate.getFullYear() === currentYear;
+            });
 
-
-export default async function PropertiesPage() {
-  const { properties, incomes, expenses } = await getPropertiesData();
+          // Fetch expenses for the current month
+          const expensesCol = collection(db, 'properties', doc.id, 'actualExpenses');
+          const expensesSnapshot = await getDocs(expensesCol);
+          allExpenses[doc.id] = expensesSnapshot.docs
+            .map(d => ({...d.data(), id: d.id, date: (d.data().date as Timestamp).toDate().toISOString() } as ActualExpense))
+            .filter(expense => {
+                const expenseDate = new Date(expense.date);
+                return expenseDate.getMonth() === currentMonth && expenseDate.getFullYear() === currentYear;
+            });
+        }
+        setData({ properties: propertiesList, incomes: allIncomes, expenses: allExpenses });
+      } catch (error) {
+        console.error("Error fetching properties:", error);
+      } finally {
+        setLoading(false);
+      }
+    }
+    getPropertiesData();
+  }, []);
 
   return (
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
@@ -61,17 +81,25 @@ export default async function PropertiesPage() {
         </Button>
       </PageHeader>
       
-      <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-2">
-        {properties.map((property) => (
-          <PropertyCard 
-            key={property.id} 
-            property={property}
-            incomes={incomes[property.id] || []}
-            expenses={expenses[property.id] || []}
-          />
-        ))}
-      </div>
+      {loading || !data ? (
+        <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-2">
+          <Skeleton className="h-[120px] w-full" />
+          <Skeleton className="h-[120px] w-full" />
+          <Skeleton className="h-[120px] w-full" />
+          <Skeleton className="h-[120px] w-full" />
+        </div>
+      ) : (
+        <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-2">
+          {data.properties.map((property) => (
+            <PropertyCard 
+              key={property.id} 
+              property={property}
+              incomes={data.incomes[property.id] || []}
+              expenses={data.expenses[property.id] || []}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
-

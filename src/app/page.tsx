@@ -1,4 +1,6 @@
 
+'use client';
+
 import * as React from 'react';
 import { collectionGroup, getDocs, query, Timestamp, collection } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
@@ -9,65 +11,104 @@ import { MonthlyComparisonChart } from "@/components/dashboard/MonthlyComparison
 import { RecentActivity } from '@/components/properties/RecentActivity';
 import { DashboardFilters } from '@/components/dashboard/DashboardFilters';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { useSearchParams } from 'next/navigation';
+import { Loader } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
 
-async function getDashboardData() {
-  const incomesQuery = query(collectionGroup(db, 'incomes'));
-  const expensesQuery = query(collectionGroup(db, 'actualExpenses'));
-  const incomeCategoriesQuery = query(collection(db, 'incomeCategories'));
-  const expenseCategoriesQuery = query(collection(db, 'expenseCategories'));
-  const liabilitiesQuery = query(collection(db, 'liabilities'));
+export default function DashboardPage() {
+  const [data, setData] = React.useState<{
+    incomes: Income[];
+    expenses: ActualExpense[];
+    incomeCategories: IncomeCategory[];
+    expenseCategories: ExpenseCategory[];
+    liabilities: Liability[];
+  } | null>(null);
+  const [loading, setLoading] = React.useState(true);
 
-  const [
-    incomesSnapshot,
-    expensesSnapshot,
-    incomeCategoriesSnapshot,
-    expenseCategoriesSnapshot,
-    liabilitiesSnapshot,
-  ] = await Promise.all([
-    getDocs(incomesQuery),
-    getDocs(expensesQuery),
-    getDocs(incomeCategoriesQuery),
-    getDocs(expenseCategoriesQuery),
-    getDocs(liabilitiesQuery),
-  ]);
+  const searchParams = useSearchParams();
 
-  const incomes = incomesSnapshot.docs.map(doc => ({
-    ...doc.data(),
-    id: doc.id,
-    date: (doc.data().date as Timestamp).toDate().toISOString(),
-  } as Income));
+  React.useEffect(() => {
+    async function getDashboardData() {
+      setLoading(true);
+      try {
+        const incomesQuery = query(collectionGroup(db, 'incomes'));
+        const expensesQuery = query(collectionGroup(db, 'actualExpenses'));
+        const incomeCategoriesQuery = query(collection(db, 'incomeCategories'));
+        const expenseCategoriesQuery = query(collection(db, 'expenseCategories'));
+        const liabilitiesQuery = query(collection(db, 'liabilities'));
 
-  const expenses = expensesSnapshot.docs.map(doc => ({
-    ...doc.data(),
-    id: doc.id,
-    date: (doc.data().date as Timestamp).toDate().toISOString(),
-  } as ActualExpense));
+        const [
+          incomesSnapshot,
+          expensesSnapshot,
+          incomeCategoriesSnapshot,
+          expenseCategoriesSnapshot,
+          liabilitiesSnapshot,
+        ] = await Promise.all([
+          getDocs(incomesQuery),
+          getDocs(expensesQuery),
+          getDocs(incomeCategoriesQuery),
+          getDocs(expenseCategoriesQuery),
+          getDocs(liabilitiesQuery),
+        ]);
 
-  const incomeCategories: IncomeCategory[] = await Promise.all(incomeCategoriesSnapshot.docs.map(async (categoryDoc) => {
-      const subcategoriesQuery = query(collection(db, 'incomeCategories', categoryDoc.id, 'subcategories'));
-      const subcategoriesSnapshot = await getDocs(subcategoriesQuery);
-      return { id: categoryDoc.id, name: categoryDoc.data().name, subcategories: subcategoriesSnapshot.docs.map(subDoc => ({ id: subDoc.id, name: subDoc.data().name })) };
-  }));
+        const incomes = incomesSnapshot.docs.map(doc => ({
+          ...doc.data(),
+          id: doc.id,
+          date: (doc.data().date as Timestamp).toDate().toISOString(),
+        } as Income));
 
-  const expenseCategories: ExpenseCategory[] = await Promise.all(expenseCategoriesSnapshot.docs.map(async (categoryDoc) => {
-      const subcategoriesQuery = query(collection(db, 'expenseCategories', categoryDoc.id, 'subcategories'));
-      const subcategoriesSnapshot = await getDocs(subcategoriesQuery);
-      return { id: categoryDoc.id, name: categoryDoc.data().name, subcategories: subcategoriesSnapshot.docs.map(subDoc => ({ id: subDoc.id, name: subDoc.data().name })) };
-  }));
-  
-  const liabilities = liabilitiesSnapshot.docs.map(doc => doc.data() as Liability);
+        const expenses = expensesSnapshot.docs.map(doc => ({
+          ...doc.data(),
+          id: doc.id,
+          date: (doc.data().date as Timestamp).toDate().toISOString(),
+        } as ActualExpense));
 
+        const incomeCategories: IncomeCategory[] = await Promise.all(incomeCategoriesSnapshot.docs.map(async (categoryDoc) => {
+            const subcategoriesQuery = query(collection(db, 'incomeCategories', categoryDoc.id, 'subcategories'));
+            const subcategoriesSnapshot = await getDocs(subcategoriesQuery);
+            return { id: categoryDoc.id, name: categoryDoc.data().name, subcategories: subcategoriesSnapshot.docs.map(subDoc => ({ id: subDoc.id, name: subDoc.data().name })) };
+        }));
 
-  return { incomes, expenses, incomeCategories, expenseCategories, liabilities };
-}
+        const expenseCategories: ExpenseCategory[] = await Promise.all(expenseCategoriesSnapshot.docs.map(async (categoryDoc) => {
+            const subcategoriesQuery = query(collection(db, 'expenseCategories', categoryDoc.id, 'subcategories'));
+            const subcategoriesSnapshot = await getDocs(subcategoriesQuery);
+            return { id: categoryDoc.id, name: categoryDoc.data().name, subcategories: subcategoriesSnapshot.docs.map(subDoc => ({ id: subDoc.id, name: subDoc.data().name })) };
+        }));
+        
+        const liabilities = liabilitiesSnapshot.docs.map(doc => doc.data() as Liability);
 
+        setData({ incomes, expenses, incomeCategories, expenseCategories, liabilities });
+      } catch (error) {
+        console.error("Error fetching dashboard data:", error);
+      } finally {
+        setLoading(false);
+      }
+    }
+    getDashboardData();
+  }, []);
 
-export default async function DashboardPage({ searchParams }: { searchParams: { month?: string, year?: string, currency?: string } }) {
-  const { incomes, expenses, incomeCategories, expenseCategories, liabilities } = await getDashboardData();
-  
-  const currentMonth = searchParams.month ? parseInt(searchParams.month) : new Date().getMonth() + 1;
-  const currentYear = searchParams.year ? parseInt(searchParams.year) : new Date().getFullYear();
-  const selectedCurrency = (searchParams.currency as Currency | 'all') || 'all';
+  const currentMonth = searchParams.get('month') ? parseInt(searchParams.get('month')!) : new Date().getMonth() + 1;
+  const currentYear = searchParams.get('year') ? parseInt(searchParams.get('year')!) : new Date().getFullYear();
+  const selectedCurrency = (searchParams.get('currency') as Currency | 'all') || 'all';
+
+  if (loading || !data) {
+    return (
+      <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
+        <PageHeader title="Dashboard" />
+        <Skeleton className="h-12 w-full" />
+        <div className="grid gap-4 md:grid-cols-2">
+            <Skeleton className="h-[200px]" />
+            <Skeleton className="h-[200px]" />
+        </div>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
+          <Skeleton className="col-span-4 h-[400px]" />
+          <Skeleton className="col-span-3 h-[400px]" />
+        </div>
+      </div>
+    );
+  }
+
+  const { incomes, expenses, incomeCategories, expenseCategories, liabilities } = data;
 
   const transactionsInPeriod = (transactions: (Income[] | ActualExpense[])) => {
     return transactions.filter(t => {
@@ -89,7 +130,6 @@ export default async function DashboardPage({ searchParams }: { searchParams: { 
       expenses: periodExpenses.filter(e => e.currency === currency),
       liabilities: liabilities.filter(l => l.currency === currency),
   })).filter(item => selectedCurrency === 'all' || item.currency === selectedCurrency);
-
 
   return (
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
