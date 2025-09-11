@@ -159,7 +159,7 @@ export default function IncomeSettingsPage() {
   return (
     <>
       <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
-        <PageHeader title="Cuentas de Ingresos">
+        <PageHeader title="Categorías de Ingresos">
           <Button onClick={handleAddCategory}>
             <PlusCircle className="mr-2 h-4 w-4" />
             Añadir Categoría

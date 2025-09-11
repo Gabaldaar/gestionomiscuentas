@@ -7,14 +7,14 @@ import Link from "next/link";
 export default function SettingsPage() {
   const settingsCards = [
     {
-      title: "Cuentas de Gastos",
+      title: "Categorías de Gastos",
       description: "Administra tus categorías y subcategorías de gastos.",
       icon: Landmark,
       action: "Administrar",
       href: "/settings/expenses"
     },
     {
-      title: "Cuentas de Ingresos",
+      title: "Categorías de Ingresos",
       description: "Administra tus categorías y subcategorías de ingresos.",
       icon: TrendingUp,
       action: "Administrar",

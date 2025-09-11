@@ -13,9 +13,9 @@ import {
   SidebarMenuButton,
   SidebarInset,
   SidebarTrigger,
-  SidebarMenuSub,
-  SidebarMenuSubButton,
-  SidebarMenuSubItem,
+  SidebarSeparator,
+  SidebarGroup,
+  SidebarGroupLabel,
 } from '@/components/ui/sidebar';
 import {
   LayoutDashboard,
@@ -28,8 +28,6 @@ import {
   TrendingUp,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useIsMobile } from '@/hooks/use-mobile';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '../ui/collapsible';
 
 const navItems = [
   { href: '/', label: 'Panel de Control', icon: LayoutDashboard },
@@ -38,15 +36,13 @@ const navItems = [
 ];
 
 const settingsNavItems = [
-    { href: '/settings', label: 'General', icon: Settings2 },
-    { href: '/settings/expenses', label: 'Cuentas de Gastos', icon: Landmark },
-    { href: '/settings/incomes', label: 'Cuentas de Ingresos', icon: TrendingUp },
+    { href: '/settings/expenses', label: 'Categorías de Gastos', icon: Landmark },
+    { href: '/settings/incomes', label: 'Categorías de Ingresos', icon: TrendingUp },
     { href: '/settings/wallets', label: 'Billeteras', icon: Wallet },
 ]
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const isMobile = useIsMobile();
   const [isClient, setIsClient] = React.useState(false);
 
   React.useEffect(() => {
@@ -86,35 +82,27 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 </SidebarMenuButton>
               </SidebarMenuItem>
             ))}
-            <Collapsible asChild>
-                 <SidebarMenuItem>
-                    <CollapsibleTrigger asChild>
-                        <SidebarMenuButton
-                            className='w-full'
-                            isActive={pathname.startsWith('/settings')}
-                            tooltip="Configuración"
-                        >
-                            <Settings2 />
-                            <span>Configuración</span>
-                        </SidebarMenuButton>
-                    </CollapsibleTrigger>
-                    <CollapsibleContent asChild>
-                        <SidebarMenuSub>
-                            {settingsNavItems.map((item) => (
-                                <SidebarMenuSubItem key={item.href}>
-                                    <SidebarMenuSubButton asChild isActive={pathname === item.href}>
-                                        <Link href={item.href}>
-                                            <item.icon />
-                                            <span>{item.label}</span>
-                                        </Link>
-                                    </SidebarMenuSubButton>
-                                </SidebarMenuSubItem>
-                            ))}
-                        </SidebarMenuSub>
-                    </CollapsibleContent>
-                </SidebarMenuItem>
-            </Collapsible>
           </SidebarMenu>
+            <SidebarSeparator />
+            <SidebarGroup>
+                <SidebarGroupLabel>Configuración</SidebarGroupLabel>
+                <SidebarMenu>
+                 {settingsNavItems.map((item) => (
+                    <SidebarMenuItem key={item.href}>
+                        <SidebarMenuButton
+                        asChild
+                        isActive={pathname.startsWith(item.href)}
+                        tooltip={item.label}
+                        >
+                        <Link href={item.href}>
+                            <item.icon />
+                            <span>{item.label}</span>
+                        </Link>
+                        </SidebarMenuButton>
+                    </SidebarMenuItem>
+                ))}
+                </SidebarMenu>
+            </SidebarGroup>
         </SidebarContent>
       </Sidebar>
       <SidebarInset>
