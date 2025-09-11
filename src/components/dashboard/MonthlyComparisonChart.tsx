@@ -15,11 +15,10 @@ type MonthlyComparisonChartProps = {
 
 export function MonthlyComparisonChart({ incomes, expenses, currency }: MonthlyComparisonChartProps) {
   const data = React.useMemo(() => {
+    if (currency === 'all') return [];
+
     const last12Months: { name: string, month: number, year: number, income: number, expense: number }[] = [];
     let currentDate = new Date();
-    
-    // Default to ARS if 'all' is selected, otherwise use the selected currency.
-    const displayCurrency = currency === 'all' ? 'ARS' : currency;
 
     for (let i = 0; i < 12; i++) {
         const date = subMonths(currentDate, i);
@@ -33,10 +32,10 @@ export function MonthlyComparisonChart({ incomes, expenses, currency }: MonthlyC
     }
 
     incomes.forEach(inc => {
-        const date = new Date(inc.date);
-        const month = date.getMonth() + 1;
-        const year = date.getFullYear();
-        if (inc.currency === displayCurrency) {
+        if (inc.currency === currency) {
+            const date = new Date(inc.date);
+            const month = date.getMonth() + 1;
+            const year = date.getFullYear();
             const targetMonth = last12Months.find(m => m.month === month && m.year === year);
             if (targetMonth) {
                 targetMonth.income += inc.amount;
@@ -45,10 +44,10 @@ export function MonthlyComparisonChart({ incomes, expenses, currency }: MonthlyC
     });
     
     expenses.forEach(exp => {
-        const date = new Date(exp.date);
-        const month = date.getMonth() + 1;
-        const year = date.getFullYear();
-        if (exp.currency === displayCurrency) {
+        if (exp.currency === currency) {
+            const date = new Date(exp.date);
+            const month = date.getMonth() + 1;
+            const year = date.getFullYear();
             const targetMonth = last12Months.find(m => m.month === month && m.year === year);
             if (targetMonth) {
                 targetMonth.expense += exp.amount;
@@ -59,6 +58,13 @@ export function MonthlyComparisonChart({ incomes, expenses, currency }: MonthlyC
     return last12Months.reverse();
   }, [incomes, expenses, currency]);
 
+  if (currency === 'all') {
+    return (
+      <div className="flex h-[350px] w-full items-center justify-center rounded-lg border-2 border-dashed bg-muted/50">
+        <p className="text-muted-foreground">Selecciona una moneda (ARS o USD) para ver el gráfico.</p>
+      </div>
+    )
+  }
 
   return (
     <ResponsiveContainer width="100%" height={350}>
