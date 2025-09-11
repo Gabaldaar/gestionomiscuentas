@@ -28,7 +28,7 @@ Esta es la parte más importante para tener informes claros. Ve a `Configuració
   - Reparaciones y Mantenimiento
   - Impuestos Inmobiliarios
 - **Financiación y Deudas**
-  - **Pago de Crédito** *(Importante para el módulo de Pasivos)*
+  - **Pago de Crédito** (o un nombre más genérico como **"Amortización de Pasivos"**). Esta es la categoría clave que usará el sistema para registrar los pagos de las deudas que crees en el módulo de `Pasivos`, ya sea un préstamo bancario o la compra a plazos de un terreno.
   - Intereses de Tarjeta de Crédito
   - Comisiones Bancarias
 - **Transporte**
@@ -54,7 +54,7 @@ Esta es la parte más importante para tener informes claros. Ve a `Configuració
   - Ventas
   - Honorarios Profesionales
 - **Financiación**
-  - **Crédito Obtenido** *(Importante para el módulo de Pasivos)*
+  - **Crédito Obtenido** (Esta es la que usará el sistema cuando un pasivo te genera un ingreso de dinero inicial).
 - **No Operativos**
   - Intereses de Inversiones
   - Dividendos
@@ -62,6 +62,6 @@ Esta es la parte más importante para tener informes claros. Ve a `Configuració
 
 ### 4. Registra tus Pasivos
 
-Si tienes deudas como créditos o préstamos, ve a la sección `Pasivos` para registrarlas. Al registrar los pagos, el sistema automáticamente los vinculará a la categoría "Pago de Crédito".
+Si tienes deudas como créditos o la compra a plazos de un activo (terreno, vehículo), ve a la sección `Pasivos` para registrarlas. Al registrar los pagos, el sistema automáticamente los vinculará a la categoría "Pago de Crédito" o la que hayas definido.
 
 ¡Con esto listo, ya puedes empezar a registrar tus transacciones y ver cómo tus finanzas cobran vida en el Dashboard y los Informes!
