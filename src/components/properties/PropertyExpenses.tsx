@@ -319,11 +319,14 @@ export function PropertyExpenses({
 
       if (expensesToCopy.length === 0) {
         toast({ title: "Sin gastos", description: "No hay gastos previstos en el mes de origen para copiar.", variant: "destructive" });
+        setIsLoading(false);
+        setIsCopyDialogOpen(false);
         return;
       }
 
       const batch = writeBatch(db);
       const expensesCol = collection(db, 'properties', propertyId, 'expectedExpenses');
+      let createdCount = 0;
 
       for (let i = 1; i <= numberOfMonths; i++) {
         let newMonth = sourceMonth + i;
@@ -334,20 +337,36 @@ export function PropertyExpenses({
             newMonth = ((newMonth - 1) % 12) + 1;
         }
 
+        const existingExpensesInTargetMonth = expectedExpenses.filter(
+          e => e.year === newYear && e.month === newMonth
+        );
+
         for (const expense of expensesToCopy) {
-            const { id, ...expenseData } = expense;
-            const newExpenseRef = doc(expensesCol); // Generate new ID
-            batch.set(newExpenseRef, {
-                ...expenseData,
-                year: newYear,
-                month: newMonth,
-            });
+            const alreadyExists = existingExpensesInTargetMonth.some(
+              e => e.subcategoryId === expense.subcategoryId && e.currency === expense.currency
+            );
+
+            if (!alreadyExists) {
+              const { id, ...expenseData } = expense;
+              const newExpenseRef = doc(expensesCol); // Generate new ID
+              batch.set(newExpenseRef, {
+                  ...expenseData,
+                  year: newYear,
+                  month: newMonth,
+              });
+              createdCount++;
+            }
         }
       }
 
-      await batch.commit();
-      toast({ title: "Gastos Copiados", description: `Los gastos se copiaron a los próximos ${numberOfMonths} meses.` });
-      onTransactionUpdate();
+      if (createdCount > 0) {
+        await batch.commit();
+        toast({ title: "Gastos Copiados", description: `${createdCount} gastos nuevos se copiaron a los próximos ${numberOfMonths} meses.` });
+        onTransactionUpdate();
+      } else {
+        toast({ title: "Sin cambios", description: "No se crearon gastos nuevos porque ya existían en los meses de destino." });
+      }
+
     } catch(e) {
       console.error("Error copying expenses", e);
       toast({ title: "Error", description: "No se pudieron copiar los gastos.", variant: "destructive" });
@@ -385,9 +404,8 @@ export function PropertyExpenses({
               <TabsTrigger value="overview">Presupuesto</TabsTrigger>
               <TabsTrigger value="actual">Gastos</TabsTrigger>
             </TabsList>
-
-            <TabsContent value="overview">
-               <div className="p-4 border rounded-lg mb-4">
+            
+            <div className="p-4 border rounded-lg">
                   <h4 className="text-md font-semibold text-center mb-2">Totales del Período</h4>
                   <div className="grid grid-cols-3 gap-4 text-center">
                       <div className="space-y-1">
@@ -406,7 +424,9 @@ export function PropertyExpenses({
                           <div className={cn("font-bold text-lg", totals.balance.USD < 0 ? "text-destructive" : "text-green-800 dark:text-green-400")}>{formatCurrency(totals.balance.USD, 'USD')}</div>
                       </div>
                   </div>
-              </div>
+            </div>
+
+            <TabsContent value="overview">
                 <div className='flex justify-between items-center mb-4 gap-2 flex-wrap'>
                     <div>
                         <h3 className="text-lg font-semibold">Gastos Previstos</h3>
