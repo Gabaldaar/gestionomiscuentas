@@ -15,6 +15,7 @@ import { type Liability } from "@/lib/types";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useRouter } from 'next/navigation';
 import { ConfirmDeleteDialog } from '@/components/shared/ConfirmDeleteDialog';
+import { cn } from '@/lib/utils';
 
 const formatCurrency = (amount: number, currency: string) => {
   return new Intl.NumberFormat('es-AR', { style: 'currency', currency, minimumFractionDigits: 0 }).format(amount);
@@ -118,6 +119,10 @@ export default function LiabilitiesPage() {
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {liabilities.map(liability => {
             const percentagePaid = (liability.totalAmount - liability.outstandingBalance) / liability.totalAmount * 100;
+            const currencyClass = cn({
+              'text-green-600 dark:text-green-400': liability.currency === 'USD',
+              'text-blue-600 dark:text-blue-400': liability.currency === 'ARS',
+            });
             return (
                 <Card key={liability.id} className="h-full flex flex-col hover:shadow-md transition-shadow">
                   <CardHeader className='flex-row justify-between items-start'>
@@ -128,7 +133,7 @@ export default function LiabilitiesPage() {
                           </Link>
                         </CardTitle>
                         <CardDescription>
-                        Total: {formatCurrency(liability.totalAmount, liability.currency)}
+                          Total: <span className={cn('font-medium', currencyClass)}>{formatCurrency(liability.totalAmount, liability.currency)}</span>
                         </CardDescription>
                     </div>
                     <DropdownMenu>
@@ -154,7 +159,9 @@ export default function LiabilitiesPage() {
                       <div className="space-y-2">
                           <div>
                               <p className="text-sm font-medium">Saldo Pendiente</p>
-                              <p className="text-2xl font-bold">{formatCurrency(liability.outstandingBalance, liability.currency)}</p>
+                              <p className={cn('text-2xl font-bold text-destructive')}>
+                                {formatCurrency(liability.outstandingBalance, liability.currency)}
+                              </p>
                           </div>
                           <Progress value={percentagePaid} className="h-2" />
                           <p className="text-xs text-muted-foreground text-right">{percentagePaid.toFixed(1)}% pagado</p>

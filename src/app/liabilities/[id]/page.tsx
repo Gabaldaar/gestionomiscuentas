@@ -19,6 +19,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { useToast } from '@/hooks/use-toast';
 import { AddExpenseDialog, type ExpenseFormValues } from '@/components/properties/AddExpenseDialog';
 import { ConfirmDeleteDialog } from '@/components/shared/ConfirmDeleteDialog';
+import { cn } from '@/lib/utils';
 
 
 const formatCurrency = (amount: number, currency: string) => {
@@ -259,6 +260,10 @@ export default function LiabilityDetailPage() {
   }
 
   const percentagePaid = liability.totalAmount > 0 ? (liability.totalAmount - liability.outstandingBalance) / liability.totalAmount * 100 : 0;
+  const currencyClass = cn({
+      'text-green-600 dark:text-green-400': liability.currency === 'USD',
+      'text-blue-600 dark:text-blue-400': liability.currency === 'ARS',
+  });
 
   return (
     <>
@@ -283,15 +288,15 @@ export default function LiabilityDetailPage() {
           <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="space-y-1">
                   <p className="text-sm font-medium text-muted-foreground">Monto Total</p>
-                  <p className="text-2xl font-bold">{formatCurrency(liability.totalAmount, liability.currency)}</p>
+                  <p className={cn("text-2xl font-bold", currencyClass)}>{formatCurrency(liability.totalAmount, liability.currency)}</p>
               </div>
               <div className="space-y-1">
                   <p className="text-sm font-medium text-muted-foreground">Pagado</p>
-                  <p className="text-2xl font-bold text-green-600">{formatCurrency(liability.totalAmount - liability.outstandingBalance, liability.currency)}</p>
+                  <p className={cn("text-2xl font-bold", currencyClass)}>{formatCurrency(liability.totalAmount - liability.outstandingBalance, liability.currency)}</p>
               </div>
               <div className="space-y-1">
                   <p className="text-sm font-medium text-muted-foreground">Saldo Pendiente</p>
-                  <p className="text-2xl font-bold text-red-600">{formatCurrency(liability.outstandingBalance, liability.currency)}</p>
+                  <p className="text-2xl font-bold text-destructive">{formatCurrency(liability.outstandingBalance, liability.currency)}</p>
               </div>
           </CardContent>
           <CardFooter>
@@ -329,7 +334,12 @@ export default function LiabilityDetailPage() {
                   <TableCell>{properties.find(p => p.id === payment.propertyId)?.name || 'N/A'}</TableCell>
                   <TableCell>{wallets.find(w => w.id === payment.walletId)?.name || 'N/A'}</TableCell>
                   <TableCell className="text-muted-foreground max-w-xs truncate">{payment.notes}</TableCell>
-                  <TableCell className="text-right font-medium">{formatCurrency(payment.amount, payment.currency)}</TableCell>
+                  <TableCell className={cn("text-right font-medium", {
+                    'text-green-600 dark:text-green-400': payment.currency === 'USD',
+                    'text-blue-600 dark:text-blue-400': payment.currency === 'ARS',
+                  })}>
+                    {formatCurrency(payment.amount, payment.currency)}
+                  </TableCell>
                   <TableCell>
                       <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => setDeletingPayment(payment)}>
                         <Trash2 className="h-4 w-4" />

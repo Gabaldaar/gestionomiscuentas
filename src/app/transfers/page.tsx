@@ -267,10 +267,13 @@ export default function TransfersHistoryPage() {
                           <TableCell>{isValid(transferDate) ? format(transferDate, 'PP', { locale: es }) : 'Fecha inválida'}</TableCell>
                           <TableCell>{fromWallet?.name ?? <span className="text-muted-foreground italic">Billetera no encontrada</span>}</TableCell>
                           <TableCell>{toWallet?.name ?? <span className="text-muted-foreground italic">Billetera no encontrada</span>}</TableCell>
-                          <TableCell className="text-right font-medium text-red-500">
+                          <TableCell className={cn("text-right font-medium text-red-500")}>
                               - {formatCurrency(transfer.amountSent, transfer.fromCurrency)}
                           </TableCell>
-                          <TableCell className="text-right font-medium text-green-500">
+                          <TableCell className={cn("text-right font-medium", {
+                            'text-green-600 dark:text-green-400': transfer.toCurrency === 'USD',
+                            'text-blue-600 dark:text-blue-400': transfer.toCurrency === 'ARS',
+                          })}>
                               + {formatCurrency(transfer.amountReceived, transfer.toCurrency)}
                           </TableCell>
                           <TableCell className="hidden md:table-cell">

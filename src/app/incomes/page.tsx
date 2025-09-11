@@ -260,7 +260,7 @@ export default function IncomesPage() {
                             <CardTitle className="text-sm font-medium">Total de Ingresos ({currency})</CardTitle>
                              <TrendingUp className={cn(
                                 'h-5 w-5',
-                                { 'text-green-500': currency === 'USD', 'text-blue-500': currency === 'ARS' }
+                                currency === 'USD' ? 'text-green-500' : 'text-blue-500'
                             )} />
                         </CardHeader>
                         <CardContent>
