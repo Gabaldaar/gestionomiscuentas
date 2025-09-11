@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { type Property, type Income, type ActualExpense, type Currency } from '@/lib/types';
 import { ArrowUp, ArrowDown, Minus } from 'lucide-react';
 import * as React from 'react';
+import { cn } from '@/lib/utils';
 
 type MiniFinancialSummaryProps = {
   incomes: Income[];
@@ -14,7 +15,7 @@ type MiniFinancialSummaryProps = {
 };
 
 const formatCurrency = (amount: number, currency: Currency) => {
-  return new Intl.NumberFormat('es-AR', { style: 'currency', currency, minimumFractionDigits: 0 }).format(amount);
+  return new Intl.NumberFormat('es-AR', { style: 'currency', currency, minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(amount);
 };
 
 function MiniFinancialSummary({ incomes, expenses }: MiniFinancialSummaryProps) {
@@ -43,39 +44,26 @@ function MiniFinancialSummary({ incomes, expenses }: MiniFinancialSummaryProps) 
         return totals;
     }, [incomes, expenses]);
 
-    const hasData = summary.ARS.income > 0 || summary.ARS.expense > 0 || summary.USD.income > 0 || summary.USD.expense > 0;
-
-    if (!hasData) {
-        return <p className="text-sm text-muted-foreground mt-2">Sin movimientos este mes.</p>;
-    }
-
     return (
-        <div className="space-y-2">
+        <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-xs">
             {(Object.keys(summary) as Currency[]).map(currency => {
                 const data = summary[currency];
                 return (
-                    <div key={currency} className="text-sm">
-                        <div className="font-bold text-base mb-1">{currency}</div>
-                        <div className="flex justify-between items-center text-green-600 dark:text-green-400">
-                            <div className="flex items-center gap-1">
-                                <ArrowUp className="h-4 w-4" />
-                                <span>Ingresos</span>
+                    <div key={currency}>
+                        <div className="font-bold mb-1">{currency}</div>
+                        <div className="space-y-1">
+                            <div className="flex justify-between items-center text-green-600 dark:text-green-400">
+                                <ArrowUp className="h-3 w-3" />
+                                <span>{formatCurrency(data.income, currency)}</span>
                             </div>
-                            <span>{formatCurrency(data.income, currency)}</span>
-                        </div>
-                        <div className="flex justify-between items-center text-red-600 dark:text-red-400">
-                             <div className="flex items-center gap-1">
-                                <ArrowDown className="h-4 w-4" />
-                                <span>Egresos</span>
+                            <div className="flex justify-between items-center text-red-600 dark:text-red-400">
+                                <ArrowDown className="h-3 w-3" />
+                                <span>{formatCurrency(data.expense, currency)}</span>
                             </div>
-                            <span>{formatCurrency(data.expense, currency)}</span>
-                        </div>
-                        <div className={`flex justify-between items-center font-semibold ${data.net >= 0 ? 'text-primary' : 'text-destructive'}`}>
-                            <div className="flex items-center gap-1">
-                                <Minus className="h-4 w-4" />
-                                <span>Neto</span>
+                            <div className={cn("flex justify-between items-center font-semibold", data.net >= 0 ? 'text-primary' : 'text-destructive')}>
+                                <Minus className="h-3 w-3" />
+                                <span>{formatCurrency(data.net, currency)}</span>
                             </div>
-                            <span>{formatCurrency(data.net, currency)}</span>
                         </div>
                     </div>
                 )
@@ -95,7 +83,7 @@ export function PropertyCard({ property, incomes, expenses }: PropertyCardProps)
   return (
     <Link href={`/properties/${property.id}`} className="block transition-all hover:scale-[1.02]">
         <Card className="overflow-hidden h-full flex flex-row">
-            <div className="w-24 h-full flex-shrink-0">
+            <div className="w-24 h-24 flex-shrink-0">
                 <Image
                     src={property.imageUrl}
                     alt={property.name}
@@ -105,14 +93,11 @@ export function PropertyCard({ property, incomes, expenses }: PropertyCardProps)
                     data-ai-hint="apartment building"
                 />
             </div>
-            <div className="flex-grow flex flex-col">
-                <CardHeader className="p-4 pb-2">
-                    <CardTitle className="font-headline text-lg">{property.name}</CardTitle>
-                    <CardDescription className="line-clamp-2 pt-1 text-xs">
-                        Resumen del mes en curso
-                    </CardDescription>
+            <div className="flex-grow flex flex-col justify-between">
+                <CardHeader className="p-3 pb-1">
+                    <CardTitle className="font-headline text-base">{property.name}</CardTitle>
                 </CardHeader>
-                <CardContent className="p-4 flex-grow flex flex-col justify-end">
+                <CardContent className="p-3">
                    <MiniFinancialSummary incomes={incomes} expenses={expenses} />
                 </CardContent>
             </div>
