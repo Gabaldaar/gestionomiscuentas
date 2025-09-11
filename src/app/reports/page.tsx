@@ -6,7 +6,7 @@ import { collection, collectionGroup, getDocs, query, Timestamp } from 'firebase
 import { db } from '@/lib/firebase';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { Bar, BarChart, CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { Bar, BarChart, CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis, Pie, PieChart, Cell, Sector } from 'recharts';
 
 import { PageHeader } from '@/components/shared/PageHeader';
 import { Button } from '@/components/ui/button';
@@ -18,8 +18,10 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Loader, AlertTriangle, Filter, Calendar as CalendarIcon, X } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-import { type ActualExpense, type Income, type Property, type Currency } from '@/lib/types';
+
+import { type ActualExpense, type Income, type Property, type Currency, type ExpenseCategory } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { type DateRange } from 'react-day-picker';
 
@@ -29,6 +31,9 @@ const formatCurrency = (amount: number, currency: Currency) => {
   return new Intl.NumberFormat('es-AR', { style: 'currency', currency, minimumFractionDigits: 0 }).format(amount);
 };
 
+const COLORS = ["hsl(var(--chart-1))", "hsl(var(--chart-2))", "hsl(var(--chart-3))", "hsl(var(--chart-4))", "hsl(var(--chart-5))", "#f59e0b", "#10b981", "#3b82f6"];
+
+
 export default function ReportsPage() {
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
@@ -36,6 +41,8 @@ export default function ReportsPage() {
   const [allIncomes, setAllIncomes] = React.useState<Income[]>([]);
   const [allExpenses, setAllExpenses] = React.useState<ActualExpense[]>([]);
   const [properties, setProperties] = React.useState<Property[]>([]);
+  const [expenseCategories, setExpenseCategories] = React.useState<ExpenseCategory[]>([]);
+
 
   // Filters
   const [selectedProperties, setSelectedProperties] = React.useState<string[]>([]);
@@ -50,10 +57,11 @@ export default function ReportsPage() {
     setLoading(true);
     setError(null);
     try {
-      const [propsSnap, incomesSnap, expensesSnap] = await Promise.all([
+      const [propsSnap, incomesSnap, expensesSnap, expenseCatSnap] = await Promise.all([
         getDocs(collection(db, 'properties')),
         getDocs(query(collectionGroup(db, 'incomes'))),
         getDocs(query(collectionGroup(db, 'actualExpenses'))),
+        getDocs(query(collection(db, 'expenseCategories')))
       ]);
 
       const propsList = propsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Property));
@@ -71,6 +79,14 @@ export default function ReportsPage() {
         return { ...data, id: doc.id, date: (data.date as Timestamp).toDate().toISOString(), propertyId: doc.ref.parent.parent?.id } as ActualExpense;
       });
       setAllExpenses(expensesList);
+      
+      const expenseCategoriesList = await Promise.all(expenseCatSnap.docs.map(async (categoryDoc) => {
+        const subcategoriesQuery = query(collection(db, 'expenseCategories', categoryDoc.id, 'subcategories'));
+        const subcategoriesSnapshot = await getDocs(subcategoriesQuery);
+        return { id: categoryDoc.id, name: categoryDoc.data().name, subcategories: subcategoriesSnapshot.docs.map(subDoc => ({ id: subDoc.id, name: subDoc.data().name })) };
+      }));
+      setExpenseCategories(expenseCategoriesList);
+
 
     } catch (err) {
       console.error("Error fetching report data:", err);
@@ -100,45 +116,100 @@ export default function ReportsPage() {
     }
   }
 
-  const reportData = React.useMemo(() => {
-    const data = new Map<string, { period: string, income: number, expense: number }>();
-
-    const processTransactions = (transactions: (Income[] | ActualExpense[]), type: 'income' | 'expense') => {
-        transactions.forEach(t => {
+    const filteredTransactions = React.useMemo(() => {
+        const filter = (transactions: (Income[] | ActualExpense[])) => transactions.filter(t => {
             const transactionDate = new Date(t.date);
             const isSelectedProperty = t.propertyId && selectedProperties.includes(t.propertyId);
             const isInDateRange = dateRange?.from && dateRange?.to ? transactionDate >= dateRange.from && transactionDate <= dateRange.to : true;
             const isCorrectCurrency = t.currency === currency;
+            return isSelectedProperty && isInDateRange && isCorrectCurrency;
+        });
 
-            if (isSelectedProperty && isInDateRange && isCorrectCurrency) {
-                const key = groupBy === 'month' ? format(transactionDate, 'yyyy-MM') : format(transactionDate, 'yyyy');
-                const periodLabel = groupBy === 'month' ? format(transactionDate, 'MMM yyyy', { locale: es }) : format(transactionDate, 'yyyy');
+        return {
+            incomes: filter(allIncomes) as Income[],
+            expenses: filter(allExpenses) as ActualExpense[],
+        };
+    }, [allIncomes, allExpenses, selectedProperties, dateRange, currency]);
 
-                if (!data.has(key)) {
-                    data.set(key, { period: periodLabel, income: 0, expense: 0 });
-                }
 
-                const entry = data.get(key)!;
-                if (type === 'income') {
-                    entry.income += t.amount;
-                } else {
-                    entry.expense += t.amount;
-                }
+  const financialSummaryData = React.useMemo(() => {
+    const data = new Map<string, { period: string, income: number, expense: number }>();
+    
+    const process = (transactions: Transaction[], type: 'income' | 'expense') => {
+        transactions.forEach(t => {
+            const key = groupBy === 'month' ? format(new Date(t.date), 'yyyy-MM') : format(new Date(t.date), 'yyyy');
+            const periodLabel = groupBy === 'month' ? format(new Date(t.date), 'MMM yyyy', { locale: es }) : format(new Date(t.date), 'yyyy');
+
+            if (!data.has(key)) {
+                data.set(key, { period: periodLabel, income: 0, expense: 0 });
+            }
+
+            const entry = data.get(key)!;
+             if (type === 'income') {
+                entry.income += t.amount;
+            } else {
+                entry.expense += t.amount;
             }
         });
-    }
+    };
 
-    processTransactions(allIncomes, 'income');
-    processTransactions(allExpenses, 'expense');
+    process(filteredTransactions.incomes, 'income');
+    process(filteredTransactions.expenses, 'expense');
 
     return Array.from(data.values())
-        .map(d => ({
-            ...d,
-            net: d.income - d.expense,
-        }))
-        .sort((a, b) => a.period.localeCompare(b.period));
+        .map(d => ({ ...d, net: d.income - d.expense }))
+        .sort((a, b) => {
+            const dateA = groupBy === 'month' ? new Date(a.period.split(" ")[1], monthsMap[a.period.split(" ")[0]]) : new Date(a.period);
+            const dateB = groupBy === 'month' ? new Date(b.period.split(" ")[1], monthsMap[b.period.split(" ")[0]]) : new Date(b.period);
+            return dateA.getTime() - dateB.getTime();
+        });
 
-  }, [allIncomes, allExpenses, selectedProperties, dateRange, groupBy, currency]);
+  }, [filteredTransactions, groupBy]);
+
+  const monthsMap: {[key: string]: number} = {
+    'ene': 0, 'feb': 1, 'mar': 2, 'abr': 3, 'may': 4, 'jun': 5,
+    'jul': 6, 'ago': 7, 'sep': 8, 'oct': 9, 'nov': 10, 'dic': 11
+  };
+  
+  const expenseBreakdownData = React.useMemo(() => {
+      const categoryMap = new Map<string, { name: string, value: number, subcategories: Map<string, {name: string, value: number}> }>();
+
+      const categoryIdToName = new Map(expenseCategories.map(c => [c.id, c.name]));
+      const subcategoryIdToInfo = new Map();
+      expenseCategories.forEach(cat => {
+          cat.subcategories.forEach(sub => {
+              subcategoryIdToInfo.set(sub.id, { name: sub.name, parentId: cat.id, parentName: cat.name });
+          });
+      });
+
+      filteredTransactions.expenses.forEach(exp => {
+          const subcatInfo = subcategoryIdToInfo.get(exp.subcategoryId);
+          if (!subcatInfo) return;
+
+          // Main category aggregation
+          if (!categoryMap.has(subcatInfo.parentId)) {
+              categoryMap.set(subcatInfo.parentId, { name: subcatInfo.parentName, value: 0, subcategories: new Map() });
+          }
+          const categoryEntry = categoryMap.get(subcatInfo.parentId)!;
+          categoryEntry.value += exp.amount;
+
+          // Subcategory aggregation
+          if (!categoryEntry.subcategories.has(exp.subcategoryId)) {
+              categoryEntry.subcategories.set(exp.subcategoryId, { name: subcatInfo.name, value: 0 });
+          }
+          categoryEntry.subcategories.get(exp.subcategoryId)!.value += exp.amount;
+      });
+      
+      const pieData = Array.from(categoryMap.values()).map(c => ({ name: c.name, value: c.value })).sort((a,b) => b.value - a.value);
+      const tableData = Array.from(categoryMap.values()).map(c => ({
+          ...c,
+          subcategories: Array.from(c.subcategories.values()).sort((a,b) => b.value - a.value)
+      })).sort((a,b) => b.value - a.value);
+      
+      return { pieData, tableData };
+
+  }, [filteredTransactions.expenses, expenseCategories]);
+
 
   if (loading) return <div className="flex-1 p-8 flex justify-center items-center"><Loader className="h-8 w-8 animate-spin" /></div>;
   if (error) return <div className="flex-1 p-8 flex justify-center items-center"><Card><CardHeader><CardTitle className="text-destructive">Error</CardTitle></CardHeader><CardContent>{error}</CardContent></Card></div>;
@@ -159,8 +230,8 @@ export default function ReportsPage() {
                 <CalendarIcon className="mr-2 h-4 w-4" />
                 {dateRange?.from ? (
                   dateRange.to ? (
-                    <>{format(dateRange.from, "LLL dd, y")} - {format(dateRange.to, "LLL dd, y")}</>
-                  ) : format(dateRange.from, "LLL dd, y")
+                    <>{format(dateRange.from, "LLL dd, y", { locale: es })} - {format(dateRange.to, "LLL dd, y", { locale: es })}</>
+                  ) : format(dateRange.from, "LLL dd, y", { locale: es })
                 ) : <span>Elige un rango</span>}
               </Button>
             </PopoverTrigger>
@@ -215,87 +286,188 @@ export default function ReportsPage() {
               </div>
             </PopoverContent>
           </Popover>
-
         </CardContent>
       </Card>
       
-      {reportData.length > 0 ? (
-        <div className="space-y-4">
-          <Card>
-            <CardHeader><CardTitle>Resumen Financiero ({currency})</CardTitle></CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Período</TableHead>
-                    <TableHead className="text-right">Ingresos</TableHead>
-                    <TableHead className="text-right">Gastos</TableHead>
-                    <TableHead className="text-right">Saldo Neto</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {reportData.map(row => (
-                    <TableRow key={row.period}>
-                      <TableCell className="font-medium capitalize">{row.period}</TableCell>
-                      <TableCell className="text-right text-green-600">{formatCurrency(row.income, currency)}</TableCell>
-                      <TableCell className="text-right text-red-600">{formatCurrency(row.expense, currency)}</TableCell>
-                      <TableCell className={cn("text-right font-bold", row.net >= 0 ? "text-primary" : "text-destructive")}>{formatCurrency(row.net, currency)}</TableCell>
-                    </TableRow>
-                  ))}
-                  <TableRow className="font-bold bg-muted/50">
-                    <TableCell>Total</TableCell>
-                    <TableCell className="text-right text-green-600">{formatCurrency(reportData.reduce((acc, r) => acc + r.income, 0), currency)}</TableCell>
-                    <TableCell className="text-right text-red-600">{formatCurrency(reportData.reduce((acc, r) => acc + r.expense, 0), currency)}</TableCell>
-                    <TableCell className={cn("text-right font-bold", reportData.reduce((acc, r) => acc + r.net, 0) >= 0 ? "text-primary" : "text-destructive")}>{formatCurrency(reportData.reduce((acc, r) => acc + r.net, 0), currency)}</TableCell>
-                  </TableRow>
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-          
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <Card>
-              <CardHeader><CardTitle>Evolución del Saldo Neto ({currency})</CardTitle></CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <LineChart data={reportData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="period" fontSize={12} tickLine={false} axisLine={false} />
-                    <YAxis fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `${formatCurrency(value, currency).replace('$', '$ ')}`} />
-                    <Tooltip formatter={(value: number) => formatCurrency(value, currency)} />
-                    <Legend />
-                    <Line type="monotone" dataKey="net" name="Saldo Neto" stroke="hsl(var(--primary))" strokeWidth={2} />
-                  </LineChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
+        <Tabs defaultValue="summary" className="space-y-4">
+            <TabsList>
+                <TabsTrigger value="summary">Resumen Financiero</TabsTrigger>
+                <TabsTrigger value="expenses">Análisis de Gastos</TabsTrigger>
+            </TabsList>
+            <TabsContent value="summary">
+                {financialSummaryData.length > 0 ? (
+                <div className="space-y-4">
+                    <Card>
+                    <CardHeader><CardTitle>Resumen Financiero ({currency})</CardTitle></CardHeader>
+                    <CardContent>
+                        <Table>
+                        <TableHeader>
+                            <TableRow>
+                            <TableHead>Período</TableHead>
+                            <TableHead className="text-right">Ingresos</TableHead>
+                            <TableHead className="text-right">Gastos</TableHead>
+                            <TableHead className="text-right">Saldo Neto</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {financialSummaryData.map(row => (
+                            <TableRow key={row.period}>
+                                <TableCell className="font-medium capitalize">{row.period}</TableCell>
+                                <TableCell className="text-right text-green-600">{formatCurrency(row.income, currency)}</TableCell>
+                                <TableCell className="text-right text-red-600">{formatCurrency(row.expense, currency)}</TableCell>
+                                <TableCell className={cn("text-right font-bold", row.net >= 0 ? "text-primary" : "text-destructive")}>{formatCurrency(row.net, currency)}</TableCell>
+                            </TableRow>
+                            ))}
+                            <TableRow className="font-bold bg-muted/50">
+                            <TableCell>Total</TableCell>
+                            <TableCell className="text-right text-green-600">{formatCurrency(financialSummaryData.reduce((acc, r) => acc + r.income, 0), currency)}</TableCell>
+                            <TableCell className="text-right text-red-600">{formatCurrency(financialSummaryData.reduce((acc, r) => acc + r.expense, 0), currency)}</TableCell>
+                            <TableCell className={cn("text-right font-bold", financialSummaryData.reduce((acc, r) => acc + r.net, 0) >= 0 ? "text-primary" : "text-destructive")}>{formatCurrency(financialSummaryData.reduce((acc, r) => acc + r.net, 0), currency)}</TableCell>
+                            </TableRow>
+                        </TableBody>
+                        </Table>
+                    </CardContent>
+                    </Card>
+                    
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    <Card>
+                        <CardHeader><CardTitle>Evolución del Saldo Neto ({currency})</CardTitle></CardHeader>
+                        <CardContent>
+                        <ResponsiveContainer width="100%" height={300}>
+                            <LineChart data={financialSummaryData}>
+                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis dataKey="period" fontSize={12} tickLine={false} axisLine={false} />
+                            <YAxis fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `${formatCurrency(value, currency).replace('$', '$ ')}`} />
+                            <Tooltip formatter={(value: number) => formatCurrency(value, currency)} />
+                            <Legend />
+                            <Line type="monotone" dataKey="net" name="Saldo Neto" stroke="hsl(var(--primary))" strokeWidth={2} />
+                            </LineChart>
+                        </ResponsiveContainer>
+                        </CardContent>
+                    </Card>
 
-            <Card>
-              <CardHeader><CardTitle>Ingresos vs. Gastos ({currency})</CardTitle></CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={reportData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="period" fontSize={12} tickLine={false} axisLine={false} />
-                    <YAxis fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `${formatCurrency(value, currency).replace('$', '$ ')}`} />
-                    <Tooltip formatter={(value: number) => formatCurrency(value, currency)} />
-                    <Legend />
-                    <Bar dataKey="income" name="Ingresos" fill="hsl(var(--chart-1))" radius={[4, 4, 0, 0]} />
-                    <Bar dataKey="expense" name="Gastos" fill="hsl(var(--chart-2))" radius={[4, 4, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-          </div>
-
-        </div>
-      ) : (
-        <Card>
-          <CardContent className="p-10 text-center text-muted-foreground">
-            No hay datos para mostrar con los filtros seleccionados.
-          </CardContent>
-        </Card>
-      )}
+                    <Card>
+                        <CardHeader><CardTitle>Ingresos vs. Gastos ({currency})</CardTitle></CardHeader>
+                        <CardContent>
+                        <ResponsiveContainer width="100%" height={300}>
+                            <BarChart data={financialSummaryData}>
+                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis dataKey="period" fontSize={12} tickLine={false} axisLine={false} />
+                            <YAxis fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `${formatCurrency(value, currency).replace('$', '$ ')}`} />
+                            <Tooltip formatter={(value: number) => formatCurrency(value, currency)} />
+                            <Legend />
+                            <Bar dataKey="income" name="Ingresos" fill="hsl(var(--chart-1))" radius={[4, 4, 0, 0]} />
+                            <Bar dataKey="expense" name="Gastos" fill="hsl(var(--chart-2))" radius={[4, 4, 0, 0]} />
+                            </BarChart>
+                        </ResponsiveContainer>
+                        </CardContent>
+                    </Card>
+                    </div>
+                </div>
+                 ) : (
+                <Card>
+                    <CardContent className="p-10 text-center text-muted-foreground">
+                        No hay datos para mostrar con los filtros seleccionados.
+                    </CardContent>
+                </Card>
+                )}
+            </TabsContent>
+            <TabsContent value="expenses">
+                {expenseBreakdownData.pieData.length > 0 ? (
+                 <div className="space-y-4">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Desglose de Gastos por Categoría ({currency})</CardTitle>
+                        </CardHeader>
+                        <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
+                            <div>
+                                <ResponsiveContainer width="100%" height={300}>
+                                    <PieChart>
+                                        <Pie data={expenseBreakdownData.pieData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={100} labelLine={false} label={({ cx, cy, midAngle, innerRadius, outerRadius, percent, index }) => {
+                                            const RADIAN = Math.PI / 180;
+                                            const radius = innerRadius + (outerRadius - innerRadius) * 0.5;
+                                            const x  = cx + radius * Math.cos(-midAngle * RADIAN);
+                                            const y = cy  + radius * Math.sin(-midAngle * RADIAN);
+                                            return (percent * 100) > 5 ? <text x={x} y={y} fill="white" textAnchor={x > cx ? 'start' : 'end'} dominantBaseline="central">
+                                                {`${(percent * 100).toFixed(0)}%`}
+                                            </text> : null;
+                                        }}>
+                                            {expenseBreakdownData.pieData.map((entry, index) => <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />)}
+                                        </Pie>
+                                        <Tooltip formatter={(value: number) => formatCurrency(value, currency)} />
+                                        <Legend />
+                                    </PieChart>
+                                </ResponsiveContainer>
+                            </div>
+                             <div className="max-h-80 overflow-y-auto">
+                                <Table>
+                                    <TableHeader>
+                                        <TableRow>
+                                            <TableHead>Categoría</TableHead>
+                                            <TableHead className="text-right">Total</TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {expenseBreakdownData.pieData.map((item, index) => (
+                                            <TableRow key={item.name}>
+                                                <TableCell className="font-medium flex items-center">
+                                                    <span className="w-2.5 h-2.5 rounded-full mr-2" style={{ backgroundColor: COLORS[index % COLORS.length] }}></span>
+                                                    {item.name}
+                                                </TableCell>
+                                                <TableCell className="text-right">{formatCurrency(item.value, currency)}</TableCell>
+                                            </TableRow>
+                                        ))}
+                                    </TableBody>
+                                </Table>
+                            </div>
+                        </CardContent>
+                    </Card>
+                     <Card>
+                        <CardHeader>
+                            <CardTitle>Detalle por Subcategoría</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                             <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead>Subcategoría</TableHead>
+                                        <TableHead>Categoría Principal</TableHead>
+                                        <TableHead className="text-right">Total Gastado</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {expenseBreakdownData.tableData.map((cat, catIndex) => (
+                                        <React.Fragment key={cat.name}>
+                                            <TableRow className="bg-muted/50">
+                                                <TableCell colSpan={2} className="font-bold" style={{color: COLORS[catIndex % COLORS.length]}}>{cat.name}</TableCell>
+                                                <TableCell className="text-right font-bold" style={{color: COLORS[catIndex % COLORS.length]}}>{formatCurrency(cat.value, currency)}</TableCell>
+                                            </TableRow>
+                                            {cat.subcategories.map(sub => (
+                                                <TableRow key={sub.name}>
+                                                    <TableCell className="pl-8">{sub.name}</TableCell>
+                                                    <TableCell className="text-muted-foreground">{cat.name}</TableCell>
+                                                    <TableCell className="text-right">{formatCurrency(sub.value, currency)}</TableCell>
+                                                </TableRow>
+                                            ))}
+                                        </React.Fragment>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        </CardContent>
+                     </Card>
+                 </div>
+                ) : (
+                <Card>
+                    <CardContent className="p-10 text-center text-muted-foreground">
+                        No hay gastos para mostrar con los filtros seleccionados.
+                    </CardContent>
+                </Card>
+                )}
+            </TabsContent>
+        </Tabs>
     </div>
   );
 }
+
+
+    
