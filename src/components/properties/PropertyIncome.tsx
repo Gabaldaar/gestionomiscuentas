@@ -57,11 +57,6 @@ export function PropertyIncome({ propertyId, wallets, incomeCategories, selected
     return "Desconocido";
   };
 
-  const getWalletName = (id: string) => {
-    const wallet = wallets.find(w => w.id === id);
-    return wallet ? `${wallet.name} (${wallet.currency})` : "Desconocido";
-  };
-  
   const closeDialogs = () => {
     setIsAddIncomeOpen(false);
     setEditingIncome(null);
@@ -204,7 +199,9 @@ export function PropertyIncome({ propertyId, wallets, incomeCategories, selected
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredIncomes.length > 0 ? filteredIncomes.map(income => (
+              {filteredIncomes.length > 0 ? filteredIncomes.map(income => {
+                 const wallet = wallets.find(w => w.id === income.walletId);
+                 return (
                 <TableRow key={income.id}>
                   <TableCell>{new Date(income.date).toLocaleDateString('es-ES')}</TableCell>
                   <TableCell>
@@ -212,7 +209,19 @@ export function PropertyIncome({ propertyId, wallets, incomeCategories, selected
                     <div className='text-xs text-muted-foreground'>{getCategoryName(income.subcategoryId)}</div>
                   </TableCell>
                   <TableCell className="hidden md:table-cell">
-                    {getWalletName(income.walletId)}
+                     {wallet ? (
+                      <span>
+                        {wallet.name}{' '}
+                        <span className={cn('font-semibold', {
+                          'text-green-800 dark:text-green-400': wallet.currency === 'USD',
+                          'text-blue-800 dark:text-blue-400': wallet.currency === 'ARS',
+                        })}>
+                          ({wallet.currency})
+                        </span>
+                      </span>
+                    ) : (
+                      "Desconocido"
+                    )}
                   </TableCell>
                   <TableCell className="hidden md:table-cell">
                     {income.notes ? (
@@ -254,7 +263,8 @@ export function PropertyIncome({ propertyId, wallets, incomeCategories, selected
                       </div>
                   </TableCell>
                 </TableRow>
-              )) : (
+                 )
+                }) : (
                 <TableRow>
                   <TableCell colSpan={6} className="text-center text-muted-foreground py-10">
                     No hay ingresos para mostrar para el período seleccionado.
