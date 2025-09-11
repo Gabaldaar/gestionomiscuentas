@@ -129,60 +129,64 @@ export default function EditTransferPage() {
         const batch = writeBatch(db);
 
         try {
-            // --- Step 1: Get all required wallet documents ---
-            const fromWalletRef = doc(db, 'wallets', data.fromWalletId);
-            const toWalletRef = doc(db, 'wallets', data.toWalletId);
-            const originalFromWalletRef = doc(db, 'wallets', originalTransfer.fromWalletId);
-            const originalToWalletRef = doc(db, 'wallets', originalTransfer.toWalletId);
+            // --- Step 1: Get all required wallet documents from Firestore ---
+            const walletRefs = new Map<string, ReturnType<typeof doc>>();
+            walletRefs.set(data.fromWalletId, doc(db, 'wallets', data.fromWalletId));
+            walletRefs.set(data.toWalletId, doc(db, 'wallets', data.toWalletId));
+            walletRefs.set(originalTransfer.fromWalletId, doc(db, 'wallets', originalTransfer.fromWalletId));
+            walletRefs.set(originalTransfer.toWalletId, doc(db, 'wallets', originalTransfer.toWalletId));
 
-            const allWalletRefs = new Map();
-            allWalletRefs.set(fromWalletRef.path, fromWalletRef);
-            allWalletRefs.set(toWalletRef.path, toWalletRef);
-            allWalletRefs.set(originalFromWalletRef.path, originalFromWalletRef);
-            allWalletRefs.set(originalToWalletRef.path, originalToWalletRef);
-
-            const walletSnapshots = await Promise.all(Array.from(allWalletRefs.values()).map(ref => getDoc(ref)));
-            const walletDataMap = new Map(walletSnapshots.map(snap => [snap.ref.path, snap.data() as Wallet]));
-
-            // --- Step 2: Revert the original transaction ---
-            const originalFromWalletData = walletDataMap.get(originalFromWalletRef.path);
-            const originalToWalletData = walletDataMap.get(originalToWalletRef.path);
-
-            if (!originalFromWalletData || !originalToWalletData) throw new Error("No se encontraron las billeteras originales.");
-
-            const revertedFromBalance = originalFromWalletData.balance + originalTransfer.amountSent;
-            const revertedToBalance = originalToWalletData.balance - originalTransfer.amountReceived;
+            const walletSnapshots = await Promise.all(Array.from(walletRefs.values()).map(ref => getDoc(ref)));
             
-            walletDataMap.set(originalFromWalletRef.path, { ...originalFromWalletData, balance: revertedFromBalance });
-            walletDataMap.set(originalToWalletRef.path, { ...originalToWalletData, balance: revertedToBalance });
+            const walletDataMap = new Map<string, Wallet>();
+            for(const snap of walletSnapshots) {
+                if (snap.exists()) {
+                    walletDataMap.set(snap.id, snap.data() as Wallet);
+                }
+            }
+            
+            // --- Step 2: Revert the original transaction ---
+            const originalFromWalletData = walletDataMap.get(originalTransfer.fromWalletId);
+            const originalToWalletData = walletDataMap.get(originalTransfer.toWalletId);
+
+            if (!originalFromWalletData || !originalToWalletData) {
+                throw new Error("No se encontraron las billeteras originales. No se puede revertir la transacción.");
+            }
+
+            const balances = new Map<string, number>();
+            balances.set(originalTransfer.fromWalletId, originalFromWalletData.balance + originalTransfer.amountSent);
+            balances.set(originalTransfer.toWalletId, (balances.get(originalTransfer.toWalletId) ?? originalToWalletData.balance) - originalTransfer.amountReceived);
 
             // --- Step 3: Apply the new transaction ---
-            const currentFromWalletData = walletDataMap.get(fromWalletRef.path);
-            const currentToWalletData = walletDataMap.get(toWalletRef.path);
+            const currentFromWalletBalance = balances.get(data.fromWalletId);
+            const currentToWalletBalance = balances.get(data.toWalletId);
+            const currentToWalletData = walletDataMap.get(data.toWalletId);
+            const currentFromWalletData = walletDataMap.get(data.fromWalletId);
 
-            if (!currentFromWalletData || !currentToWalletData) throw new Error("No se encontraron las billeteras actuales.");
+
+            if (currentFromWalletBalance === undefined || currentToWalletBalance === undefined || !currentToWalletData || !currentFromWalletData) {
+                 throw new Error("No se encontraron las billeteras para la nueva transacción.");
+            }
             
-            if (currentFromWalletData.balance < data.amountSent) {
+            if (currentFromWalletBalance < data.amountSent) {
                 toast({ title: "Fondos Insuficientes", description: `El saldo revertido de ${currentFromWalletData.name} no es suficiente para la nueva transacción.`, variant: "destructive" });
                 setIsSubmitting(false);
                 return;
             }
 
-            const newFromBalance = currentFromWalletData.balance - data.amountSent;
-            const newToBalance = currentToWalletData.balance + data.amountReceived;
-            
-            walletDataMap.set(fromWalletRef.path, { ...currentFromWalletData, balance: newFromBalance });
-            walletDataMap.set(toWalletRef.path, { ...currentToWalletData, balance: newToBalance });
+            balances.set(data.fromWalletId, currentFromWalletBalance - data.amountSent);
+            balances.set(data.toWalletId, currentToWalletBalance + data.amountReceived);
 
             // --- Step 4: Batch update wallets and the transfer itself ---
-            walletDataMap.forEach((wallet, path) => {
-                batch.update(doc(db, path), { balance: wallet.balance });
+            balances.forEach((balance, walletId) => {
+                const walletRef = doc(db, 'wallets', walletId);
+                batch.update(walletRef, { balance });
             });
 
             const transferRef = doc(db, 'transfers', id);
             const updatedTransferData = {
                 ...data,
-                date: originalTransfer.date, // Keep original date or update? Let's keep it for now.
+                date: originalTransfer.date, // Keep original date
                 fromCurrency: fromWallet.currency,
                 toCurrency: toWallet.currency,
                 exchangeRate: showExchangeRate ? data.exchangeRate : null,
@@ -199,9 +203,10 @@ export default function EditTransferPage() {
 
         } catch (error) {
             console.error('Error updating transfer: ', error);
+            const errorMessage = error instanceof Error ? error.message : 'No se pudo actualizar la transferencia.';
             toast({
                 title: 'Error',
-                description: 'No se pudo actualizar la transferencia.',
+                description: errorMessage,
                 variant: 'destructive',
             });
         } finally {
@@ -368,3 +373,5 @@ export default function EditTransferPage() {
         </div>
     );
 }
+
+    
