@@ -3,15 +3,18 @@
 
 import * as React from 'react';
 import Link from 'next/link';
-import { collection, getDocs, orderBy, query } from 'firebase/firestore';
+import { collection, getDocs, orderBy, query, doc, deleteDoc, getDocsFromCache } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, Loader, HandCoins } from "lucide-react";
+import { PlusCircle, Loader, HandCoins, MoreVertical, Pencil, Trash2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import { type Liability } from "@/lib/types";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { useRouter } from 'next/navigation';
+import { ConfirmDeleteDialog } from '@/components/shared/ConfirmDeleteDialog';
 
 const formatCurrency = (amount: number, currency: string) => {
   return new Intl.NumberFormat('es-AR', { style: 'currency', currency, minimumFractionDigits: 0 }).format(amount);
@@ -19,8 +22,11 @@ const formatCurrency = (amount: number, currency: string) => {
 
 export default function LiabilitiesPage() {
   const { toast } = useToast();
+  const router = useRouter();
   const [liabilities, setLiabilities] = React.useState<Liability[]>([]);
   const [loading, setLoading] = React.useState(true);
+  const [deletingLiability, setDeletingLiability] = React.useState<Liability | null>(null);
+
 
   const fetchLiabilities = React.useCallback(async () => {
     setLoading(true);
@@ -43,8 +49,43 @@ export default function LiabilitiesPage() {
   React.useEffect(() => {
     fetchLiabilities();
   }, [fetchLiabilities]);
+  
+  const handleDeleteClick = (e: React.MouseEvent, liability: Liability) => {
+    e.stopPropagation();
+    e.preventDefault();
+    setDeletingLiability(liability);
+  };
+
+  const confirmDelete = async () => {
+    if (!deletingLiability) return;
+
+    // Check for payments before deleting
+    const paymentsCol = collection(db, 'liabilities', deletingLiability.id, 'payments');
+    const paymentsSnapshot = await getDocs(query(paymentsCol));
+
+    if (!paymentsSnapshot.empty) {
+        toast({
+            title: "No se puede eliminar",
+            description: "Este pasivo tiene pagos registrados. Debe eliminarlos primero desde la página de detalle del pasivo.",
+            variant: "destructive",
+            duration: 6000
+        });
+        setDeletingLiability(null);
+        return;
+    }
+
+    try {
+      await deleteDoc(doc(db, 'liabilities', deletingLiability.id));
+      toast({ title: "Pasivo Eliminado", variant: "destructive" });
+      setLiabilities(liabilities.filter(l => l.id !== deletingLiability.id));
+      setDeletingLiability(null);
+    } catch (error) {
+      toast({ title: "Error", description: "No se pudo eliminar el pasivo.", variant: "destructive" });
+    }
+  };
 
   return (
+    <>
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
       <PageHeader title="Pasivos y Deudas">
         <Button asChild>
@@ -78,30 +119,61 @@ export default function LiabilitiesPage() {
           {liabilities.map(liability => {
             const percentagePaid = (liability.totalAmount - liability.outstandingBalance) / liability.totalAmount * 100;
             return (
-              <Link key={liability.id} href={`/liabilities/${liability.id}`} className="block transition-all hover:scale-[1.02]">
-                <Card className="h-full flex flex-col">
-                  <CardHeader>
-                    <CardTitle>{liability.name}</CardTitle>
-                    <CardDescription>
-                      Total: {formatCurrency(liability.totalAmount, liability.currency)}
-                    </CardDescription>
+                <Card key={liability.id} className="h-full flex flex-col hover:shadow-md transition-shadow">
+                  <CardHeader className='flex-row justify-between items-start'>
+                    <div>
+                        <CardTitle>
+                          <Link href={`/liabilities/${liability.id}`} className="hover:underline">
+                            {liability.name}
+                          </Link>
+                        </CardTitle>
+                        <CardDescription>
+                        Total: {formatCurrency(liability.totalAmount, liability.currency)}
+                        </CardDescription>
+                    </div>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); e.preventDefault(); }}>
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent>
+                        <DropdownMenuItem onClick={(e) => { e.stopPropagation(); e.preventDefault(); router.push(`/liabilities/${liability.id}/edit`) }}>
+                          <Pencil className="mr-2 h-4 w-4" />
+                          Editar
+                        </DropdownMenuItem>
+                        <DropdownMenuItem className="text-destructive" onClick={(e) => handleDeleteClick(e, liability)}>
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          Eliminar
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </CardHeader>
                   <CardContent className="flex-grow flex flex-col justify-end">
-                    <div className="space-y-2">
-                        <div>
-                            <p className="text-sm font-medium">Saldo Pendiente</p>
-                            <p className="text-2xl font-bold">{formatCurrency(liability.outstandingBalance, liability.currency)}</p>
-                        </div>
-                        <Progress value={percentagePaid} className="h-2" />
-                        <p className="text-xs text-muted-foreground text-right">{percentagePaid.toFixed(1)}% pagado</p>
-                    </div>
+                    <Link href={`/liabilities/${liability.id}`} className="block">
+                      <div className="space-y-2">
+                          <div>
+                              <p className="text-sm font-medium">Saldo Pendiente</p>
+                              <p className="text-2xl font-bold">{formatCurrency(liability.outstandingBalance, liability.currency)}</p>
+                          </div>
+                          <Progress value={percentagePaid} className="h-2" />
+                          <p className="text-xs text-muted-foreground text-right">{percentagePaid.toFixed(1)}% pagado</p>
+                      </div>
+                    </Link>
                   </CardContent>
                 </Card>
-              </Link>
             )
           })}
         </div>
       )}
     </div>
+    <ConfirmDeleteDialog
+        isOpen={!!deletingLiability}
+        onOpenChange={() => setDeletingLiability(null)}
+        onConfirm={confirmDelete}
+        title={`¿Eliminar pasivo "${deletingLiability?.name}"?`}
+        description="Esta acción es permanente y solo se puede realizar si el pasivo no tiene pagos registrados. ¿Estás seguro?"
+    />
+    </>
   );
 }

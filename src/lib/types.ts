@@ -1,6 +1,7 @@
 
 
 
+
 export type Currency = 'ARS' | 'USD';
 
 export type Property = {
@@ -95,7 +96,7 @@ export type Liability = {
   totalAmount: number;
   outstandingBalance: number;
   currency: Currency;
-  creationDate: string; // ISO string
+  creationDate: string | import('firebase/firestore').Timestamp; // ISO string or Timestamp
   notes?: string;
 };
 

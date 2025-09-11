@@ -6,7 +6,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useRouter } from 'next/navigation';
-import { collection, addDoc, getDocs, doc, writeBatch, Timestamp, query, orderBy } from 'firebase/firestore';
+import { collection, addDoc, getDocs, doc, writeBatch, Timestamp, query, orderBy, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
 import { PageHeader } from '@/components/shared/PageHeader';
@@ -74,7 +74,14 @@ export default function NewLiabilityPage() {
         ]);
         setWallets(walletsSnap.docs.map(d => ({ id: d.id, ...d.data() } as Wallet)));
         setProperties(propertiesSnap.docs.map(d => ({ id: d.id, ...d.data() } as Property)));
-        setIncomeCategories(incomeCatSnap.docs.map(d => ({ id: d.id, ...d.data() } as IncomeCategory)));
+        
+        const categoriesList = await Promise.all(incomeCatSnap.docs.map(async (categoryDoc) => {
+            const subcategoriesQuery = query(collection(db, 'incomeCategories', categoryDoc.id, 'subcategories'), orderBy('name'));
+            const subcategoriesSnapshot = await getDocs(subcategoriesQuery);
+            return { id: categoryDoc.id, name: categoryDoc.data().name, subcategories: subcategoriesSnapshot.docs.map(subDoc => ({ id: subDoc.id, name: subDoc.data().name })) };
+        }));
+        setIncomeCategories(categoriesList);
+
       } catch (error) {
         toast({ title: "Error", description: "No se pudieron cargar los datos necesarios.", variant: "destructive" });
       } finally {

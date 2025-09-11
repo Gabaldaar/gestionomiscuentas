@@ -3,7 +3,7 @@
 
 import * as React from 'react';
 import { notFound, useRouter, useParams } from 'next/navigation';
-import { doc, getDoc, collection, getDocs, Timestamp, query, orderBy, writeBatch, addDoc } from 'firebase/firestore';
+import { doc, getDoc, collection, getDocs, Timestamp, query, orderBy, writeBatch, deleteDoc, where } from 'firebase/firestore';
 import Link from 'next/link';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -13,7 +13,7 @@ import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter }
 import { Button } from '@/components/ui/button';
 import { Pencil, Loader, FileText, PlusCircle, Trash2 } from 'lucide-react';
 import { db } from '@/lib/firebase';
-import { type Liability, type LiabilityPayment, type Wallet, type ExpenseCategory, type Property, type ActualExpense } from '@/lib/types';
+import { type Liability, type LiabilityPayment, type Wallet, type ExpenseCategory, type Property, type ActualExpense, type Income } from '@/lib/types';
 import { Progress } from '@/components/ui/progress';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
@@ -43,6 +43,7 @@ export default function LiabilityDetailPage() {
   const [isAddPaymentOpen, setIsAddPaymentOpen] = React.useState(false);
 
   const [deletingPayment, setDeletingPayment] = React.useState<LiabilityPayment | null>(null);
+  const [isDeleteLiabilityOpen, setIsDeleteLiabilityOpen] = React.useState(false);
 
   const fetchPageData = React.useCallback(async () => {
     setLoading(true);
@@ -183,6 +184,61 @@ export default function LiabilityDetailPage() {
     }
   }
 
+  const handleDeleteLiability = async () => {
+    if (!liability) return;
+    if (payments.length > 0) {
+        toast({
+            title: "No se puede eliminar",
+            description: "Este pasivo tiene pagos registrados. Elimine primero todos los pagos para poder eliminar el pasivo.",
+            variant: "destructive",
+            duration: 6000,
+        });
+        setIsDeleteLiabilityOpen(false);
+        return;
+    }
+
+    setIsSubmitting(true);
+    const batch = writeBatch(db);
+
+    try {
+        // Find and delete the associated initial income if it exists
+        const incomesRef = collectionGroup(db, 'incomes');
+        const q = query(incomesRef, where("liabilityId", "==", liability.id));
+        const incomeQuerySnapshot = await getDocs(q);
+
+        if (!incomeQuerySnapshot.empty) {
+            const incomeDoc = incomeQuerySnapshot.docs[0];
+            const incomeData = incomeDoc.data() as Income;
+            
+            const walletRef = doc(db, 'wallets', incomeData.walletId);
+            const walletSnap = await getDoc(walletRef);
+            
+            // Revert wallet balance
+            if (walletSnap.exists()) {
+                const currentBalance = walletSnap.data().balance;
+                batch.update(walletRef, { balance: currentBalance - incomeData.amount });
+            }
+            // Delete income record
+            batch.delete(incomeDoc.ref);
+        }
+
+        // Delete the liability itself
+        const liabilityRef = doc(db, 'liabilities', liability.id);
+        batch.delete(liabilityRef);
+
+        await batch.commit();
+        toast({ title: "Pasivo Eliminado", description: "El pasivo ha sido eliminado exitosamente.", variant: "destructive" });
+        router.push('/liabilities');
+
+    } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : "No se pudo eliminar el pasivo.";
+        toast({ title: "Error", description: errorMessage, variant: "destructive" });
+    } finally {
+        setIsSubmitting(false);
+    }
+  };
+
+
   if (loading) {
     return (
       <div className="flex-1 space-y-4 p-4 md:p-8 pt-6 flex justify-center items-center">
@@ -204,8 +260,12 @@ export default function LiabilityDetailPage() {
         <Button asChild variant="outline">
           <Link href={`/liabilities/${id}/edit`}>
             <Pencil className="mr-2 h-4 w-4" />
-            Editar Pasivo
+            Editar
           </Link>
+        </Button>
+        <Button variant="destructive-outline" onClick={() => setIsDeleteLiabilityOpen(true)}>
+          <Trash2 className="mr-2 h-4 w-4" />
+          Eliminar
         </Button>
       </PageHeader>
 
@@ -295,6 +355,14 @@ export default function LiabilityDetailPage() {
         onConfirm={handleDeletePayment}
         title="¿Eliminar este pago?"
         description="Esta acción eliminará el pago y el gasto asociado, revirtiendo los saldos de la billetera y del pasivo. Esta acción es permanente."
+    />
+
+    <ConfirmDeleteDialog
+        isOpen={isDeleteLiabilityOpen}
+        onOpenChange={setIsDeleteLiabilityOpen}
+        onConfirm={handleDeleteLiability}
+        title={`¿Eliminar el pasivo "${liability.name}"?`}
+        description="Esta acción es permanente y no se puede deshacer. Solo puedes eliminar un pasivo si no tiene pagos registrados. ¿Continuar?"
     />
     </>
   );

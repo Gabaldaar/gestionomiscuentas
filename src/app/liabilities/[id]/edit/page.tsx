@@ -52,7 +52,7 @@ export default function EditLiabilityPage() {
         const liabilitySnap = await getDoc(liabilityRef);
 
         if (liabilitySnap.exists()) {
-          const data = liabilitySnap.data() as Liability;
+          const data = {id: liabilitySnap.id, ...liabilitySnap.data()} as Liability;
           setOriginalLiability(data);
           form.reset({
             name: data.name,
