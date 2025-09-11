@@ -56,9 +56,15 @@ function MainNav() {
       return pathname === '/';
     }
     if (href === '/settings') {
-      return pathname === '/settings';
+      return pathname.startsWith('/settings');
     }
-    return pathname.startsWith(href);
+    if (href.startsWith('/settings')) {
+        return pathname.startsWith(href);
+    }
+    if (href !== '/') {
+      return pathname.startsWith(href);
+    }
+    return false;
   };
   
     return (
@@ -119,12 +125,17 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </Sidebar>
       <SidebarInset>
         <header className="flex items-center justify-between p-4 border-b md:justify-end">
-            <SidebarTrigger>
-                <div className="flex items-center gap-2">
-                    <PanelLeft />
-                    <span className="font-semibold md:hidden">Menú</span>
-                </div>
-            </SidebarTrigger>
+            <div className="flex items-center gap-2 md:hidden">
+              <SidebarTrigger>
+                <PanelLeft />
+              </SidebarTrigger>
+              <span className="font-semibold">Menú</span>
+            </div>
+             <div className="hidden md:flex">
+              <SidebarTrigger>
+                <PanelLeft />
+              </SidebarTrigger>
+            </div>
         </header>
         <main>{children}</main>
       </SidebarInset>
