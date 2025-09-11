@@ -52,8 +52,13 @@ export default function NewLiabilityPage() {
   const form = useForm<LiabilityFormValues>({
     resolver: zodResolver(liabilitySchema),
     defaultValues: {
+      name: '',
+      totalAmount: 0,
       currency: 'ARS',
       initialAmountReceived: 0,
+      walletId: '',
+      propertyId: '',
+      notes: '',
     },
   });
 
