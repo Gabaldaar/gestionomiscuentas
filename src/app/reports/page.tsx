@@ -2,7 +2,7 @@
 'use client';
 
 import * as React from 'react';
-import { collectionGroup, getDocs, query, Timestamp } from 'firebase/firestore';
+import { collection, collectionGroup, getDocs, query, Timestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
