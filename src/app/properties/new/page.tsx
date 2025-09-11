@@ -8,6 +8,7 @@ import { z } from 'zod';
 import { useRouter } from 'next/navigation';
 import { collection, addDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import Image from 'next/image';
 
 import { PageHeader } from '@/components/shared/PageHeader';
 import { Button } from '@/components/ui/button';
@@ -30,12 +31,15 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { Loader } from 'lucide-react';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { PlaceHolderImages } from '@/lib/placeholder-images';
+import { cn } from '@/lib/utils';
 
 
 const propertySchema = z.object({
   name: z.string().min(1, 'El nombre es obligatorio.'),
   description: z.string().min(1, 'La descripción es obligatoria.'),
-  imageUrl: z.string().url('Debe ser una URL válida.').or(z.literal('')).optional(),
+  imageUrl: z.string().min(1, 'Debes seleccionar una imagen.'),
   notes: z.string().optional(),
 });
 
@@ -59,14 +63,7 @@ export default function NewPropertyPage() {
   const onSubmit = async (data: PropertyFormValues) => {
     setIsSubmitting(true);
     try {
-      const propertyData = { ...data };
-      if (!propertyData.imageUrl) {
-        // Generate a placeholder image URL if one isn't provided
-        const seed = propertyData.name.replace(/\s+/g, '-').toLowerCase();
-        propertyData.imageUrl = `https://picsum.photos/seed/${seed}/600/400`;
-      }
-
-      await addDoc(collection(db, 'properties'), propertyData);
+      await addDoc(collection(db, 'properties'), data);
       toast({
         title: 'Cuenta creada',
         description: 'La nueva cuenta ha sido añadida exitosamente.',
@@ -126,19 +123,41 @@ export default function NewPropertyPage() {
                   </FormItem>
                 )}
               />
-              <FormField
+               <FormField
                 control={form.control}
                 name="imageUrl"
                 render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>URL de la Imagen (Opcional)</FormLabel>
+                  <FormItem className="space-y-3">
+                    <FormLabel>Selecciona una Imagen</FormLabel>
+                     <FormMessage />
                     <FormControl>
-                      <Input
-                        placeholder="Déjalo en blanco para usar una imagen automática"
-                        {...field}
-                      />
+                      <RadioGroup
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
+                        className="grid grid-cols-3 md:grid-cols-4 gap-4"
+                      >
+                        {PlaceHolderImages.map((image) => (
+                          <FormItem key={image.id} className="flex items-center space-x-3 space-y-0">
+                            <FormControl>
+                              <RadioGroupItem value={image.imageUrl} className="sr-only" />
+                            </FormControl>
+                            <FormLabel className="font-normal">
+                               <Image
+                                src={image.imageUrl}
+                                alt={image.description}
+                                width={150}
+                                height={150}
+                                className={cn(
+                                  "h-full w-full object-cover rounded-md cursor-pointer transition-all hover:scale-105",
+                                  field.value === image.imageUrl ? 'ring-2 ring-primary ring-offset-2' : 'ring-1 ring-border'
+                                )}
+                                data-ai-hint={image.imageHint}
+                              />
+                            </FormLabel>
+                          </FormItem>
+                        ))}
+                      </RadioGroup>
                     </FormControl>
-                    <FormMessage />
                   </FormItem>
                 )}
               />

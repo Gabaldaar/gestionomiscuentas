@@ -4,7 +4,7 @@
       "id": "prop1",
       "description": "Un edificio de apartamentos moderno en una ciudad.",
       "imageUrl": "https://picsum.photos/seed/prop1/600/400",
-      "imageHint": "edificio de apartamentos"
+      "imageHint": "edificio apartamentos"
     },
     {
       "id": "prop2",
@@ -16,7 +16,37 @@
       "id": "prop3",
       "description": "Un moderno edificio de condominios cerca de la playa.",
       "imageUrl": "https://picsum.photos/seed/prop3/600/400",
-      "imageHint": "condominio de playa"
+      "imageHint": "condominio playa"
+    },
+    {
+      "id": "office1",
+      "description": "Interior de una oficina moderna y luminosa.",
+      "imageUrl": "https://picsum.photos/seed/office1/600/400",
+      "imageHint": "interior oficina"
+    },
+    {
+      "id": "land1",
+      "description": "Un terreno vacío con árboles y cielo azul.",
+      "imageUrl": "https://picsum.photos/seed/land1/600/400",
+      "imageHint": "terreno baldío"
+    },
+    {
+      "id": "shop1",
+      "description": "Frente de una pequeña tienda o local comercial.",
+      "imageUrl": "https://picsum.photos/seed/shop1/600/400",
+      "imageHint": "frente tienda"
+    },
+    {
+      "id": "garage1",
+      "description": "Una cochera o garaje cerrado.",
+      "imageUrl": "https://picsum.photos/seed/garage1/600/400",
+      "imageHint": "garaje cerrado"
+    },
+    {
+      "id": "storage1",
+      "description": "Un depósito o unidad de almacenamiento.",
+      "imageUrl": "https://picsum.photos/seed/storage1/600/400",
+      "imageHint": "unidad almacenamiento"
     }
   ]
 }
