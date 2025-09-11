@@ -92,10 +92,7 @@ export default function WalletsSettingsPage() {
                         {wallet.currency === 'USD' ? <DollarSign className="h-6 w-6" /> : <CircleDollarSign className="h-6 w-6" />}
                       </div>
                       <div>
-                          <CardTitle className={cn({
-                            'text-green-800 dark:text-green-400': wallet.currency === 'USD',
-                            'text-blue-800 dark:text-blue-400': wallet.currency === 'ARS',
-                          })}>{wallet.name}</CardTitle>
+                          <CardTitle>{wallet.name}</CardTitle>
                           <CardDescription>{wallet.currency}</CardDescription>
                       </div>
                     </div>
@@ -119,9 +116,9 @@ export default function WalletsSettingsPage() {
                   </CardHeader>
                   <CardContent>
                   <div className={cn("text-2xl font-bold", {
-                    'text-green-500': wallet.balance > 0,
+                    'text-green-800 dark:text-green-400': wallet.currency === 'USD' && wallet.balance > 0,
+                    'text-blue-800 dark:text-blue-400': wallet.currency === 'ARS' && wallet.balance > 0,
                     'text-red-500': wallet.balance < 0,
-                    'text-foreground': wallet.balance === 0,
                   })}>
                       {new Intl.NumberFormat('es-AR', { style: 'currency', currency: wallet.currency, minimumFractionDigits: 2 }).format(wallet.balance)}
                   </div>
