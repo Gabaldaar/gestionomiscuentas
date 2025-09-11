@@ -92,7 +92,10 @@ export default function WalletsSettingsPage() {
                         {wallet.currency === 'USD' ? <DollarSign className="h-6 w-6" /> : <CircleDollarSign className="h-6 w-6" />}
                       </div>
                       <div>
-                          <CardTitle>{wallet.name}</CardTitle>
+                          <CardTitle className={cn({
+                            'text-green-800 dark:text-green-400': wallet.currency === 'USD',
+                            'text-blue-800 dark:text-blue-400': wallet.currency === 'ARS',
+                          })}>{wallet.name}</CardTitle>
                           <CardDescription>{wallet.currency}</CardDescription>
                       </div>
                     </div>
