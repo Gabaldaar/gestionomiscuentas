@@ -227,7 +227,7 @@ export function PropertyDetail({ id }: { id: string }) {
                 </CardHeader>
                 <CardContent>
                     <p className="text-muted-foreground mb-4">{property.description}</p>
-                    <div className="flex flex-col md:flex-row gap-6">
+                    <div className="flex flex-row gap-6">
                         <div className="flex-shrink-0">
                             <Image
                                 src={property.imageUrl}
