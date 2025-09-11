@@ -47,6 +47,61 @@
       "description": "Un depósito o unidad de almacenamiento.",
       "imageUrl": "https://picsum.photos/seed/storage1/600/400",
       "imageHint": "unidad almacenamiento"
+    },
+    {
+      "id": "ambos",
+      "description": "Foto de ambos.",
+      "imageUrl": "/img/ambos.jpg",
+      "imageHint": "ambos"
+    },
+    {
+      "id": "belen",
+      "description": "Foto de belen.",
+      "imageUrl": "/img/belen.jpg",
+      "imageHint": "belen"
+    },
+    {
+      "id": "ambos",
+      "description": "Foto de benteveo.",
+      "imageUrl": "/img/benteveo.jpg",
+      "imageHint": "benteveo"
+    },
+    {
+      "id": "ambos",
+      "description": "Foto de ceci.",
+      "imageUrl": "/img/ceci.jpg",
+      "imageHint": "ceci"
+    },
+    {
+      "id": "ambos",
+      "description": "Foto de depto1.",
+      "imageUrl": "/img/depto1.jpg",
+      "imageHint": "depto1"
+    },
+    {
+      "id": "ambos",
+      "description": "Foto de depto2.",
+      "imageUrl": "/img/depto2.jpg",
+      "imageHint": "depto2"
+    },
+    {
+      "id": "ambos",
+      "description": "Foto de deptosf.",
+      "imageUrl": "/img/deptosf.jpg",
+      "imageHint": "deptosf"
+    },
+    {
+      "id": "ambos",
+      "description": "Foto de gaby.",
+      "imageUrl": "/img/gaby.jpg",
+      "imageHint": "gaby"
+    },
+    {
+      "id": "ambos",
+      "description": "Foto de sanfer.",
+      "imageUrl": "/img/sanfer.jpg",
+      "imageHint": "sanfer"
     }
   ]
 }
+

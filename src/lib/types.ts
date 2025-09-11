@@ -14,6 +14,7 @@ export type Wallet = {
   name: string;
   currency: Currency;
   balance: number;
+  icon?: string;
 };
 
 export type ExpenseCategory = {

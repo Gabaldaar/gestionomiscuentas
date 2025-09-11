@@ -8,6 +8,7 @@ import { z } from 'zod';
 import { useRouter, useParams } from 'next/navigation';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import { cn } from '@/lib/utils';
 
 import { PageHeader } from '@/components/shared/PageHeader';
 import { Button } from '@/components/ui/button';
@@ -37,15 +38,21 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { Loader, AlertTriangle } from 'lucide-react';
 import { type Wallet } from '@/lib/types';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { walletIcons, WalletIcon, type WalletIconName } from '@/lib/wallet-icons';
+
 
 const walletSchema = z.object({
   name: z.string().min(1, 'El nombre es obligatorio.'),
   currency: z.enum(['ARS', 'USD'], {
     required_error: 'La moneda es obligatoria.',
   }),
+  icon: z.string().optional(),
 });
 
 type WalletFormValues = z.infer<typeof walletSchema>;
+const iconNames = Object.keys(walletIcons) as WalletIconName[];
+
 
 export default function EditWalletPage() {
   const router = useRouter();
@@ -73,6 +80,7 @@ export default function EditWalletPage() {
           form.reset({
             name: walletData.name,
             currency: walletData.currency,
+            icon: walletData.icon || 'Wallet',
           });
         } else {
           setError('No se encontró la billetera.');
@@ -91,10 +99,7 @@ export default function EditWalletPage() {
     setIsSubmitting(true);
     try {
       const walletRef = doc(db, 'wallets', id);
-      await updateDoc(walletRef, {
-        name: data.name,
-        currency: data.currency,
-      });
+      await updateDoc(walletRef, data);
 
       toast({
         title: 'Billetera actualizada',
@@ -189,6 +194,42 @@ export default function EditWalletPage() {
                 )}
               />
               
+              <FormField
+                control={form.control}
+                name="icon"
+                render={({ field }) => (
+                  <FormItem className="space-y-3">
+                    <FormLabel>Selecciona un Ícono</FormLabel>
+                    <FormControl>
+                      <RadioGroup
+                        onValueChange={field.onChange}
+                        value={field.value}
+                        className="grid grid-cols-3 md:grid-cols-6 gap-4"
+                      >
+                        {iconNames.map((name) => (
+                          <FormItem key={name} className="flex items-center space-x-3 space-y-0">
+                            <FormControl>
+                              <RadioGroupItem value={name} className="sr-only" />
+                            </FormControl>
+                            <FormLabel className="font-normal">
+                               <div className={cn(
+                                  "p-4 rounded-lg border-2 flex items-center justify-center cursor-pointer transition-all",
+                                   field.value === name 
+                                    ? 'border-primary bg-primary/10' 
+                                    : 'border-border hover:border-primary/50'
+                                )}>
+                                  <WalletIcon name={name} className="h-6 w-6" />
+                               </div>
+                            </FormLabel>
+                          </FormItem>
+                        ))}
+                      </RadioGroup>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
               <div className="flex justify-end gap-2">
                  <Button type="button" variant="ghost" onClick={() => router.push('/settings/wallets')}>
                     Cancelar

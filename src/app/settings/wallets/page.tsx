@@ -20,6 +20,8 @@ import { useToast } from "@/hooks/use-toast";
 import { type Wallet } from '@/lib/types';
 import { ConfirmDeleteDialog } from '@/components/shared/ConfirmDeleteDialog';
 import { cn } from '@/lib/utils';
+import { WalletIcon, type WalletIconName } from '@/lib/wallet-icons';
+
 
 export default function WalletsSettingsPage() {
   const { toast } = useToast();
@@ -65,6 +67,13 @@ export default function WalletsSettingsPage() {
       toast({ title: "Error", description: "No se pudo eliminar la billetera.", variant: "destructive" });
     }
   };
+  
+  const renderIcon = (wallet: Wallet) => {
+    if (wallet.icon) {
+        return <WalletIcon name={wallet.icon as WalletIconName} className="h-6 w-6" />;
+    }
+    return wallet.currency === 'USD' ? <DollarSign className="h-6 w-6" /> : <CircleDollarSign className="h-6 w-6" />;
+  };
 
   return (
     <>
@@ -89,7 +98,7 @@ export default function WalletsSettingsPage() {
                   <CardHeader className="flex flex-row items-start justify-between">
                     <div className="flex items-center gap-3">
                       <div className="bg-primary/10 text-primary p-3 rounded-md">
-                        {wallet.currency === 'USD' ? <DollarSign className="h-6 w-6" /> : <CircleDollarSign className="h-6 w-6" />}
+                        {renderIcon(wallet)}
                       </div>
                       <div>
                           <CardTitle>{wallet.name}</CardTitle>
