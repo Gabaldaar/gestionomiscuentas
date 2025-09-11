@@ -2,12 +2,14 @@
 'use client';
 
 import * as React from 'react';
-import { Wallet, Landmark, CreditCard, Home, Briefcase, PiggyBank, type LucideIcon, Building, Car, Plane, University } from 'lucide-react';
+import { Wallet, Landmark, CreditCard, Home, Briefcase, PiggyBank, type LucideIcon, Building, Car, Plane, University, DollarSign, CircleDollarSign } from 'lucide-react';
 
 export const walletIcons = {
     Wallet,
     Landmark,
     CreditCard,
+    DollarSign,
+    CircleDollarSign,
     Home,
     Briefcase,
     PiggyBank,
