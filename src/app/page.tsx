@@ -1,73 +1,108 @@
+
+import * as React from 'react';
+import { collectionGroup, getDocs, query, Timestamp } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+import { type Income, type ActualExpense, type IncomeCategory, type ExpenseCategory } from '@/lib/types';
 import { PageHeader } from "@/components/shared/PageHeader";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Calendar as CalendarIcon, Filter } from "lucide-react";
 import { DashboardStats } from "@/components/dashboard/DashboardStats";
 import { MonthlyComparisonChart } from "@/components/dashboard/MonthlyComparisonChart";
-import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
-import { Calendar } from "@/components/ui/calendar";
+import { RecentActivity } from '@/components/properties/RecentActivity';
+import { DashboardFilters } from '@/components/dashboard/DashboardFilters';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 
-export default function DashboardPage() {
+async function getDashboardData() {
+  const incomesQuery = query(collectionGroup(db, 'incomes'));
+  const expensesQuery = query(collectionGroup(db, 'actualExpenses'));
+  const incomeCategoriesQuery = query(collection(db, 'incomeCategories'));
+  const expenseCategoriesQuery = query(collection(db, 'expenseCategories'));
+
+  const [
+    incomesSnapshot,
+    expensesSnapshot,
+    incomeCategoriesSnapshot,
+    expenseCategoriesSnapshot,
+  ] = await Promise.all([
+    getDocs(incomesQuery),
+    getDocs(expensesQuery),
+    getDocs(incomeCategoriesQuery),
+    getDocs(expenseCategoriesQuery),
+  ]);
+
+  const incomes = incomesSnapshot.docs.map(doc => ({
+    ...doc.data(),
+    id: doc.id,
+    date: (doc.data().date as Timestamp).toDate().toISOString(),
+  } as Income));
+
+  const expenses = expensesSnapshot.docs.map(doc => ({
+    ...doc.data(),
+    id: doc.id,
+    date: (doc.data().date as Timestamp).toDate().toISOString(),
+  } as ActualExpense));
+
+  const incomeCategories: IncomeCategory[] = await Promise.all(incomeCategoriesSnapshot.docs.map(async (categoryDoc) => {
+      const subcategoriesQuery = query(collection(db, 'incomeCategories', categoryDoc.id, 'subcategories'));
+      const subcategoriesSnapshot = await getDocs(subcategoriesQuery);
+      return { id: categoryDoc.id, name: categoryDoc.data().name, subcategories: subcategoriesSnapshot.docs.map(subDoc => ({ id: subDoc.id, name: subDoc.data().name })) };
+  }));
+
+  const expenseCategories: ExpenseCategory[] = await Promise.all(expenseCategoriesSnapshot.docs.map(async (categoryDoc) => {
+      const subcategoriesQuery = query(collection(db, 'expenseCategories', categoryDoc.id, 'subcategories'));
+      const subcategoriesSnapshot = await getDocs(subcategoriesQuery);
+      return { id: categoryDoc.id, name: categoryDoc.data().name, subcategories: subcategoriesSnapshot.docs.map(subDoc => ({ id: subDoc.id, name: subDoc.data().name })) };
+  }));
+
+  return { incomes, expenses, incomeCategories, expenseCategories };
+}
+
+
+export default async function DashboardPage({ searchParams }: { searchParams: { month?: string, year?: string, currency?: string } }) {
+  const { incomes, expenses, incomeCategories, expenseCategories } = await getDashboardData();
+  
+  const currentMonth = searchParams.month ? parseInt(searchParams.month) : new Date().getMonth() + 1;
+  const currentYear = searchParams.year ? parseInt(searchParams.year) : new Date().getFullYear();
+  const selectedCurrency = searchParams.currency || 'all';
+
+  const filteredIncomes = incomes.filter(i => {
+    const date = new Date(i.date);
+    const currencyMatch = selectedCurrency === 'all' || i.currency === selectedCurrency;
+    const dateMatch = date.getFullYear() === currentYear && (date.getMonth() + 1) === currentMonth;
+    return currencyMatch && dateMatch;
+  });
+
+  const filteredExpenses = expenses.filter(e => {
+    const date = new Date(e.date);
+    const currencyMatch = selectedCurrency === 'all' || e.currency === selectedCurrency;
+    const dateMatch = date.getFullYear() === currentYear && (date.getMonth() + 1) === currentMonth;
+    return currencyMatch && dateMatch;
+  });
+
+
   return (
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
-      <PageHeader title="Panel de Control" />
-
-      <div className="flex items-center justify-between space-y-2">
-        <div className="flex items-center space-x-2">
-           <Popover>
-            <PopoverTrigger asChild>
-              <Button
-                variant={"outline"}
-                className="w-[240px] justify-start text-left font-normal"
-              >
-                <CalendarIcon className="mr-2 h-4 w-4" />
-                <span>Elige una fecha</span>
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="start">
-              <Calendar
-                mode="single"
-                initialFocus
-              />
-            </PopoverContent>
-          </Popover>
-          <Select>
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Todas las monedas" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todas las monedas</SelectItem>
-              <SelectItem value="ars">ARS</SelectItem>
-              <SelectItem value="usd">USD</SelectItem>
-            </SelectContent>
-          </Select>
-          <Button variant="outline">
-            <Filter className="mr-2 h-4 w-4" />
-            Aplicar Filtros
-          </Button>
-        </div>
-      </div>
+      <PageHeader title="Dashboard" />
       
-      <DashboardStats />
+      <DashboardFilters />
+
+      <DashboardStats incomes={filteredIncomes} expenses={filteredExpenses} />
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
         <Card className="col-span-4">
           <CardHeader>
-            <CardTitle>Costos Esperados vs. Reales</CardTitle>
+            <CardTitle>Ingresos vs. Egresos (Últimos 12 Meses)</CardTitle>
           </CardHeader>
           <CardContent className="pl-2">
-            <MonthlyComparisonChart />
+            <MonthlyComparisonChart incomes={incomes} expenses={expenses} currency={selectedCurrency} />
           </CardContent>
         </Card>
-        <Card className="col-span-4 md:col-span-3">
-          <CardHeader>
-            <CardTitle>Actividad Reciente</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground">No hay actividad reciente para mostrar.</p>
-          </CardContent>
-        </Card>
+        <div className="col-span-4 md:col-span-3">
+          <RecentActivity 
+            incomes={incomes}
+            expenses={expenses}
+            incomeCategories={incomeCategories}
+            expenseCategories={expenseCategories}
+          />
+        </div>
       </div>
     </div>
   );

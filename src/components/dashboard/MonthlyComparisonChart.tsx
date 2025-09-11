@@ -1,18 +1,61 @@
 "use client"
 
+import * as React from 'react';
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip, Legend } from "recharts"
+import { type Income, type ActualExpense } from '@/lib/types';
+import { format, subMonths } from 'date-fns';
+import { es } from 'date-fns/locale';
 
-const data = [
-  { name: "Ene", expected: 4000, actual: 2400 },
-  { name: "Feb", expected: 3000, actual: 1398 },
-  { name: "Mar", expected: 2000, actual: 9800 },
-  { name: "Abr", expected: 2780, actual: 3908 },
-  { name: "May", expected: 1890, actual: 4800 },
-  { name: "Jun", expected: 2390, actual: 3800 },
-  { name: "Jul", expected: 3490, actual: 4300 },
-]
+type MonthlyComparisonChartProps = {
+  incomes: Income[];
+  expenses: ActualExpense[];
+  currency: string;
+};
 
-export function MonthlyComparisonChart() {
+export function MonthlyComparisonChart({ incomes, expenses, currency }: MonthlyComparisonChartProps) {
+  const data = React.useMemo(() => {
+    const last12Months: { name: string, month: number, year: number, income: number, expense: number }[] = [];
+    let currentDate = new Date();
+
+    for (let i = 0; i < 12; i++) {
+        const date = subMonths(currentDate, i);
+        last12Months.push({
+            name: format(date, 'MMM', { locale: es }),
+            month: date.getMonth() + 1,
+            year: date.getFullYear(),
+            income: 0,
+            expense: 0,
+        });
+    }
+
+    incomes.forEach(inc => {
+        const date = new Date(inc.date);
+        const month = date.getMonth() + 1;
+        const year = date.getFullYear();
+        if (currency === 'all' || inc.currency === currency) {
+            const targetMonth = last12Months.find(m => m.month === month && m.year === year);
+            if (targetMonth) {
+                targetMonth.income += inc.amount;
+            }
+        }
+    });
+    
+    expenses.forEach(exp => {
+        const date = new Date(exp.date);
+        const month = date.getMonth() + 1;
+        const year = date.getFullYear();
+        if (currency === 'all' || exp.currency === currency) {
+            const targetMonth = last12Months.find(m => m.month === month && m.year === year);
+            if (targetMonth) {
+                targetMonth.expense += exp.amount;
+            }
+        }
+    });
+
+    return last12Months.reverse();
+  }, [incomes, expenses, currency]);
+
+
   return (
     <ResponsiveContainer width="100%" height={350}>
       <BarChart data={data}>
@@ -28,17 +71,18 @@ export function MonthlyComparisonChart() {
           fontSize={12}
           tickLine={false}
           axisLine={false}
-          tickFormatter={(value) => `$${value}`}
+          tickFormatter={(value) => `$${value/1000}k`}
         />
         <Tooltip
             contentStyle={{
                 backgroundColor: 'hsl(var(--background))',
                 borderColor: 'hsl(var(--border))'
             }}
+             formatter={(value: number) => new Intl.NumberFormat('es-AR').format(value)}
         />
         <Legend />
-        <Bar dataKey="expected" fill="hsl(var(--secondary-foreground))" name="Esperado" radius={[4, 4, 0, 0]} />
-        <Bar dataKey="actual" fill="hsl(var(--primary))" name="Actual" radius={[4, 4, 0, 0]} />
+        <Bar dataKey="income" fill="hsl(var(--chart-1))" name="Ingresos" radius={[4, 4, 0, 0]} />
+        <Bar dataKey="expense" fill="hsl(var(--chart-2))" name="Egresos" radius={[4, 4, 0, 0]} />
       </BarChart>
     </ResponsiveContainer>
   )

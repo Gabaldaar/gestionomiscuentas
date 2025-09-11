@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import * as React from 'react';
@@ -29,7 +30,7 @@ import {
 import { Button } from '@/components/ui/button';
 
 const navItems = [
-  { href: '/', label: 'Panel de Control', icon: LayoutDashboard },
+  { href: '/', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/properties', label: 'Cuentas', icon: Building2 },
   { href: '/expenses', label: 'Historial de Gastos', icon: TrendingDown },
   { href: '/incomes', label: 'Historial de Ingresos', icon: TrendingUp },

@@ -1,11 +1,27 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DollarSign, TrendingDown, TrendingUp } from "lucide-react";
+import { type Income, type ActualExpense } from "@/lib/types";
 
-export function DashboardStats() {
+type DashboardStatsProps = {
+    incomes: Income[];
+    expenses: ActualExpense[];
+};
+
+const formatCurrency = (amount: number, currency: string) => {
+    return new Intl.NumberFormat('es-AR', { style: 'currency', currency, minimumFractionDigits: 0 }).format(amount);
+};
+
+export function DashboardStats({ incomes, expenses }: DashboardStatsProps) {
+    const totalIncome = incomes.reduce((acc, income) => acc + income.amount, 0);
+    const totalExpense = expenses.reduce((acc, expense) => acc + expense.amount, 0);
+    const netBalance = totalIncome - totalExpense;
+
+    const currency = incomes[0]?.currency || expenses[0]?.currency || 'ARS';
+
     const stats = [
-        { title: "Ingresos Totales", value: "$12,345", icon: TrendingUp, color: "text-green-500" },
-        { title: "Egresos Totales", value: "$8,765", icon: TrendingDown, color: "text-red-500" },
-        { title: "Saldo Neto", value: "$3,580", icon: DollarSign, color: "text-primary" },
+        { title: "Ingresos Totales", value: formatCurrency(totalIncome, currency), icon: TrendingUp, color: "text-green-500" },
+        { title: "Egresos Totales", value: formatCurrency(totalExpense, currency), icon: TrendingDown, color: "text-red-500" },
+        { title: "Saldo Neto", value: formatCurrency(netBalance, currency), icon: DollarSign, color: "text-primary" },
     ];
 
     return (
@@ -21,7 +37,7 @@ export function DashboardStats() {
                     <CardContent>
                         <div className="text-2xl font-bold">{stat.value}</div>
                         <p className="text-xs text-muted-foreground">
-                            +20.1% desde el mes pasado
+                            Para el período seleccionado
                         </p>
                     </CardContent>
                 </Card>
