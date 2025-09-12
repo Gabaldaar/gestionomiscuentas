@@ -3,7 +3,7 @@
 
 import * as React from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { GoogleAuthProvider, signInWithPopup, onAuthStateChanged } from 'firebase/auth';
+import { GoogleAuthProvider, signInWithRedirect, getRedirectResult } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -27,12 +27,35 @@ export default function LoginPage() {
   const searchParams = useSearchParams();
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
+  
+  React.useEffect(() => {
+    // Handle the redirect result when the page loads after returning from Google
+    const handleRedirect = async () => {
+        try {
+            await getRedirectResult(auth);
+            // The onAuthStateChanged listener in AuthProvider will handle the user state update.
+        } catch (err: any) {
+            console.error("Error after redirect:", err);
+            if (err.code !== 'auth/cancelled-popup-request') {
+              setError('No se pudo completar el inicio de sesión. Por favor, inténtalo de nuevo.');
+            }
+        } finally {
+            // Even if there's an error, we stop loading to show the login page again.
+            if (!auth.currentUser) {
+              setLoading(false);
+            }
+        }
+    };
+    handleRedirect();
+  }, []);
 
   React.useEffect(() => {
     if (user) {
       const redirectTo = searchParams.get('redirect') || '/';
       router.replace(redirectTo);
     } else {
+        // Stop loading only if we are not authenticated. 
+        // If we are, we wait for the redirection to happen.
         setLoading(false);
     }
   }, [user, router, searchParams]);
@@ -43,12 +66,12 @@ export default function LoginPage() {
     setError(null);
     const provider = new GoogleAuthProvider();
     try {
-      await signInWithPopup(auth, provider);
-      // The onAuthStateChanged listener in AuthProvider will handle redirection.
+      await signInWithRedirect(auth, provider);
+      // The page will redirect, and the result will be handled by the useEffect hook on page load.
     } catch (err: any) {
       console.error("Error signing in with Google:", err);
-      if (err.code === 'auth/popup-closed-by-user') {
-          setError('El proceso de inicio de sesión fue cancelado.');
+      if (err.code === 'auth/popup-blocked' || err.code === 'auth/cancelled-popup-request') {
+          setError('El proceso de inicio de sesión fue bloqueado o cancelado.');
       } else {
           setError('No se pudo iniciar sesión. Por favor, inténtalo de nuevo.');
       }
