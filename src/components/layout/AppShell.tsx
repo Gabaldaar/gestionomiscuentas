@@ -47,7 +47,7 @@ const navItems = [
   { href: '/incomes', label: 'Historial de Ingresos', icon: TrendingUp },
   { href: '/transfers', label: 'Transferencias', icon: ArrowLeftRight },
   { href: '/reports', label: 'Informes', icon: AreaChart },
-  { href: '/settings', label: 'Configuración', icon: Settings2 },
+  { href: '/categories', label: 'Categorías', icon: Settings2 },
 ];
 
 function MainNav() {
@@ -64,10 +64,10 @@ function MainNav() {
     if (href === '/') {
       return pathname === '/';
     }
-    if (href === '/settings') {
-      return pathname.startsWith('/settings');
+    if (href === '/categories') {
+      return pathname.startsWith('/categories');
     }
-    if (href.startsWith('/settings')) {
+    if (href.startsWith('/categories')) {
         return pathname.startsWith(href);
     }
     if (href !== '/') {
