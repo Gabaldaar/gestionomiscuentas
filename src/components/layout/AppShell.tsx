@@ -52,7 +52,6 @@ const navItems = [
   { href: '/transfers', label: 'Transferencias', icon: ArrowLeftRight },
   { href: '/reports', label: 'Informes', icon: AreaChart },
   { href: '/categories', label: 'Categorías', icon: Settings2 },
-  { href: '/help', label: 'Ayuda', icon: LifeBuoy },
 ];
 
 function MainNav({ onLinkClick }: { onLinkClick: () => void }) {
@@ -76,7 +75,7 @@ function MainNav({ onLinkClick }: { onLinkClick: () => void }) {
   
     return (
      <SidebarMenu>
-        {navItems.filter(item => item.href !== '/help').map((item) => (
+        {navItems.map((item) => (
           <SidebarMenuItem key={item.href}>
             <SidebarMenuButton
               asChild
@@ -95,7 +94,7 @@ function MainNav({ onLinkClick }: { onLinkClick: () => void }) {
     )
 }
 
-function UserProfile() {
+function UserProfile({ onLinkClick }: { onLinkClick: () => void }) {
     const { user } = useAuth();
     const router = useRouter();
 
@@ -137,17 +136,10 @@ function UserProfile() {
     );
 }
 
-export function AppShell({ children }: { children: React.ReactNode }) {
-  const { user, loading } = useAuth();
+function AppShellContent({ children }: { children: React.ReactNode }) {
   const { isMobile, setOpenMobile } = useSidebar();
   const pathname = usePathname();
 
-  if (loading || !user) {
-    // AuthProvider shows a loader or handles redirection,
-    // so we don't need to render the shell for unauthenticated users.
-    return <>{children}</>;
-  }
-  
   const handleLinkClick = () => {
     if (isMobile) {
       setOpenMobile(false);
@@ -155,7 +147,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <SidebarProvider>
+    <>
       <Sidebar>
         <SidebarHeader>
           <div className="flex items-center gap-2 p-2">
@@ -192,7 +184,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                     </SidebarMenuButton>
                 </SidebarMenuItem>
             </SidebarMenu>
-            <UserProfile />
+            <UserProfile onLinkClick={handleLinkClick} />
         </SidebarFooter>
       </Sidebar>
       <SidebarInset>
@@ -211,6 +203,22 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </header>
         <main>{children}</main>
       </SidebarInset>
+    </>
+  );
+}
+
+export function AppShell({ children }: { children: React.ReactNode }) {
+  const { user, loading } = useAuth();
+  
+  if (loading || !user) {
+    // AuthProvider shows a loader or handles redirection,
+    // so we don't need to render the shell for unauthenticated users.
+    return <>{children}</>;
+  }
+
+  return (
+    <SidebarProvider>
+      <AppShellContent>{children}</AppShellContent>
     </SidebarProvider>
   );
 }
