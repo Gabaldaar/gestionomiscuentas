@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -45,7 +46,7 @@ export default function PropertiesPage() {
         const currentYear = new Date().getFullYear();
 
         incomesSnapshot.docs.forEach(doc => {
-            const income = {...d.data(), id: doc.id, date: (doc.data().date as Timestamp).toDate().toISOString() } as Income;
+            const income = {...doc.data(), id: doc.id, date: (doc.data().date as Timestamp).toDate().toISOString() } as Income;
             const propertyId = doc.ref.parent.parent!.id;
             const incomeDate = new Date(income.date);
             if (incomeDate.getMonth() === currentMonth && incomeDate.getFullYear() === currentYear) {
