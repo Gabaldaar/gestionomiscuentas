@@ -1,5 +1,6 @@
 
 
+
 export type Currency = 'ARS' | 'USD';
 
 export type Property = {
@@ -60,6 +61,7 @@ export type ActualExpense = {
   date: string; // ISO string
   notes?: string;
   liabilityId?: string; // If this expense is a payment for a liability
+  assetId?: string; // If this expense is from creating an asset (loaning money)
 };
 
 export type Income = {
@@ -73,6 +75,7 @@ export type Income = {
   date: string; // ISO string
   notes: string;
   liabilityId?: string; // If this income came from a liability
+  assetId?: string; // If this income is a collection from an asset
 };
 
 export type Transfer = {
@@ -110,6 +113,27 @@ export type LiabilityPayment = {
   propertyId: string; // The property where the expense was booked
 };
 
+export type Asset = {
+  id: string;
+  name: string;
+  totalAmount: number; // Amount loaned
+  outstandingBalance: number; // Amount yet to be collected
+  currency: Currency;
+  creationDate: string | import('firebase/firestore').Timestamp; // ISO string or Timestamp
+  notes?: string;
+};
+
+export type AssetCollection = {
+  id: string;
+  assetId: string;
+  date: string; // ISO string
+  amount: number;
+  walletId: string;
+  currency: Currency;
+  notes?: string;
+  incomeId: string; // The corresponding income entry
+  propertyId: string; // The property where the income was booked
+};
 
 export type Transaction = {
   id: string;

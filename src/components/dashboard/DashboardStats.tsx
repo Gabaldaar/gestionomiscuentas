@@ -1,7 +1,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { DollarSign, TrendingDown, TrendingUp, HandCoins } from "lucide-react";
-import { type Income, type ActualExpense, type Currency, type Liability } from "@/lib/types";
+import { DollarSign, TrendingDown, TrendingUp, HandCoins, Coins } from "lucide-react";
+import { type Income, type ActualExpense, type Currency, type Liability, type Asset } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 type Stats = {
@@ -9,6 +9,7 @@ type Stats = {
     incomes: Income[];
     expenses: ActualExpense[];
     liabilities: Liability[];
+    assets: Asset[];
 }
 
 type DashboardStatsProps = {
@@ -33,11 +34,12 @@ export function DashboardStats({ statsByCurrency }: DashboardStatsProps) {
 
     return (
         <div className="grid gap-4 md:grid-cols-2">
-            {statsByCurrency.map(({ currency, incomes, expenses, liabilities }) => {
+            {statsByCurrency.map(({ currency, incomes, expenses, liabilities, assets }) => {
                 const totalIncome = incomes.reduce((acc, income) => acc + income.amount, 0);
                 const totalExpense = expenses.reduce((acc, expense) => acc + expense.amount, 0);
                 const netBalance = totalIncome - totalExpense;
                 const totalLiabilities = liabilities.reduce((acc, l) => acc + l.outstandingBalance, 0);
+                const totalAssets = assets.reduce((acc, a) => acc + a.outstandingBalance, 0);
 
                 const currencyColors = {
                     'ARS': 'text-blue-800 dark:text-blue-400',
@@ -65,7 +67,11 @@ export function DashboardStats({ statsByCurrency }: DashboardStatsProps) {
                                 <span className={cn("font-bold text-xl", netBalanceColor)}>{formatCurrency(netBalance, currency)}</span>
                            </div>
                            <div className="flex items-center justify-between border-t pt-2 mt-2">
-                                <span className="text-sm font-medium flex items-center gap-2"><HandCoins className="text-orange-500"/> Total Pasivos</span>
+                                <span className="text-sm font-medium flex items-center gap-2"><Coins className="text-teal-500"/> Total Activos por Cobrar</span>
+                                <span className="font-bold text-lg text-teal-500">{formatCurrency(totalAssets, currency)}</span>
+                           </div>
+                           <div className="flex items-center justify-between">
+                                <span className="text-sm font-medium flex items-center gap-2"><HandCoins className="text-orange-500"/> Total Pasivos (Deudas)</span>
                                 <span className="font-bold text-lg text-orange-500">{formatCurrency(totalLiabilities, currency)}</span>
                            </div>
                         </CardContent>

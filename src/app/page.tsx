@@ -4,7 +4,7 @@
 import * as React from 'react';
 import { collectionGroup, getDocs, query, Timestamp, collection } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { type Income, type ActualExpense, type IncomeCategory, type ExpenseCategory, type Currency, type Liability } from '@/lib/types';
+import { type Income, type ActualExpense, type IncomeCategory, type ExpenseCategory, type Currency, type Liability, type Asset } from '@/lib/types';
 import { PageHeader } from "@/components/shared/PageHeader";
 import { DashboardStats } from "@/components/dashboard/DashboardStats";
 import { MonthlyComparisonChart } from "@/components/dashboard/MonthlyComparisonChart";
@@ -21,6 +21,7 @@ type DashboardData = {
   incomeCategories: IncomeCategory[];
   expenseCategories: ExpenseCategory[];
   liabilities: Liability[];
+  assets: Asset[];
 };
 
 function DashboardContent() {
@@ -39,6 +40,7 @@ function DashboardContent() {
         const incomeCategoriesQuery = query(collection(db, 'incomeCategories'));
         const expenseCategoriesQuery = query(collection(db, 'expenseCategories'));
         const liabilitiesQuery = query(collection(db, 'liabilities'));
+        const assetsQuery = query(collection(db, 'assets'));
 
         const [
           incomesSnapshot,
@@ -46,12 +48,14 @@ function DashboardContent() {
           incomeCategoriesSnapshot,
           expenseCategoriesSnapshot,
           liabilitiesSnapshot,
+          assetsSnapshot,
         ] = await Promise.all([
           getDocs(incomesQuery),
           getDocs(expensesQuery),
           getDocs(incomeCategoriesQuery),
           getDocs(expenseCategoriesQuery),
           getDocs(liabilitiesQuery),
+          getDocs(assetsQuery),
         ]);
 
         const incomes = incomesSnapshot.docs.map(doc => ({
@@ -79,8 +83,9 @@ function DashboardContent() {
         }));
 
         const liabilities = liabilitiesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Liability));
+        const assets = assetsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Asset));
 
-        setData({ incomes, expenses, incomeCategories, expenseCategories, liabilities });
+        setData({ incomes, expenses, incomeCategories, expenseCategories, liabilities, assets });
       } catch (e) {
         console.error(e);
         setError("No se pudieron cargar los datos del dashboard.");
@@ -111,7 +116,7 @@ function DashboardContent() {
     );
   }
 
-  const { incomes, expenses, incomeCategories, expenseCategories, liabilities } = data;
+  const { incomes, expenses, incomeCategories, expenseCategories, liabilities, assets } = data;
 
   const currentMonth = searchParams?.get('month') ? parseInt(searchParams.get('month') as string) : new Date().getMonth() + 1;
   const currentYear = searchParams?.get('year') ? parseInt(searchParams.get('year') as string) : new Date().getFullYear();
@@ -130,12 +135,14 @@ function DashboardContent() {
   const statsByCurrency = (Object.keys(periodIncomes.reduce((acc, curr) => ({ ...acc, [curr.currency]: true }), {})) as Currency[])
     .concat(Object.keys(periodExpenses.reduce((acc, curr) => ({ ...acc, [curr.currency]: true }), {})) as Currency[])
     .concat(Object.keys(liabilities.reduce((acc, curr) => ({ ...acc, [curr.currency]: true }), {})) as Currency[])
+    .concat(Object.keys(assets.reduce((acc, curr) => ({ ...acc, [curr.currency]: true }), {})) as Currency[])
     .filter((value, index, self) => self.indexOf(value) === index)
     .map(currency => ({
       currency,
       incomes: periodIncomes.filter(i => i.currency === currency),
       expenses: periodExpenses.filter(e => e.currency === currency),
       liabilities: liabilities.filter(l => l.currency === currency),
+      assets: assets.filter(a => a.currency === currency),
     })).filter(item => selectedCurrency === 'all' || item.currency === selectedCurrency);
 
   return (

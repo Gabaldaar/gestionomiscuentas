@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -31,6 +32,7 @@ import {
   HandCoins,
   LogOut,
   User as UserIcon,
+  Coins,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '../auth/AuthProvider';
@@ -42,6 +44,7 @@ const navItems = [
   { href: '/', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/properties', label: 'Cuentas', icon: Building2 },
   { href: '/wallets', label: 'Billeteras', icon: Wallet },
+  { href: '/assets', label: 'Activos', icon: Coins },
   { href: '/liabilities', label: 'Pasivos', icon: HandCoins },
   { href: '/expenses', label: 'Historial de Gastos', icon: TrendingDown },
   { href: '/incomes', label: 'Historial de Ingresos', icon: TrendingUp },
