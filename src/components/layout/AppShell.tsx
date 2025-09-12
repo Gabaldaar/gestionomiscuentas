@@ -33,6 +33,7 @@ import {
   LogOut,
   User as UserIcon,
   Coins,
+  LifeBuoy,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '../auth/AuthProvider';
@@ -51,6 +52,7 @@ const navItems = [
   { href: '/transfers', label: 'Transferencias', icon: ArrowLeftRight },
   { href: '/reports', label: 'Informes', icon: AreaChart },
   { href: '/categories', label: 'Categorías', icon: Settings2 },
+  { href: '/help', label: 'Ayuda', icon: LifeBuoy },
 ];
 
 function MainNav() {
@@ -81,7 +83,7 @@ function MainNav() {
   
     return (
      <SidebarMenu>
-        {navItems.map((item) => (
+        {navItems.filter(item => item.href !== '/help').map((item) => (
           <SidebarMenuItem key={item.href}>
             <SidebarMenuButton
               asChild
@@ -144,6 +146,7 @@ function UserProfile() {
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
+  const pathname = usePathname();
 
   if (loading || !user) {
     // AuthProvider shows a loader or handles redirection,
@@ -179,6 +182,16 @@ export function AppShell({ children }: { children: React.ReactNode }) {
          <MainNav />
         </SidebarContent>
          <SidebarFooter>
+            <SidebarMenu>
+                <SidebarMenuItem>
+                    <SidebarMenuButton asChild isActive={pathname === '/help'} tooltip="Ayuda">
+                        <Link href="/help">
+                            <LifeBuoy />
+                            <span>Ayuda</span>
+                        </Link>
+                    </SidebarMenuButton>
+                </SidebarMenuItem>
+            </SidebarMenu>
             <UserProfile />
         </SidebarFooter>
       </Sidebar>
