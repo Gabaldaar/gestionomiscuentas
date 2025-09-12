@@ -93,13 +93,23 @@ export default function HelpPage() {
                  <p className="mb-4">
                     Del mismo modo, si has prestado dinero a otros, ve a <code className="font-semibold text-primary bg-primary/10 px-1 rounded-sm">Activos</code> para registrar estas cuentas por cobrar y llevar un control de los cobros que recibes.
                 </p>
-                <div className="bg-blue-50 border border-blue-200 text-blue-800 p-3 rounded-md flex items-start gap-3">
+                <div className="bg-blue-50 border border-blue-200 text-blue-800 p-3 rounded-md flex items-start gap-3 dark:bg-blue-900/30 dark:text-blue-200 dark:border-blue-500/30">
                     <Info className="h-5 w-5 mt-1 flex-shrink-0" />
                     <p>
-                        <strong>Importante:</strong> El sistema utiliza categorías específicas para vincular transacciones con Activos y Pasivos. Asegúrate de tener las categorías adecuadas creadas en la sección <code className="font-semibold">Categorías</code>.
-                        <ul className="list-disc pl-5 mt-2">
-                            <li>Para **Pasivos**: una categoría de gasto como <code className="font-semibold">"Pago de Crédito"</code> y una de ingreso como <code className="font-semibold">"Crédito Obtenido"</code>.</li>
-                            <li>Para **Activos**: una categoría de gasto como <code className="font-semibold">"Préstamo Otorgado"</code> y una de ingreso como <code className="font-semibold">"Cobranza de Préstamo"</code>.</li>
+                        <strong>Importante:</strong> Para que el sistema vincule automáticamente las transacciones con tus deudas y préstamos, asegúrate de tener las siguientes subcategorías creadas en la sección <code className="font-semibold">Categorías</code>:
+                        <ul className="list-disc pl-5 mt-2 space-y-1">
+                            <li>Para **Pasivos (Créditos Obtenidos)**:
+                                <ul className="list-['-_'] pl-5">
+                                    <li>Un ingreso llamado <code className="font-semibold">"Crédito Obtenido"</code>.</li>
+                                    <li>Un gasto llamado <code className="font-semibold">"Pago de Crédito"</code>.</li>
+                                </ul>
+                            </li>
+                            <li>Para **Activos (Préstamos Otorgados)**:
+                                <ul className="list-['-_'] pl-5">
+                                    <li>Un gasto llamado <code className="font-semibold">"Préstamo Otorgado"</code>.</li>
+                                    <li>Un ingreso llamado <code className="font-semibold">"Cobranza de Préstamo"</code>.</li>
+                                </ul>
+                            </li>
                         </ul>
                     </p>
                 </div>
