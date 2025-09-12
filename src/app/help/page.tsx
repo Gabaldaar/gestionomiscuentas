@@ -6,7 +6,8 @@ import { CheckCircle, Info } from "lucide-react";
 
 const suggestedExpenseCategories = [
     { title: 'Vivienda', items: ['Alquiler / Hipoteca', 'Expensas / Gastos comunes', 'Servicios (Luz, Gas, Agua)', 'Internet / Cable', 'Reparaciones y Mantenimiento', 'Impuestos Inmobiliarios'] },
-    { title: 'Financiación y Deudas', items: ['Pago de Crédito (Amortización de Pasivos)', 'Intereses de Tarjeta de Crédito', 'Comisiones Bancarias'] },
+    { title: 'Financiación y Deudas', items: ['Pago de Crédito (para Pasivos)', 'Intereses de Tarjeta de Crédito', 'Comisiones Bancarias'] },
+    { title: 'Inversiones y Préstamos', items: ['Préstamo Otorgado (para Activos)'] },
     { title: 'Transporte', items: ['Combustible', 'Seguro de Vehículo', 'Mantenimiento de Vehículo', 'Transporte Público'] },
     { title: 'Personal', items: ['Supermercado y Alimentos', 'Salud (Medicina, Farmacia)', 'Educación', 'Ocio y Entretenimiento', 'Vestimenta'] },
     { title: 'Negocio / Cuentas', items: ['Impuestos (Monotributo, etc.)', 'Insumos y Materiales', 'Honorarios Profesionales'] },
@@ -14,7 +15,7 @@ const suggestedExpenseCategories = [
 
 const suggestedIncomeCategories = [
     { title: 'Operativos', items: ['Alquileres Recibidos', 'Ventas', 'Honorarios Profesionales'] },
-    { title: 'Financiación', items: ['Crédito Obtenido'] },
+    { title: 'Financiación', items: ['Crédito Obtenido (de Pasivos)', 'Cobranza de Préstamo (de Activos)'] },
     { title: 'No Operativos', items: ['Intereses de Inversiones', 'Dividendos', 'Otros Ingresos'] },
 ];
 
@@ -95,7 +96,11 @@ export default function HelpPage() {
                 <div className="bg-blue-50 border border-blue-200 text-blue-800 p-3 rounded-md flex items-start gap-3">
                     <Info className="h-5 w-5 mt-1 flex-shrink-0" />
                     <p>
-                        <strong>Importante:</strong> El sistema utiliza categorías específicas para vincular transacciones. Asegúrate de tener una categoría de gasto como <code className="font-semibold">"Pago de Crédito"</code> para los pasivos y una de ingreso como <code className="font-semibold">"Crédito Obtenido"</code> para el dinero inicial que recibes de un préstamo.
+                        <strong>Importante:</strong> El sistema utiliza categorías específicas para vincular transacciones con Activos y Pasivos. Asegúrate de tener las categorías adecuadas creadas en la sección <code className="font-semibold">Categorías</code>.
+                        <ul className="list-disc pl-5 mt-2">
+                            <li>Para **Pasivos**: una categoría de gasto como <code className="font-semibold">"Pago de Crédito"</code> y una de ingreso como <code className="font-semibold">"Crédito Obtenido"</code>.</li>
+                            <li>Para **Activos**: una categoría de gasto como <code className="font-semibold">"Préstamo Otorgado"</code> y una de ingreso como <code className="font-semibold">"Cobranza de Préstamo"</code>.</li>
+                        </ul>
                     </p>
                 </div>
               </AccordionContent>
