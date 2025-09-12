@@ -1,0 +1,18 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Regla 1: Haz que la lista de usuarios autorizados sea pública para leer.
+    // Esto permite que el sistema SIEMPRE pueda comprobar quién está autorizado.
+    match /authorized_users/{userId} {
+      allow read: if request.auth != null; // Cualquiera que haya iniciado sesión puede leer la lista
+      allow write: if false; // Nadie puede modificar esta lista desde la app
+    }
+
+    // Regla 2: Protege TODO EL RESTO de la base de datos.
+    // Esta regla solo se aplica si no coincide con la Regla 1.
+    match /{path=**} {
+      allow read, write: if request.auth != null && exists(/databases/$(database)/documents/authorized_users/$(request.auth.email));
+    }
+  }
+}
