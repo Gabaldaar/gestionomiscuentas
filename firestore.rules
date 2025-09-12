@@ -1,17 +1,8 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    
-    // Regla 1: Permite que los usuarios autorizados lean la lista de autorización.
-    match /authorized_users/{userId} {
-      allow read: if request.auth != null;
-      allow write: if false; // Nadie puede escribir desde la app
-    }
-    
-    // Regla 2: Permite a los usuarios autorizados leer/escribir en CUALQUIER documento.
-    // Esta regla es la que fallaba para las consultas de grupo.
-    match /{path=**}/{document} {
-      allow read, write: if request.auth != null && exists(/databases/$(database)/documents/authorized_users/$(request.auth.email));
+    match /{document=**} {
+      allow read, write: if request.auth != null;
     }
   }
 }
