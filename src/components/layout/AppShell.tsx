@@ -55,15 +55,8 @@ const navItems = [
   { href: '/help', label: 'Ayuda', icon: LifeBuoy },
 ];
 
-function MainNav() {
+function MainNav({ onLinkClick }: { onLinkClick: () => void }) {
   const pathname = usePathname();
-  const { isMobile, setOpenMobile } = useSidebar();
-
-  const handleLinkClick = () => {
-    if (isMobile) {
-      setOpenMobile(false);
-    }
-  };
 
   const checkActive = (href: string) => {
     if (href === '/') {
@@ -89,7 +82,7 @@ function MainNav() {
               asChild
               isActive={checkActive(item.href)}
               tooltip={item.label}
-              onClick={handleLinkClick}
+              onClick={onLinkClick}
             >
               <Link href={item.href}>
                 <item.icon />
@@ -146,6 +139,7 @@ function UserProfile() {
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
+  const { isMobile, setOpenMobile } = useSidebar();
   const pathname = usePathname();
 
   if (loading || !user) {
@@ -154,6 +148,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     return <>{children}</>;
   }
   
+  const handleLinkClick = () => {
+    if (isMobile) {
+      setOpenMobile(false);
+    }
+  };
+
   return (
     <SidebarProvider>
       <Sidebar>
@@ -179,12 +179,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </div>
         </SidebarHeader>
         <SidebarContent>
-         <MainNav />
+         <MainNav onLinkClick={handleLinkClick} />
         </SidebarContent>
          <SidebarFooter>
             <SidebarMenu>
                 <SidebarMenuItem>
-                    <SidebarMenuButton asChild isActive={pathname === '/help'} tooltip="Ayuda">
+                    <SidebarMenuButton asChild isActive={pathname === '/help'} tooltip="Ayuda" onClick={handleLinkClick}>
                         <Link href="/help">
                             <LifeBuoy />
                             <span>Ayuda</span>
