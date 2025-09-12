@@ -1,4 +1,3 @@
-
 'use client';
 
 import * as React from 'react';
@@ -218,7 +217,7 @@ export default function WalletDetailPage() {
                     </CardHeader>
                     <CardContent>
                         <p>{error}</p>
-                        <Button onClick={() => router.push('/settings/wallets')} className="mt-4">Volver a Billeteras</Button>
+                        <Button onClick={() => router.push('/wallets')} className="mt-4">Volver a Billeteras</Button>
                     </CardContent>
                 </Card>
             </div>
@@ -233,7 +232,7 @@ export default function WalletDetailPage() {
         <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
             <PageHeader title={wallet.name}>
                 <Button asChild variant="outline">
-                    <Link href={`/settings/wallets/${wallet.id}/edit`}>
+                    <Link href={`/wallets/${wallet.id}/edit`}>
                         <Pencil className="mr-2 h-4 w-4" />
                         Editar Billetera
                     </Link>

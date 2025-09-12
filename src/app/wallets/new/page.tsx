@@ -1,4 +1,3 @@
-
 'use client';
 
 import * as React from 'react';
@@ -80,7 +79,7 @@ export default function NewWalletPage() {
         title: 'Billetera creada',
         description: 'La nueva billetera ha sido añadida exitosamente.',
       });
-      router.push('/settings/wallets');
+      router.push('/wallets');
     } catch (error) {
       console.error('Error adding document: ', error);
       toast({

@@ -85,7 +85,7 @@ export default function WalletsSettingsPage() {
       <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
         <PageHeader title="Billeteras">
           <Button asChild>
-            <Link href="/settings/wallets/new">
+            <Link href="/wallets/new">
               <PlusCircle className="mr-2 h-4 w-4" />
               Añadir Billetera
             </Link>
@@ -99,7 +99,7 @@ export default function WalletsSettingsPage() {
         ) : (
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
               {wallets.map((wallet) => (
-                <Link key={wallet.id} href={`/settings/wallets/${wallet.id}`} className="block transition-all hover:scale-[1.02]">
+                <Link key={wallet.id} href={`/wallets/${wallet.id}`} className="block transition-all hover:scale-[1.02]">
                     <Card className="h-full">
                         <CardHeader className="flex flex-row items-start justify-between">
                             <div className="flex items-center gap-3">
@@ -121,7 +121,7 @@ export default function WalletsSettingsPage() {
                                 </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent>
-                                <DropdownMenuItem onClick={(e) => {e.stopPropagation(); e.preventDefault(); router.push(`/settings/wallets/${wallet.id}/edit`)}}>
+                                <DropdownMenuItem onClick={(e) => {e.stopPropagation(); e.preventDefault(); router.push(`/wallets/${wallet.id}/edit`)}}>
                                     <Pencil className="mr-2 h-4 w-4" />
                                     Editar
                                 </DropdownMenuItem>

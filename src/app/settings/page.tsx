@@ -1,4 +1,3 @@
-
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -20,13 +19,6 @@ export default function SettingsPage() {
       icon: TrendingUp,
       action: "Administrar",
       href: "/settings/incomes"
-    },
-    {
-      title: "Billeteras",
-      description: "Administra tus cuentas de ingresos (ARS, USD).",
-      icon: Wallet,
-      action: "Administrar",
-      href: "/settings/wallets"
     },
   ];
 

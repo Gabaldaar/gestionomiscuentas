@@ -1,4 +1,3 @@
-
 'use client';
 
 import * as React from 'react';
@@ -42,6 +41,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 const navItems = [
   { href: '/', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/properties', label: 'Cuentas', icon: Building2 },
+  { href: '/wallets', label: 'Billeteras', icon: Wallet },
   { href: '/liabilities', label: 'Pasivos', icon: HandCoins },
   { href: '/expenses', label: 'Historial de Gastos', icon: TrendingDown },
   { href: '/incomes', label: 'Historial de Ingresos', icon: TrendingUp },

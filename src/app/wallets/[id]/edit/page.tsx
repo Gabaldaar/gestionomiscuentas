@@ -1,4 +1,3 @@
-
 'use client';
 
 import * as React from 'react';
@@ -107,7 +106,7 @@ export default function EditWalletPage() {
         title: 'Billetera actualizada',
         description: 'La billetera ha sido actualizada exitosamente.',
       });
-      router.push('/settings/wallets');
+      router.push('/wallets');
     } catch (error) {
       console.error('Error updating document: ', error);
       toast({
@@ -248,7 +247,7 @@ export default function EditWalletPage() {
               />
 
               <div className="flex justify-end gap-2">
-                 <Button type="button" variant="ghost" onClick={() => router.push('/settings/wallets')}>
+                 <Button type="button" variant="ghost" onClick={() => router.push('/wallets')}>
                     Cancelar
                 </Button>
                 <Button type="submit" disabled={isSubmitting}>
