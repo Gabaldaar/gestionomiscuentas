@@ -193,13 +193,13 @@ export default function ExpensesPage() {
                         {areFiltersActive && <Button variant="ghost" size="sm" onClick={handleClearFilters}><X className="mr-2 h-4 w-4"/>Limpiar Filtros</Button>}
                     </CardTitle>
                 </CardHeader>
-                <CardContent className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+                <CardContent className="flex flex-wrap gap-4">
                     <Popover>
                         <PopoverTrigger asChild>
                         <Button
                             id="date"
                             variant={"outline"}
-                            className={cn("justify-start text-left font-normal", !dateRange && "text-muted-foreground")}
+                            className={cn("w-full sm:w-auto justify-start text-left font-normal", !dateRange && "text-muted-foreground")}
                         >
                             <CalendarIcon className="mr-2 h-4 w-4" />
                             {dateRange?.from ? (
@@ -219,7 +219,7 @@ export default function ExpensesPage() {
                     </Popover>
                     
                     <Select value={selectedProperty} onValueChange={setSelectedProperty}>
-                        <SelectTrigger><SelectValue placeholder="Cuenta" /></SelectTrigger>
+                        <SelectTrigger className="w-full sm:w-auto"><SelectValue placeholder="Cuenta" /></SelectTrigger>
                         <SelectContent>
                             <SelectItem value="all">Todas las cuentas</SelectItem>
                             {properties.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
@@ -227,7 +227,7 @@ export default function ExpensesPage() {
                     </Select>
                     
                     <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                        <SelectTrigger><SelectValue placeholder="Categoría" /></SelectTrigger>
+                        <SelectTrigger className="w-full sm:w-auto"><SelectValue placeholder="Categoría" /></SelectTrigger>
                         <SelectContent>
                             <SelectItem value="all">Todas las categorías</SelectItem>
                             {categories.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
@@ -235,7 +235,7 @@ export default function ExpensesPage() {
                     </Select>
 
                     <Select value={selectedSubcategory} onValueChange={setSelectedSubcategory} disabled={selectedCategory === 'all'}>
-                        <SelectTrigger><SelectValue placeholder="Subcategoría" /></SelectTrigger>
+                        <SelectTrigger className="w-full sm:w-auto"><SelectValue placeholder="Subcategoría" /></SelectTrigger>
                         <SelectContent>
                             <SelectItem value="all">Todas las subcategorías</SelectItem>
                             {categories.find(c => c.id === selectedCategory)?.subcategories.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
@@ -243,7 +243,7 @@ export default function ExpensesPage() {
                     </Select>
 
                     <Select value={selectedCurrency} onValueChange={(v: any) => setSelectedCurrency(v)}>
-                        <SelectTrigger><SelectValue placeholder="Moneda" /></SelectTrigger>
+                        <SelectTrigger className="w-full sm:w-auto"><SelectValue placeholder="Moneda" /></SelectTrigger>
                         <SelectContent>
                             <SelectItem value="all">Todas las monedas</SelectItem>
                             <SelectItem value="ARS">ARS</SelectItem>

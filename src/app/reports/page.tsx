@@ -269,10 +269,10 @@ export default function ReportsPage() {
           <CardTitle className="flex items-center gap-2"><Filter className="h-5 w-5"/> Filtros del Informe</CardTitle>
           <CardDescription>Selecciona los criterios para generar tu informe financiero.</CardDescription>
         </CardHeader>
-        <CardContent className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        <CardContent className="flex flex-wrap gap-4">
           <Popover>
             <PopoverTrigger asChild>
-              <Button variant="outline" className="w-full justify-start text-left font-normal">
+              <Button variant="outline" className="w-full sm:w-auto justify-start text-left font-normal">
                 <CalendarIcon className="mr-2 h-4 w-4" />
                 {dateRange?.from ? (
                   dateRange.to ? (
@@ -287,7 +287,7 @@ export default function ReportsPage() {
           </Popover>
 
           <Select value={groupBy} onValueChange={(v: any) => setGroupBy(v)}>
-            <SelectTrigger><SelectValue placeholder="Agrupar por..." /></SelectTrigger>
+            <SelectTrigger className="w-full sm:w-auto"><SelectValue placeholder="Agrupar por..." /></SelectTrigger>
             <SelectContent>
               <SelectItem value="month">Agrupar por Mes</SelectItem>
               <SelectItem value="year">Agrupar por Año</SelectItem>
@@ -295,7 +295,7 @@ export default function ReportsPage() {
           </Select>
 
           <Select value={currency} onValueChange={(v: any) => setCurrency(v)}>
-            <SelectTrigger><SelectValue placeholder="Moneda" /></SelectTrigger>
+            <SelectTrigger className="w-full sm:w-auto"><SelectValue placeholder="Moneda" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="ARS">ARS</SelectItem>
               <SelectItem value="USD">USD</SelectItem>
@@ -304,7 +304,7 @@ export default function ReportsPage() {
           
            <Popover>
             <PopoverTrigger asChild>
-              <Button variant="outline" className="w-full justify-start text-left font-normal">
+              <Button variant="outline" className="w-full sm:w-auto justify-start text-left font-normal">
                 Cuentas ({selectedProperties.length})
               </Button>
             </PopoverTrigger>
