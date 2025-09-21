@@ -335,7 +335,7 @@ export default function ReportsPage() {
       </Card>
       
         <Tabs defaultValue="summary" className="space-y-4">
-            <TabsList>
+            <TabsList className="h-auto flex-wrap justify-start">
                 <TabsTrigger value="summary">Resumen Financiero</TabsTrigger>
                 <TabsTrigger value="expenses">Análisis de Gastos</TabsTrigger>
                 <TabsTrigger value="ai">Resumen Inteligente</TabsTrigger>
@@ -591,7 +591,7 @@ export default function ReportsPage() {
                                     </div>
                                     <div>
                                         <h4 className="font-bold">Mirando Hacia Adelante</h4>
-                                        <p>{aiSummary.forwardLooking}</p>
+                                        <p className="text-muted-foreground">{aiSummary.forwardLooking}</p>
                                     </div>
                                 </div>
                             </div>
