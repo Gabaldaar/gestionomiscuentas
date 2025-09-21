@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -190,7 +191,7 @@ export default function IncomesPage() {
                         {areFiltersActive && <Button variant="ghost" size="sm" onClick={handleClearFilters}><X className="mr-2 h-4 w-4"/>Limpiar Filtros</Button>}
                     </CardTitle>
                 </CardHeader>
-                <CardContent className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                <CardContent className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
                     <Popover>
                         <PopoverTrigger asChild>
                         <Button

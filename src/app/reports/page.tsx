@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -268,7 +269,7 @@ export default function ReportsPage() {
           <CardTitle className="flex items-center gap-2"><Filter className="h-5 w-5"/> Filtros del Informe</CardTitle>
           <CardDescription>Selecciona los criterios para generar tu informe financiero.</CardDescription>
         </CardHeader>
-        <CardContent className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+        <CardContent className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
           <Popover>
             <PopoverTrigger asChild>
               <Button variant="outline" className="w-full justify-start text-left font-normal">
