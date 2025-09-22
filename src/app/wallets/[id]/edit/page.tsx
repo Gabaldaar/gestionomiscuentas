@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -39,6 +40,7 @@ import { Loader, AlertTriangle } from 'lucide-react';
 import { type Wallet } from '@/lib/types';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { walletIcons, WalletIcon, type WalletIconName } from '@/lib/wallet-icons';
+import { Switch } from '@/components/ui/switch';
 
 
 const walletSchema = z.object({
@@ -48,6 +50,7 @@ const walletSchema = z.object({
   }),
   balance: z.coerce.number({invalid_type_error: 'El saldo debe ser un número.'}),
   icon: z.string().optional(),
+  allowNegativeBalance: z.boolean().optional(),
 });
 
 type WalletFormValues = z.infer<typeof walletSchema>;
@@ -82,6 +85,7 @@ export default function EditWalletPage() {
             currency: walletData.currency,
             balance: walletData.balance,
             icon: walletData.icon || 'Wallet',
+            allowNegativeBalance: walletData.allowNegativeBalance || false,
           });
         } else {
           setError('No se encontró la billetera.');
@@ -242,6 +246,25 @@ export default function EditWalletPage() {
                       </RadioGroup>
                     </FormControl>
                     <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="allowNegativeBalance"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                    <div className="space-y-0.5">
+                      <FormLabel className="text-base">Permitir Saldo Negativo</FormLabel>
+                      <FormMessage />
+                    </div>
+                    <FormControl>
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
                   </FormItem>
                 )}
               />

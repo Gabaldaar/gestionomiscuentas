@@ -1,6 +1,5 @@
 
 
-
 export type Currency = 'ARS' | 'USD';
 
 export type Property = {
@@ -17,6 +16,7 @@ export type Wallet = {
   currency: Currency;
   balance: number;
   icon?: string;
+  allowNegativeBalance?: boolean;
 };
 
 export type ExpenseCategory = {

@@ -100,8 +100,8 @@ export default function NewAssetPage() {
       const walletRef = doc(db, 'wallets', data.walletId);
       const walletSnap = await getDoc(walletRef);
       if (!walletSnap.exists()) throw new Error("La billetera seleccionada no existe.");
-      const walletData = walletSnap.data();
-      if (walletData.balance < data.totalAmount) {
+      const walletData = walletSnap.data() as Wallet;
+      if (walletData.balance < data.totalAmount && !walletData.allowNegativeBalance) {
           toast({ title: "Error", description: "Saldo insuficiente en la billetera de origen.", variant: "destructive" });
           setIsSubmitting(false);
           return;

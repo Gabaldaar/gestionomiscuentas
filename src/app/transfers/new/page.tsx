@@ -141,7 +141,7 @@ export default function NewTransferPage() {
 
         const fromWalletData = fromWalletSnap.data() as Wallet;
         
-        if (fromWalletData.balance < data.amountSent) {
+        if (fromWalletData.balance < data.amountSent && !fromWalletData.allowNegativeBalance) {
             toast({ title: "Fondos Insuficientes", description: `La billetera ${fromWalletData.name} no tiene suficiente saldo.`, variant: "destructive" });
             setIsSubmitting(false);
             return;

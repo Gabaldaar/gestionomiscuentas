@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -38,6 +39,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Loader } from 'lucide-react';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { walletIcons, WalletIcon, type WalletIconName } from '@/lib/wallet-icons';
+import { Switch } from '@/components/ui/switch';
 
 
 const walletSchema = z.object({
@@ -46,6 +48,7 @@ const walletSchema = z.object({
     required_error: 'La moneda es obligatoria.',
   }),
   icon: z.string().optional(),
+  allowNegativeBalance: z.boolean().optional(),
 });
 
 type WalletFormValues = z.infer<typeof walletSchema>;
@@ -63,6 +66,7 @@ export default function NewWalletPage() {
       name: '',
       currency: 'ARS',
       icon: 'Wallet',
+      allowNegativeBalance: false,
     },
   });
 
@@ -176,6 +180,25 @@ export default function NewWalletPage() {
                 )}
               />
               
+              <FormField
+                control={form.control}
+                name="allowNegativeBalance"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                    <div className="space-y-0.5">
+                      <FormLabel className="text-base">Permitir Saldo Negativo</FormLabel>
+                      <FormMessage />
+                    </div>
+                    <FormControl>
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+
               <div className="flex justify-end gap-2">
                  <Button type="button" variant="ghost" onClick={() => router.back()}>
                     Cancelar

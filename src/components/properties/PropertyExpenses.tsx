@@ -164,14 +164,14 @@ export function PropertyExpenses({
             const revertedBalance = oldWalletData.balance + editingExpense.amount;
             
             if (editingExpense.walletId === expenseData.walletId) {
-                if (revertedBalance < expenseData.amount) throw new Error("Fondos insuficientes en la billetera.");
+                if (revertedBalance < expenseData.amount && !oldWalletData.allowNegativeBalance) throw new Error("Fondos insuficientes en la billetera.");
                 batch.update(newWalletRef, { balance: revertedBalance - expenseData.amount });
             } else {
                 batch.update(oldWalletRef, { balance: revertedBalance });
                 const newWalletSnap = await getDoc(newWalletRef);
                 if (!newWalletSnap.exists()) throw new Error("La nueva billetera no fue encontrada.");
                 const newWalletData = newWalletSnap.data() as Wallet;
-                if (newWalletData.balance < expenseData.amount) throw new Error("Fondos insuficientes en la billetera.");
+                if (newWalletData.balance < expenseData.amount && !newWalletData.allowNegativeBalance) throw new Error("Fondos insuficientes en la billetera.");
                 batch.update(newWalletRef, { balance: newWalletData.balance - expenseData.amount });
             }
 
@@ -186,7 +186,7 @@ export function PropertyExpenses({
             if (!walletSnap.exists()) throw new Error("Billetera no encontrada.");
             
             const walletData = walletSnap.data() as Wallet;
-            if (walletData.balance < expenseData.amount) {
+            if (walletData.balance < expenseData.amount && !walletData.allowNegativeBalance) {
                  toast({ title: "Fondos insuficientes", description: `La billetera ${walletData.name} no tiene suficiente saldo.`, variant: "destructive" });
                  setIsLoading(false);
                  return;
@@ -685,5 +685,3 @@ export function PropertyExpenses({
     </>
   );
 }
-
-    

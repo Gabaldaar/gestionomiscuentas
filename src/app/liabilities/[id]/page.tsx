@@ -124,8 +124,10 @@ export default function LiabilityDetailPage() {
         const walletRef = doc(db, 'wallets', data.walletId);
         const walletSnap = await getDoc(walletRef);
         if (!walletSnap.exists()) throw new Error("Billetera no encontrada");
-        const walletData = walletSnap.data();
-        if (walletData.balance < data.amount) throw new Error("Fondos insuficientes en la billetera.");
+        const walletData = walletSnap.data() as Wallet;
+        if (walletData.balance < data.amount && !walletData.allowNegativeBalance) {
+          throw new Error("Fondos insuficientes en la billetera.");
+        }
         batch.update(walletRef, { balance: walletData.balance - data.amount });
         
         const liabilityRef = doc(db, 'liabilities', id);
