@@ -41,6 +41,7 @@ const propertySchema = z.object({
   name: z.string().min(1, 'El nombre es obligatorio.'),
   description: z.string().min(1, 'La descripción es obligatoria.'),
   imageUrl: z.string().min(1, 'Debes seleccionar una imagen.'),
+  order: z.coerce.number().optional(),
   notes: z.string().optional(),
 });
 
@@ -69,7 +70,10 @@ export default function EditPropertyPage() {
 
             if (propertySnap.exists()) {
                 const propertyData = propertySnap.data() as Property;
-                form.reset(propertyData);
+                form.reset({
+                  ...propertyData,
+                  order: propertyData.order ?? undefined
+                });
             } else {
                 notFound();
             }
@@ -193,6 +197,19 @@ export default function EditPropertyPage() {
                         ))}
                       </RadioGroup>
                     </FormControl>
+                  </FormItem>
+                )}
+              />
+               <FormField
+                control={form.control}
+                name="order"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Orden de Visualización</FormLabel>
+                    <FormControl>
+                      <Input type="number" placeholder="Ej: 1" {...field} />
+                    </FormControl>
+                    <FormMessage />
                   </FormItem>
                 )}
               />

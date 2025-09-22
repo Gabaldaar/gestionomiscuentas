@@ -8,7 +8,7 @@ import { Loader, PlusCircle } from "lucide-react";
 import { PropertyCard } from "@/components/properties/PropertyCard";
 import { db } from "@/lib/firebase";
 import { collection, getDocs, Timestamp, collectionGroup, query } from "firebase/firestore";
-import { type Property, type Income, type ActualExpense } from "@/lib/types";
+import { type Property, type Income, type ActualExpense, type ExpectedExpense } from "@/lib/types";
 import Link from "next/link";
 import { useToast } from '@/hooks/use-toast';
 
@@ -16,6 +16,7 @@ type PropertiesData = {
   properties: Property[];
   incomes: Record<string, Income[]>;
   expenses: Record<string, ActualExpense[]>;
+  expectedExpenses: Record<string, ExpectedExpense[]>;
 };
 
 export default function PropertiesPage() {
@@ -29,18 +30,22 @@ export default function PropertiesPage() {
       try {
         const propertiesCol = collection(db, 'properties');
         const propertiesSnapshot = await getDocs(propertiesCol);
-        const propertiesList: Property[] = propertiesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Property));
+        const propertiesList: Property[] = propertiesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Property))
+            .sort((a, b) => (a.order ?? 999) - (b.order ?? 999));
         
         const incomesQuery = query(collectionGroup(db, 'incomes'));
         const expensesQuery = query(collectionGroup(db, 'actualExpenses'));
+        const expectedExpensesQuery = query(collectionGroup(db, 'expectedExpenses'));
         
-        const [incomesSnapshot, expensesSnapshot] = await Promise.all([
+        const [incomesSnapshot, expensesSnapshot, expectedExpensesSnapshot] = await Promise.all([
             getDocs(incomesQuery),
-            getDocs(expensesQuery)
+            getDocs(expensesQuery),
+            getDocs(expectedExpensesQuery),
         ]);
 
         const allIncomes: Record<string, Income[]> = {};
         const allExpenses: Record<string, ActualExpense[]> = {};
+        const allExpectedExpenses: Record<string, ExpectedExpense[]> = {};
 
         const currentMonth = new Date().getMonth();
         const currentYear = new Date().getFullYear();
@@ -69,7 +74,20 @@ export default function PropertiesPage() {
             }
         });
 
-        setData({ properties: propertiesList, incomes: allIncomes, expenses: allExpenses });
+        expectedExpensesSnapshot.docs.forEach(doc => {
+            const expectedExpense = {...doc.data(), id: doc.id } as ExpectedExpense;
+            const propertyId = doc.ref.parent.parent!.id;
+            const expenseMonth = expectedExpense.month - 1;
+            if (expenseMonth === currentMonth && expectedExpense.year === currentYear) {
+                if (!allExpectedExpenses[propertyId]) {
+                    allExpectedExpenses[propertyId] = [];
+                }
+                allExpectedExpenses[propertyId].push(expectedExpense);
+            }
+        });
+
+
+        setData({ properties: propertiesList, incomes: allIncomes, expenses: allExpenses, expectedExpenses: allExpectedExpenses });
       } catch (error) {
         console.error("Error fetching properties:", error);
         toast({
@@ -119,6 +137,7 @@ export default function PropertiesPage() {
             property={property}
             incomes={data.incomes[property.id] || []}
             expenses={data.expenses[property.id] || []}
+            expectedExpenses={data.expectedExpenses[property.id] || []}
           />
         ))}
       </div>

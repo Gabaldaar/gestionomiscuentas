@@ -6,7 +6,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useRouter } from 'next/navigation';
-import { collection, addDoc } from 'firebase/firestore';
+import { collection, addDoc, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import Image from 'next/image';
 
@@ -40,6 +40,7 @@ const propertySchema = z.object({
   name: z.string().min(1, 'El nombre es obligatorio.'),
   description: z.string().min(1, 'La descripción es obligatoria.'),
   imageUrl: z.string().min(1, 'Debes seleccionar una imagen.'),
+  order: z.coerce.number().optional(),
   notes: z.string().optional(),
 });
 
@@ -63,7 +64,15 @@ export default function NewPropertyPage() {
   const onSubmit = async (data: PropertyFormValues) => {
     setIsSubmitting(true);
     try {
-      await addDoc(collection(db, 'properties'), data);
+      const propertiesCollection = collection(db, 'properties');
+      const propertiesSnapshot = await getDocs(propertiesCollection);
+      const newOrder = (propertiesSnapshot.size || 0) + 1;
+
+      await addDoc(propertiesCollection, {
+          ...data,
+          order: data.order || newOrder
+      });
+
       toast({
         title: 'Cuenta creada',
         description: 'La nueva cuenta ha sido añadida exitosamente.',
@@ -158,6 +167,19 @@ export default function NewPropertyPage() {
                         ))}
                       </RadioGroup>
                     </FormControl>
+                  </FormItem>
+                )}
+              />
+               <FormField
+                control={form.control}
+                name="order"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Orden de Visualización (Opcional)</FormLabel>
+                    <FormControl>
+                      <Input type="number" placeholder="Ej: 1" {...field} />
+                    </FormControl>
+                    <FormMessage />
                   </FormItem>
                 )}
               />

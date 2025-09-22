@@ -4,25 +4,26 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { type Property, type Income, type ActualExpense, type Currency } from '@/lib/types';
-import { ArrowUp, ArrowDown, Minus } from 'lucide-react';
+import { type Property, type Income, type ActualExpense, type ExpectedExpense, type Currency } from '@/lib/types';
+import { ArrowUp, ArrowDown, Minus, CircleAlert } from 'lucide-react';
 import * as React from 'react';
 import { cn } from '@/lib/utils';
 
 type MiniFinancialSummaryProps = {
   incomes: Income[];
   expenses: ActualExpense[];
+  expectedExpenses: ExpectedExpense[];
 };
 
 const formatCurrency = (amount: number, currency: Currency) => {
   return new Intl.NumberFormat('es-AR', { style: 'currency', currency, minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(amount);
 };
 
-function MiniFinancialSummary({ incomes, expenses }: MiniFinancialSummaryProps) {
+function MiniFinancialSummary({ incomes, expenses, expectedExpenses }: MiniFinancialSummaryProps) {
     const summary = React.useMemo(() => {
-        const totals: Record<Currency, { income: number; expense: number; net: number }> = {
-        ARS: { income: 0, expense: 0, net: 0 },
-        USD: { income: 0, expense: 0, net: 0 },
+        const totals: Record<Currency, { income: number; expense: number; net: number; expectedExpense: number; expenseBalance: number }> = {
+            ARS: { income: 0, expense: 0, net: 0, expectedExpense: 0, expenseBalance: 0 },
+            USD: { income: 0, expense: 0, net: 0, expectedExpense: 0, expenseBalance: 0 },
         };
 
         incomes.forEach(income => {
@@ -37,18 +38,25 @@ function MiniFinancialSummary({ incomes, expenses }: MiniFinancialSummaryProps) 
             }
         });
         
+        expectedExpenses.forEach(exp => {
+            if (totals[exp.currency]) {
+                totals[exp.currency].expectedExpense += exp.amount;
+            }
+        });
+
         (Object.keys(totals) as Currency[]).forEach(currency => {
             totals[currency].net = totals[currency].income - totals[currency].expense;
+            totals[currency].expenseBalance = totals[currency].expectedExpense - totals[currency].expense;
         });
 
         return totals;
-    }, [incomes, expenses]);
+    }, [incomes, expenses, expectedExpenses]);
     
     return (
         <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-xs flex-grow">
             {(Object.keys(summary) as Currency[]).map(currency => {
                 const data = summary[currency];
-                if (data.income === 0 && data.expense === 0) return (
+                if (data.income === 0 && data.expense === 0 && data.expectedExpense === 0) return (
                   <div key={currency}>
                     <div className="font-bold mb-1">{currency}</div>
                      <div className="text-muted-foreground">Sin datos</div>
@@ -77,6 +85,12 @@ function MiniFinancialSummary({ incomes, expenses }: MiniFinancialSummaryProps) 
                                 <Minus className="h-3 w-3" />
                                 <span>{formatCurrency(data.net, currency)}</span>
                             </div>
+                             {data.expenseBalance > 0 && (
+                                <div className="flex justify-between items-center text-orange-500 font-semibold">
+                                    <CircleAlert className="h-3 w-3" />
+                                    <span>{formatCurrency(data.expenseBalance, currency)}</span>
+                                </div>
+                            )}
                         </div>
                     </div>
                 )
@@ -90,9 +104,10 @@ type PropertyCardProps = {
   property: Property;
   incomes: Income[];
   expenses: ActualExpense[];
+  expectedExpenses: ExpectedExpense[];
 };
 
-export function PropertyCard({ property, incomes, expenses }: PropertyCardProps) {
+export function PropertyCard({ property, incomes, expenses, expectedExpenses }: PropertyCardProps) {
   return (
     <Link href={`/properties/${property.id}`} className="block transition-all hover:scale-[1.02]">
         <Card className="overflow-hidden h-full flex flex-col p-0">
@@ -110,7 +125,7 @@ export function PropertyCard({ property, incomes, expenses }: PropertyCardProps)
                         data-ai-hint="apartment building"
                     />
                 </div>
-                <MiniFinancialSummary incomes={incomes} expenses={expenses} />
+                <MiniFinancialSummary incomes={incomes} expenses={expenses} expectedExpenses={expectedExpenses}/>
             </CardContent>
         </Card>
     </Link>

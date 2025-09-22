@@ -1,5 +1,6 @@
 
 
+
 export type Currency = 'ARS' | 'USD';
 
 export type Property = {
@@ -8,6 +9,7 @@ export type Property = {
   imageUrl: string;
   description: string;
   notes: string;
+  order?: number;
 };
 
 export type Wallet = {
@@ -145,3 +147,4 @@ export type Transaction = {
   notes?: string;
   relatedEntity: string;
 };
+
