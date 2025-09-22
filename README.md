@@ -1,4 +1,4 @@
-# GestionoMisCuentas
+# GestionoMisCuentas.
 
 Esta aplicación te ayuda a tener un control total sobre tus finanzas personales y de tus cuentas, permitiéndote tomar decisiones más inteligentes.
 
