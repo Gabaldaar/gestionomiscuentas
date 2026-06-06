@@ -14,6 +14,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Loader, AlertTriangle, Filter, FileText, X, TrendingDown, Wallet, Pencil, Trash2, ArrowUp, ArrowDown, PlusCircle, Calendar as CalendarIcon } from 'lucide-react';
 import { type ActualExpense, type Property, type ExpenseCategory, type Currency, type Wallet as WalletType, Liability, type ExpenseSubcategory } from '@/lib/types';
 import { cn } from '@/lib/utils';
@@ -548,90 +549,8 @@ export default function ExpensesPage() {
                     <CardDescription>Se encontraron {sortedAndFilteredExpenses.length} gastos con los filtros aplicados.</CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <div className="hidden md:block">
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <SortableHeader
-                                        label="Fecha"
-                                        sortKey="date"
-                                        sortConfig={sortConfig}
-                                        onSort={setSortConfig}
-                                    />
-                                    <SortableHeader
-                                        label="Cuenta"
-                                        sortKey="propertyName"
-                                        sortConfig={sortConfig}
-                                        onSort={setSortConfig}
-                                    />
-                                    <SortableHeader
-                                        label="Billetera"
-                                        sortKey="walletName"
-                                        sortConfig={sortConfig}
-                                        onSort={setSortConfig}
-                                    />
-                                    <SortableHeader
-                                        label="Categoría"
-                                        sortKey="categoryName"
-                                        sortConfig={sortConfig}
-                                        onSort={setSortConfig}
-                                    />
-                                    <TableHead>Notas</TableHead>
-                                    <SortableHeader
-                                        label="Monto"
-                                        sortKey="amount"
-                                        sortConfig={sortConfig}
-                                        onSort={setSortConfig}
-                                        className="text-right"
-                                    />
-                                    <TableHead className="w-[100px]"></TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {sortedAndFilteredExpenses.length > 0 ? sortedAndFilteredExpenses.map(expense => {
-                                    return (
-                                    <TableRow key={expense.id}>
-                                        <TableCell>{format(new Date(expense.date), 'PP', { locale: es })}</TableCell>
-                                        <TableCell>{expense.propertyName}</TableCell>
-                                        <TableCell>{expense.walletName}</TableCell>
-                                        <TableCell>
-                                            <div className="font-medium">{expense.subcategoryName}</div>
-                                            <div className="text-xs text-muted-foreground">{expense.categoryName}</div>
-                                        </TableCell>
-                                        <TableCell>
-                                            {expense.notes ? (
-                                            <Popover>
-                                                <PopoverTrigger asChild>
-                                                <Button variant="ghost" size="icon" className="h-8 w-8"><FileText className="h-4 w-4" /></Button>
-                                                </PopoverTrigger>
-                                                <PopoverContent className="w-80"><p className="text-sm">{expense.notes}</p></PopoverContent>
-                                            </Popover>
-                                            ) : (
-                                            <span className="text-muted-foreground text-xs italic">N/A</span>
-                                            )}
-                                        </TableCell>
-                                        <TableCell className="text-right font-semibold text-destructive">{formatCurrency(expense.amount, expense.currency)}</TableCell>
-                                        <TableCell>
-                                            <div className="flex items-center justify-end">
-                                                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleEditClick(expense)}>
-                                                    <Pencil className="h-4 w-4" />
-                                                </Button>
-                                                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => handleDeleteClick(expense)}>
-                                                    <Trash2 className="h-4 w-4" />
-                                                </Button>
-                                            </div>
-                                        </TableCell>
-                                    </TableRow>
-                                    );
-                                }) : (
-                                    <TableRow>
-                                        <TableCell colSpan={7} className="text-center h-24">No se encontraron gastos para los filtros seleccionados.</TableCell>
-                                    </TableRow>
-                                )}
-                            </TableBody>
-                        </Table>
-                    </div>
-                    <div className="md:hidden space-y-4">
+                    <TooltipProvider>
+                    <div className="space-y-4">
                         <div className="flex items-center justify-end gap-2 mb-4">
                             <Label htmlFor="sort-select" className="text-sm font-medium">Ordenar por:</Label>
                             <Select
@@ -650,16 +569,21 @@ export default function ExpensesPage() {
                                     <SelectItem value="propertyName">Cuenta</SelectItem>
                                 </SelectContent>
                             </Select>
-                            <Button
-                                variant="outline"
-                                size="icon"
-                                className="h-9 w-9"
-                                onClick={() => {
-                                    setSortConfig({ key: sortConfig?.key || 'date', direction: sortConfig?.direction === 'asc' ? 'desc' : 'asc' });
-                                }}
-                            >
-                                {sortConfig?.direction === 'asc' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />}
-                            </Button>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Button
+                                        variant="outline"
+                                        size="icon"
+                                        className="h-9 w-9"
+                                        onClick={() => {
+                                            setSortConfig({ key: sortConfig?.key || 'date', direction: sortConfig?.direction === 'asc' ? 'desc' : 'asc' });
+                                        }}
+                                    >
+                                        {sortConfig?.direction === 'asc' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />}
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent><p>Cambiar orden</p></TooltipContent>
+                            </Tooltip>
                         </div>
                         {sortedAndFilteredExpenses.length > 0 ? sortedAndFilteredExpenses.map(expense => {
                              return (
@@ -674,12 +598,22 @@ export default function ExpensesPage() {
                                         <div className="flex flex-col items-end">
                                             <p className="font-bold text-lg text-destructive">{formatCurrency(expense.amount, expense.currency)}</p>
                                             <div className='flex items-center'>
-                                                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleEditClick(expense)}>
-                                                    <Pencil className="h-4 w-4" />
-                                                </Button>
-                                                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => handleDeleteClick(expense)}>
-                                                    <Trash2 className="h-4 w-4" />
-                                                </Button>
+                                                <Tooltip>
+                                                    <TooltipTrigger asChild>
+                                                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleEditClick(expense)}>
+                                                            <Pencil className="h-4 w-4" />
+                                                        </Button>
+                                                    </TooltipTrigger>
+                                                    <TooltipContent><p>Editar gasto</p></TooltipContent>
+                                                </Tooltip>
+                                                <Tooltip>
+                                                    <TooltipTrigger asChild>
+                                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => handleDeleteClick(expense)}>
+                                                            <Trash2 className="h-4 w-4" />
+                                                        </Button>
+                                                    </TooltipTrigger>
+                                                    <TooltipContent><p>Eliminar gasto</p></TooltipContent>
+                                                </Tooltip>
                                             </div>
                                         </div>
                                     </div>
@@ -692,6 +626,7 @@ export default function ExpensesPage() {
                             </div>
                         )}
                     </div>
+                    </TooltipProvider>
                 </CardContent>
             </Card>
         </div>

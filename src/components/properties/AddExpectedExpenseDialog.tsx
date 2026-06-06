@@ -27,6 +27,7 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import {
   Select,
   SelectContent,
@@ -51,6 +52,7 @@ const expectedExpenseSchema = z.object({
     required_error: 'La fecha de vencimiento es obligatoria.',
   }),
   isPaid: z.boolean().optional(),
+  notes: z.string().optional(),
 });
 
 type ExpectedExpenseFormValues = z.infer<typeof expectedExpenseSchema>;
@@ -123,6 +125,7 @@ export function AddExpectedExpenseDialog({
           currency: expenseToEdit.currency,
           date: new Date(expenseToEdit.date),
           isPaid: expenseToEdit.isPaid || false,
+          notes: expenseToEdit.notes || '',
         });
       } else {
           form.reset({
@@ -131,6 +134,7 @@ export function AddExpectedExpenseDialog({
               currency: 'ARS',
               date: new Date(),
               isPaid: false,
+              notes: '',
           });
       }
     }
@@ -257,6 +261,23 @@ export function AddExpectedExpenseDialog({
                 )}
                 />
             </div>
+            <FormField
+              control={form.control}
+              name="notes"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Notas</FormLabel>
+                  <FormControl>
+                    <Textarea 
+                      placeholder="Agrega comentarios o detalles adicionales..." 
+                      className="resize-none"
+                      {...field} 
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
             {isEditing && (
               <FormField
                 control={form.control}

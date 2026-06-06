@@ -18,7 +18,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Table, TableBody, TableCell, TableHeader, TableRow, TableHead } from "@/components/ui/table";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { type Transfer, type Wallet, type Currency } from "@/lib/types";
@@ -303,75 +303,9 @@ export default function TransfersHistoryPage() {
                  </div>
             ) : (
               <>
-                {/* Desktop View */}
-                <div className="hidden md:block">
-                    <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <SortableHeader label="Fecha" sortKey="date" sortConfig={sortConfig} onSort={setSortConfig} />
-                            <SortableHeader label="Desde" sortKey="fromWalletName" sortConfig={sortConfig} onSort={setSortConfig} />
-                            <SortableHeader label="Hacia" sortKey="toWalletName" sortConfig={sortConfig} onSort={setSortConfig} />
-                            <SortableHeader label="Monto Enviado" sortKey="amountSent" sortConfig={sortConfig} onSort={setSortConfig} className="text-right" />
-                            <SortableHeader label="Monto Recibido" sortKey="amountReceived" sortConfig={sortConfig} onSort={setSortConfig} className="text-right" />
-                            <SortableHeader label="Tasa" sortKey="exchangeRate" sortConfig={sortConfig} onSort={setSortConfig} className="hidden md:table-cell" />
-                            <TableHead className="hidden md:table-cell">Notas</TableHead>
-                            <TableHead className="w-[50px]"></TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {sortedAndFilteredTransfers.length > 0 ? sortedAndFilteredTransfers.map(transfer => {
-                            const transferDate = new Date(transfer.date);
-                            return (
-                            <TableRow key={transfer.id}>
-                                <TableCell>{isValid(transferDate) ? format(transferDate, 'PP', { locale: es }) : 'Fecha inválida'}</TableCell>
-                                <TableCell>{transfer.fromWalletName}</TableCell>
-                                <TableCell>{transfer.toWalletName}</TableCell>
-                                <TableCell className={cn("text-right font-medium text-red-500")}>
-                                    - {formatCurrency(transfer.amountSent, transfer.fromCurrency)}
-                                </TableCell>
-                                <TableCell className={cn("text-right font-medium", {
-                                    'text-green-600 dark:text-green-400': transfer.toCurrency === 'USD',
-                                    'text-blue-600 dark:text-blue-400': transfer.toCurrency === 'ARS',
-                                })}>
-                                    + {formatCurrency(transfer.amountReceived, transfer.toCurrency)}
-                                </TableCell>
-                                <TableCell className="hidden md:table-cell">
-                                    {transfer.exchangeRate ? `1 USD = ${formatCurrency(transfer.exchangeRate, 'ARS')}` : 'N/A'}
-                                </TableCell>
-                                <TableCell className="text-muted-foreground max-w-[200px] truncate hidden md:table-cell">{transfer.notes}</TableCell>
-                                <TableCell>
-                                    <DropdownMenu>
-                                        <DropdownMenuTrigger asChild>
-                                        <Button variant="ghost" size="icon">
-                                            <MoreVertical className="h-4 w-4" />
-                                        </Button>
-                                        </DropdownMenuTrigger>
-                                        <DropdownMenuContent>
-                                        <DropdownMenuItem onClick={() => router.push(`/transfers/${transfer.id}/edit`)}>
-                                            <Pencil className="mr-2 h-4 w-4" />
-                                            Editar
-                                        </DropdownMenuItem>
-                                        <DropdownMenuItem className="text-destructive" onClick={() => handleDeleteClick(transfer)}>
-                                            <Trash2 className="mr-2 h-4 w-4" />
-                                            Eliminar
-                                        </DropdownMenuItem>
-                                        </DropdownMenuContent>
-                                    </DropdownMenu>
-                                </TableCell>
-                            </TableRow>
-                            )
-                        }) : (
-                        <TableRow>
-                            <TableCell colSpan={8} className="text-center text-muted-foreground py-10">
-                            No hay transferencias para mostrar con los filtros seleccionados.
-                            </TableCell>
-                        </TableRow>
-                        )}
-                    </TableBody>
-                    </Table>
-                </div>
-                {/* Mobile View */}
-                <div className="md:hidden p-4 space-y-4">
+                {/* Cards View */}
+                <TooltipProvider>
+                <div className="p-4 space-y-4">
                   <div className="flex items-center justify-end gap-2 mb-4">
                       <Label htmlFor="sort-select" className="text-sm font-medium">Ordenar por:</Label>
                       <Select
@@ -390,16 +324,21 @@ export default function TransfersHistoryPage() {
                               <SelectItem value="toWalletName">Destino</SelectItem>
                           </SelectContent>
                       </Select>
-                      <Button
-                          variant="outline"
-                          size="icon"
-                          className="h-9 w-9"
-                          onClick={() => {
-                              setSortConfig({ key: sortConfig?.key || 'date', direction: sortConfig?.direction === 'asc' ? 'desc' : 'asc' });
-                          }}
-                      >
-                          {sortConfig?.direction === 'asc' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />}
-                      </Button>
+                      <Tooltip>
+                          <TooltipTrigger asChild>
+                              <Button
+                                  variant="outline"
+                                  size="icon"
+                                  className="h-9 w-9"
+                                  onClick={() => {
+                                      setSortConfig({ key: sortConfig?.key || 'date', direction: sortConfig?.direction === 'asc' ? 'desc' : 'asc' });
+                                  }}
+                              >
+                                  {sortConfig?.direction === 'asc' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />}
+                              </Button>
+                          </TooltipTrigger>
+                          <TooltipContent><p>Cambiar orden</p></TooltipContent>
+                      </Tooltip>
                   </div>
                   {sortedAndFilteredTransfers.length > 0 ? sortedAndFilteredTransfers.map(transfer => {
                       const transferDate = new Date(transfer.date);
@@ -452,6 +391,7 @@ export default function TransfersHistoryPage() {
                       </div>
                   )}
                 </div>
+                </TooltipProvider>
               </>
             )}
           </CardContent>

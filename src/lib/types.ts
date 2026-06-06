@@ -56,6 +56,7 @@ export type ExpectedExpense = {
   date: string; // ISO string
   isPaid?: boolean; // To manually mark as paid
   propertyId: string;
+  notes?: string;
 };
 
 export type ActualExpense = {

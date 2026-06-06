@@ -11,9 +11,9 @@ import Link from 'next/link';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader, AlertTriangle, Filter, X, CalendarClock, Tag, Building, Pencil, Trash2, ReceiptText, CheckCircle, ArrowUp, ArrowDown } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Loader, AlertTriangle, Filter, X, CalendarClock, Tag, Building, Pencil, Trash2, ReceiptText, CheckCircle, ArrowUp, ArrowDown, FileText } from 'lucide-react';
 import { type ExpectedExpense, type ActualExpense, type Property, type ExpenseCategory, type Currency, type Wallet, type ExpenseSubcategory } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
@@ -373,54 +373,8 @@ export default function DueDatesPage() {
           <CardDescription>Se encontraron {sortedAndFilteredExpenses.length} vencimientos sin pagar con los filtros aplicados.</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="hidden md:block">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <SortableHeader label="Vencimiento" sortKey="date" sortConfig={sortConfig} onSort={setSortConfig} />
-                  <SortableHeader label="Cuenta" sortKey="propertyName" sortConfig={sortConfig} onSort={setSortConfig} />
-                  <SortableHeader label="Categoría" sortKey="categoryName" sortConfig={sortConfig} onSort={setSortConfig} />
-                  <SortableHeader label="Total Previsto" sortKey="amount" sortConfig={sortConfig} onSort={setSortConfig} className="text-right" />
-                  <TableHead className="text-right">Pagado</TableHead>
-                  <SortableHeader label="Saldo" sortKey="balance" sortConfig={sortConfig} onSort={setSortConfig} className="text-right" />
-                  <TableHead className="w-[140px]"></TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {sortedAndFilteredExpenses.length > 0 ? sortedAndFilteredExpenses.map(expense => (
-                    <TableRow key={expense.id}>
-                      <TableCell className="font-medium">{format(expense.date, 'dd/MM/yyyy', { locale: es })}</TableCell>
-                      <TableCell>
-                        <Link href={`/properties/${expense.propertyId}`} className="hover:underline text-blue-600 dark:text-blue-400">
-                          {expense.propertyName}
-                        </Link>
-                      </TableCell>
-                      <TableCell>
-                        <div className="font-medium">{expense.subcategoryName}</div>
-                        <div className="text-xs text-muted-foreground">{expense.categoryName}</div>
-                      </TableCell>
-                      <TableCell className="text-right">{formatCurrency(expense.amount, expense.currency)}</TableCell>
-                      <TableCell className="text-right text-green-600">{formatCurrency(expense.paidAmount, expense.currency)}</TableCell>
-                      <TableCell className="text-right font-semibold text-destructive">{formatCurrency(expense.balance, expense.currency)}</TableCell>
-                      <TableCell className="text-right">
-                          <div className="flex items-center justify-end">
-                              <Button variant="ghost" size="icon" className="h-8 w-8 text-green-600 hover:text-green-700" onClick={() => handleToggleIsPaid(expense)}><CheckCircle className="h-4 w-4" /></Button>
-                              <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-600 hover:text-blue-700" onClick={() => setPayingExpected(expense)}><ReceiptText className="h-4 w-4" /></Button>
-                              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setEditingExpected(expense)}><Pencil className="h-4 w-4" /></Button>
-                              <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => setDeletingExpected(expense)}><Trash2 className="h-4 w-4" /></Button>
-                          </div>
-                      </TableCell>
-                    </TableRow>
-                  )
-                ) : (
-                  <TableRow>
-                    <TableCell colSpan={7} className="text-center h-24">No se encontraron vencimientos para los filtros seleccionados.</TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </div>
-          <div className="md:hidden space-y-4">
+          <TooltipProvider>
+          <div className="space-y-4">
               <div className="flex items-center justify-end gap-2 my-4">
                 <Label htmlFor="sort-select-due-dates" className="text-sm font-medium">Ordenar por:</Label>
                 <Select
@@ -435,12 +389,17 @@ export default function DueDatesPage() {
                         <SelectItem value="propertyName">Cuenta</SelectItem>
                     </SelectContent>
                 </Select>
-                <Button
-                    variant="outline" size="icon" className="h-9 w-9"
-                    onClick={() => setSortConfig({ key: sortConfig?.key || 'date', direction: sortConfig?.direction === 'asc' ? 'desc' : 'asc' })}
-                >
-                    {sortConfig?.direction === 'asc' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />}
-                </Button>
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <Button
+                            variant="outline" size="icon" className="h-9 w-9"
+                            onClick={() => setSortConfig({ key: sortConfig?.key || 'date', direction: sortConfig?.direction === 'asc' ? 'desc' : 'asc' })}
+                        >
+                            {sortConfig?.direction === 'asc' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />}
+                        </Button>
+                    </TooltipTrigger>
+                    <TooltipContent><p>Cambiar orden</p></TooltipContent>
+                </Tooltip>
               </div>
             {sortedAndFilteredExpenses.length > 0 ? sortedAndFilteredExpenses.map(expense => {
               return (
@@ -468,11 +427,40 @@ export default function DueDatesPage() {
                        <p className="text-xs text-muted-foreground">de {formatCurrency(expense.amount, expense.currency)}</p>
                     </div>
                   </div>
+                  {expense.notes && <p className="text-sm text-muted-foreground mt-2 pt-2 border-t">{expense.notes}</p>}
                   <div className="flex justify-end -mr-2 border-t mt-2 pt-1">
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-green-600" onClick={() => handleToggleIsPaid(expense)}><CheckCircle className="h-4 w-4" /></Button>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-600" onClick={() => setPayingExpected(expense)}><ReceiptText className="h-4 w-4" /></Button>
-                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setEditingExpected(expense)}><Pencil className="h-4 w-4" /></Button>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => setDeletingExpected(expense)}><Trash2 className="h-4 w-4" /></Button>
+                      <Tooltip>
+                          <TooltipTrigger asChild>
+                              <Button variant="ghost" size="icon" className={cn("h-8 w-8", expense.notes ? "text-yellow-500" : "text-muted-foreground")} onClick={() => setEditingExpected(expense)}>
+                                  <FileText className="h-4 w-4" />
+                              </Button>
+                          </TooltipTrigger>
+                          <TooltipContent><p>{expense.notes ? "Ver/Editar nota" : "Agregar nota"}</p></TooltipContent>
+                      </Tooltip>
+                      <Tooltip>
+                          <TooltipTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-8 w-8 text-green-600" onClick={() => handleToggleIsPaid(expense)}><CheckCircle className="h-4 w-4" /></Button>
+                          </TooltipTrigger>
+                          <TooltipContent><p>Marcar como pagado</p></TooltipContent>
+                      </Tooltip>
+                      <Tooltip>
+                          <TooltipTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-600" onClick={() => setPayingExpected(expense)}><ReceiptText className="h-4 w-4" /></Button>
+                          </TooltipTrigger>
+                          <TooltipContent><p>Registrar pago</p></TooltipContent>
+                      </Tooltip>
+                      <Tooltip>
+                          <TooltipTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setEditingExpected(expense)}><Pencil className="h-4 w-4" /></Button>
+                          </TooltipTrigger>
+                          <TooltipContent><p>Editar vencimiento</p></TooltipContent>
+                      </Tooltip>
+                      <Tooltip>
+                          <TooltipTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => setDeletingExpected(expense)}><Trash2 className="h-4 w-4" /></Button>
+                          </TooltipTrigger>
+                          <TooltipContent><p>Eliminar vencimiento</p></TooltipContent>
+                      </Tooltip>
                   </div>
                 </Card>
               )
@@ -482,6 +470,7 @@ export default function DueDatesPage() {
               </div>
             )}
           </div>
+          </TooltipProvider>
         </CardContent>
       </Card>
     </div>

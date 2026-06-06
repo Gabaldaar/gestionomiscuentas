@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DollarSign, TrendingDown, TrendingUp, HandCoins, Coins } from "lucide-react";
 import { type Income, type ActualExpense, type Currency, type Liability, type Asset } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 type Stats = {
     currency: Currency;
@@ -54,16 +55,38 @@ export function DashboardStats({ statsByCurrency }: DashboardStatsProps) {
                             <CardTitle className="text-xl font-bold font-headline tracking-tight">Resumen en {currency}</CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-2">
+                           <TooltipProvider>
                            <div className="flex items-center justify-between">
-                                <span className="text-sm text-muted-foreground flex items-center gap-2"><TrendingUp className="text-green-500"/> Ingresos del Período</span>
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <span className="text-sm text-muted-foreground flex items-center gap-2 cursor-help underline decoration-dotted underline-offset-2"><TrendingUp className="text-green-500"/> Ingresos del Período</span>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                        <p>El total de ingresos recibidos en este período.</p>
+                                    </TooltipContent>
+                                </Tooltip>
                                 <span className="font-bold text-lg text-green-500">{formatCurrency(totalIncome, currency)}</span>
                            </div>
                            <div className="flex items-center justify-between">
-                                <span className="text-sm text-muted-foreground flex items-center gap-2"><TrendingDown className="text-red-500"/> Egresos del Período</span>
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <span className="text-sm text-muted-foreground flex items-center gap-2 cursor-help underline decoration-dotted underline-offset-2"><TrendingDown className="text-red-500"/> Egresos del Período</span>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                        <p>El total de gastos realmente efectuados en este período.</p>
+                                    </TooltipContent>
+                                </Tooltip>
                                 <span className="font-bold text-lg text-red-500">{formatCurrency(totalExpense, currency)}</span>
                            </div>
                            <div className="flex items-center justify-between border-t pt-2 mt-2">
-                                <span className="text-sm font-medium flex items-center gap-2"><DollarSign className={netBalanceColor}/> Saldo Neto del Período</span>
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <span className="text-sm font-medium flex items-center gap-2 cursor-help underline decoration-dotted underline-offset-2"><DollarSign className={netBalanceColor}/> Saldo Neto del Período</span>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                        <p>La diferencia entre ingresos y egresos en este período.</p>
+                                    </TooltipContent>
+                                </Tooltip>
                                 <span className={cn("font-bold text-xl", netBalanceColor)}>{formatCurrency(netBalance, currency)}</span>
                            </div>
                            <div className="flex items-center justify-between border-t pt-2 mt-2">
@@ -74,6 +97,7 @@ export function DashboardStats({ statsByCurrency }: DashboardStatsProps) {
                                 <span className="text-sm font-medium flex items-center gap-2"><HandCoins className="text-orange-500"/> Total Pasivos (Deudas)</span>
                                 <span className="font-bold text-lg text-orange-500">{formatCurrency(totalLiabilities, currency)}</span>
                            </div>
+                           </TooltipProvider>
                         </CardContent>
                     </Card>
                 )

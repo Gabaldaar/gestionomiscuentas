@@ -4,6 +4,7 @@
 import * as React from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { type Income, type ActualExpense, type Currency } from '@/lib/types';
 import { ArrowDownCircle, ArrowUpCircle, MinusCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -50,6 +51,7 @@ export function FinancialSummary({ incomes, expenses }: FinancialSummaryProps) {
         {!hasData ? (
           <p className="text-sm text-muted-foreground">No hay datos para el período seleccionado.</p>
         ) : (
+          <TooltipProvider>
           <div className="space-y-4">
             {(Object.keys(summary) as Currency[]).map(currency => {
               const data = summary[currency];
@@ -65,28 +67,49 @@ export function FinancialSummary({ incomes, expenses }: FinancialSummaryProps) {
                 <div key={currency} className="space-y-3">
                   <h4 className="font-semibold text-lg">{currency}</h4>
                   <div className="flex items-center justify-between">
-                    <div className='flex items-center gap-2'>
-                        <ArrowUpCircle className="h-5 w-5 text-green-500" />
-                        <span className="text-muted-foreground">Ingresos</span>
-                    </div>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div className='flex items-center gap-2 cursor-help'>
+                            <ArrowUpCircle className="h-5 w-5 text-green-500" />
+                            <span className="text-muted-foreground underline decoration-dotted underline-offset-2">Ingresos</span>
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>El total de ingresos recibidos en este período.</p>
+                      </TooltipContent>
+                    </Tooltip>
                     <span className={cn("font-medium", {
                         'text-green-600 dark:text-green-400': currency === 'USD',
                         'text-blue-600 dark:text-blue-400': currency === 'ARS',
                     })}>{formatCurrency(data.income, currency)}</span>
                   </div>
                   <div className="flex items-center justify-between">
-                     <div className='flex items-center gap-2'>
-                        <ArrowDownCircle className="h-5 w-5 text-red-500" />
-                        <span className="text-muted-foreground">Egresos</span>
-                    </div>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div className='flex items-center gap-2 cursor-help'>
+                            <ArrowDownCircle className="h-5 w-5 text-red-500" />
+                            <span className="text-muted-foreground underline decoration-dotted underline-offset-2">Egresos</span>
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>El total de gastos realmente efectuados en este período.</p>
+                      </TooltipContent>
+                    </Tooltip>
                     <span className="font-medium text-red-500">{formatCurrency(data.expense, currency)}</span>
                   </div>
                   <Separator />
                   <div className="flex items-center justify-between">
-                    <div className='flex items-center gap-2'>
-                        <MinusCircle className={cn('h-5 w-5', netBalanceColor)} />
-                        <span className="font-semibold">Saldo Neto</span>
-                    </div>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div className='flex items-center gap-2 cursor-help'>
+                            <MinusCircle className={cn('h-5 w-5', netBalanceColor)} />
+                            <span className="font-semibold underline decoration-dotted underline-offset-2">Saldo Neto</span>
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>La diferencia entre ingresos y egresos en este período.</p>
+                      </TooltipContent>
+                    </Tooltip>
                     <span className={cn('font-bold text-lg', netBalanceColor)}>
                         {formatCurrency(data.net, currency)}
                     </span>
@@ -96,6 +119,7 @@ export function FinancialSummary({ incomes, expenses }: FinancialSummaryProps) {
               );
             })}
           </div>
+          </TooltipProvider>
         )}
       </CardContent>
     </Card>

@@ -378,56 +378,7 @@ export default function WalletDetailPage() {
                          </Button>
                     </div>
 
-                    <div className="hidden md:block">
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead className="w-[50px]"></TableHead>
-                                    <TableHead>Fecha</TableHead>
-                                    <TableHead>Descripción</TableHead>
-                                    <TableHead>Relacionado con</TableHead>
-                                    <TableHead className="hidden md:table-cell">Notas</TableHead>
-                                    <TableHead className="text-right">Monto</TableHead>
-                                    <TableHead className="text-right">Saldo</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {filteredTransactions.length > 0 ? filteredTransactions.map(t => (
-                                    <TableRow key={t.id}>
-                                        <TableCell>{transactionIcon(t.type)}</TableCell>
-                                        <TableCell>{format(t.date, 'PP', { locale: es })}</TableCell>
-                                        <TableCell>
-                                            <div className="font-medium">{t.description}</div>
-                                            <div className="text-xs text-muted-foreground">{t.category}</div>
-                                        </TableCell>
-                                        <TableCell>{t.relatedEntity}</TableCell>
-                                        <TableCell className="hidden md:table-cell">
-                                            {t.notes ? (
-                                            <Popover>
-                                                <PopoverTrigger asChild>
-                                                <Button variant="ghost" size="icon" className="h-8 w-8"><FileText className="h-4 w-4" /></Button>
-                                                </PopoverTrigger>
-                                                <PopoverContent className="w-80"><p className="text-sm">{t.notes}</p></PopoverContent>
-                                            </Popover>
-                                            ) : null}
-                                        </TableCell>
-                                        <TableCell className={cn("text-right font-semibold", t.amount > 0 ? "text-green-500" : "text-red-500")}>
-                                            {formatCurrency(t.amount, wallet.currency)}
-                                        </TableCell>
-                                        <TableCell className="text-right text-muted-foreground">{formatCurrency(t.runningBalance, wallet.currency)}</TableCell>
-                                    </TableRow>
-                                )) : (
-                                    <TableRow>
-                                        <TableCell colSpan={7} className="text-center h-24">
-                                            No se encontraron movimientos para los filtros seleccionados.
-                                        </TableCell>
-                                    </TableRow>
-                                )}
-                            </TableBody>
-                        </Table>
-                    </div>
-
-                    <div className="md:hidden space-y-4">
+                    <div className="space-y-4">
                         {filteredTransactions.length > 0 ? filteredTransactions.map(t => (
                             <Card key={t.id} className="p-4">
                                 <div className="flex items-start justify-between">

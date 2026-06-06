@@ -18,6 +18,7 @@ import { DateNavigator } from '../shared/DateNavigator';
 import { SortableHeader, type SortConfig } from '../shared/SortableHeader';
 import { Label } from '../ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
 
 type PropertyIncomeProps = {
   propertyId: string;
@@ -213,101 +214,14 @@ export function PropertyIncome({ propertyId, wallets, incomeCategories, selected
           </div>
         </CardHeader>
         <CardContent>
+          <TooltipProvider>
           {isLoading ? (
             <div className="flex justify-center items-center h-24">
               <Loader className="h-6 w-6 animate-spin text-primary" />
             </div>
           ) : (
           <>
-            <div className="hidden md:block">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <SortableHeader label="Fecha" sortKey="date" sortConfig={sortConfig} onSort={setSortConfig} />
-                    <SortableHeader label="Categoría" sortKey="categoryName" sortConfig={sortConfig} onSort={setSortConfig} />
-                    <SortableHeader label="Billetera" sortKey="walletName" sortConfig={sortConfig} onSort={setSortConfig} className="hidden md:table-cell" />
-                    <TableHead className="hidden md:table-cell">Notas</TableHead>
-                    <SortableHeader label="Monto" sortKey="amount" sortConfig={sortConfig} onSort={setSortConfig} className="text-right" />
-                    <TableHead className="w-[100px]"></TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredIncomes.length > 0 ? filteredIncomes.map(income => {
-                    const wallet = wallets.find(w => w.id === income.walletId);
-                    return (
-                    <TableRow key={income.id}>
-                      <TableCell>{new Date(income.date).toLocaleDateString('es-ES')}</TableCell>
-                      <TableCell>
-                        <div className='font-medium'>{income.subcategoryName}</div>
-                        <div className='text-xs text-muted-foreground'>{income.categoryName}</div>
-                      </TableCell>
-                      <TableCell className="hidden md:table-cell">
-                        {wallet ? (
-                          <span>
-                            {wallet.name}{' '}
-                            <span className={cn('font-semibold', {
-                              'text-green-600 dark:text-green-400': wallet.currency === 'USD',
-                              'text-blue-600 dark:text-blue-400': wallet.currency === 'ARS',
-                            })}>
-                              ({wallet.currency})
-                            </span>
-                          </span>
-                        ) : (
-                          "Desconocido"
-                        )}
-                      </TableCell>
-                      <TableCell className="hidden md:table-cell">
-                        {income.notes ? (
-                          <Popover>
-                            <PopoverTrigger asChild>
-                              <Button variant="ghost" size="icon" className="h-8 w-8">
-                                <FileText className="h-4 w-4" />
-                              </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-80">
-                              <p className="text-sm">{income.notes}</p>
-                            </PopoverContent>
-                          </Popover>
-                        ) : (
-                          <Button variant="ghost" size="icon" className="h-8 w-8" disabled>
-                            <FileText className="h-4 w-4" />
-                          </Button>
-                        )}
-                      </TableCell>
-                      <TableCell className={cn(
-                        "text-right font-medium",
-                        {
-                            'text-green-600 dark:text-green-400': income.currency === 'USD',
-                            'text-blue-600 dark:text-blue-400': income.currency === 'ARS',
-                        }
-                      )}>
-                        {new Intl.NumberFormat('es-AR', { style: 'currency', currency: income.currency }).format(income.amount)}
-                      </TableCell>
-                      <TableCell className="text-right">
-                          <div className="flex items-center justify-end gap-2">
-                              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleEdit(income)}>
-                                  <Pencil className="h-4 w-4" />
-                                  <span className="sr-only">Editar Ingreso</span>
-                              </Button>
-                              <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => handleDelete(income.id)}>
-                                  <Trash2 className="h-4 w-4" />
-                                  <span className="sr-only">Eliminar Ingreso</span>
-                              </Button>
-                          </div>
-                      </TableCell>
-                    </TableRow>
-                    )
-                    }) : (
-                    <TableRow>
-                      <TableCell colSpan={6} className="text-center text-muted-foreground py-10">
-                        No hay ingresos para mostrar para el período seleccionado.
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            </div>
-            <div className="md:hidden space-y-2">
+            <div className="space-y-2">
                 <div className="flex items-center justify-end gap-2 my-4">
                     <Label htmlFor="sort-select-income" className="text-sm font-medium">Ordenar por:</Label>
                     <Select
@@ -321,12 +235,17 @@ export function PropertyIncome({ propertyId, wallets, incomeCategories, selected
                             <SelectItem value="amount">Monto</SelectItem>
                         </SelectContent>
                     </Select>
-                    <Button
-                        variant="outline" size="icon" className="h-9 w-9"
-                        onClick={() => setSortConfig({ key: sortConfig?.key || 'date', direction: sortConfig?.direction === 'asc' ? 'desc' : 'asc' })}
-                    >
-                        {sortConfig?.direction === 'asc' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />}
-                    </Button>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Button
+                                variant="outline" size="icon" className="h-9 w-9"
+                                onClick={() => setSortConfig({ key: sortConfig?.key || 'date', direction: sortConfig?.direction === 'asc' ? 'desc' : 'asc' })}
+                            >
+                                {sortConfig?.direction === 'asc' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />}
+                            </Button>
+                        </TooltipTrigger>
+                        <TooltipContent><p>Cambiar orden</p></TooltipContent>
+                    </Tooltip>
                 </div>
               {filteredIncomes.length > 0 ? filteredIncomes.map(income => {
                  const wallet = wallets.find(w => w.id === income.walletId);
@@ -349,12 +268,22 @@ export function PropertyIncome({ propertyId, wallets, incomeCategories, selected
                         </div>
                         {income.notes && <p className="text-sm text-muted-foreground mt-2 pt-2 border-t">{income.notes}</p>}
                         <div className="flex items-center justify-end gap-2 -mb-2 -mr-2 mt-1">
-                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleEdit(income)}>
-                                <Pencil className="h-4 w-4" />
-                            </Button>
-                            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => handleDelete(income.id)}>
-                                <Trash2 className="h-4 w-4" />
-                            </Button>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleEdit(income)}>
+                                        <Pencil className="h-4 w-4" />
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent><p>Editar ingreso</p></TooltipContent>
+                            </Tooltip>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => handleDelete(income.id)}>
+                                        <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent><p>Eliminar ingreso</p></TooltipContent>
+                            </Tooltip>
                         </div>
                     </Card>
                  )
@@ -366,6 +295,7 @@ export function PropertyIncome({ propertyId, wallets, incomeCategories, selected
             </div>
           </>
           )}
+          </TooltipProvider>
         </CardContent>
       </Card>
 

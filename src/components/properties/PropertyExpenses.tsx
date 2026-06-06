@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, Pencil, Trash2, Loader, Copy, ClipboardList, ReceiptText, CheckCircle, ClipboardPlus, ArrowUp, ArrowDown } from "lucide-react";
+import { PlusCircle, Pencil, Trash2, Loader, Copy, ClipboardList, ReceiptText, CheckCircle, ClipboardPlus, ArrowUp, ArrowDown, FileText } from "lucide-react";
 import { type ExpectedExpense, type ActualExpense, type ExpenseCategory, type Wallet, type Currency, type Liability } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
 import { AddExpenseDialog } from './AddExpenseDialog';
@@ -22,6 +22,7 @@ import { es } from 'date-fns/locale';
 import { SortableHeader, type SortConfig } from '../shared/SortableHeader';
 import { Label } from '../ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
 
 type PropertyExpensesProps = {
   propertyId: string;
@@ -601,23 +602,46 @@ export function PropertyExpenses({
             
             <div className="p-4 border rounded-lg">
                   <h4 className="text-lg font-semibold text-center mb-2">Totales del Período</h4>
+                  <TooltipProvider>
                   <div className="flex flex-col sm:flex-row sm:justify-around text-center gap-4">
                       <div className="space-y-1">
-                          <div className='text-sm text-muted-foreground'>Previsto</div>
+                          <Tooltip>
+                              <TooltipTrigger asChild>
+                                  <div className='text-sm text-muted-foreground cursor-help underline decoration-dotted underline-offset-2'>Previsto</div>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                  <p>El total de gastos planificados para este período.</p>
+                              </TooltipContent>
+                          </Tooltip>
                           <div className="font-bold text-blue-800 dark:text-blue-400 text-lg">{formatCurrency(totals.expected.ARS, 'ARS')}</div>
                           <div className="font-bold text-green-800 dark:text-green-400 text-lg">{formatCurrency(totals.expected.USD, 'USD')}</div>
                       </div>
                       <div className="space-y-1">
-                          <div className='text-sm text-muted-foreground'>Pagado</div>
+                          <Tooltip>
+                              <TooltipTrigger asChild>
+                                  <div className='text-sm text-muted-foreground cursor-help underline decoration-dotted underline-offset-2'>Pagado</div>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                  <p>El total de gastos realmente efectuados en este período.</p>
+                              </TooltipContent>
+                          </Tooltip>
                           <div className="font-bold text-blue-800 dark:text-blue-400 text-lg">{formatCurrency(totals.paid.ARS, 'ARS')}</div>
                           <div className="font-bold text-green-800 dark:text-green-400 text-lg">{formatCurrency(totals.paid.USD, 'USD')}</div>
                       </div>
                       <div className="space-y-1">
-                          <div className='text-sm text-muted-foreground'>Saldo</div>
+                          <Tooltip>
+                              <TooltipTrigger asChild>
+                                  <div className='text-sm text-muted-foreground cursor-help underline decoration-dotted underline-offset-2'>Saldo</div>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                  <p>La diferencia entre lo previsto y lo pagado.</p>
+                              </TooltipContent>
+                          </Tooltip>
                           <div className={cn("font-bold text-lg", totals.balance.ARS < 0 ? "text-destructive" : "text-blue-800 dark:text-blue-400")}>{formatCurrency(totals.balance.ARS, 'ARS')}</div>
                           <div className={cn("font-bold text-lg", totals.balance.USD < 0 ? "text-destructive" : "text-green-800 dark:text-green-400")}>{formatCurrency(totals.balance.USD, 'USD')}</div>
                       </div>
                   </div>
+                  </TooltipProvider>
             </div>
 
             <TabsContent value="overview">
@@ -647,70 +671,7 @@ export function PropertyExpenses({
                     </div>
                 ) : (
                   <>
-                  <div className="hidden md:block">
-                    <Table>
-                        <TableHeader>
-                        <TableRow>
-                            <SortableHeader label="Vencimiento" sortKey="date" sortConfig={expectedSortConfig} onSort={setExpectedSortConfig} />
-                            <SortableHeader label="Categoría" sortKey="categoryName" sortConfig={expectedSortConfig} onSort={setExpectedSortConfig} />
-                            <SortableHeader label="Previsto" sortKey="amount" sortConfig={expectedSortConfig} onSort={setExpectedSortConfig} className="text-right" />
-                            <TableHead className="text-right hidden md:table-cell">Pagado</TableHead>
-                            <TableHead className="text-right">Saldo</TableHead>
-                            <TableHead className="w-[140px]"></TableHead>
-                        </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                        {filteredExpectedExpenses.length > 0 ? filteredExpectedExpenses.map(expense => {
-                            const paidAmount = getPaidAmount(expense);
-                            const balance = expense.amount - paidAmount;
-                            const isPaid = expense.isPaid || balance <= 0;
-                            return (
-                                <TableRow key={expense.id} className={cn("border-b-0 border-t border-dashed", isPaid && "text-muted-foreground line-through")}>
-                                    <TableCell>{format(new Date(expense.date), 'dd/MM/yyyy', { locale: es })}</TableCell>
-                                    <TableCell>
-                                        <div className='font-medium'>{expense.subcategoryName}</div>
-                                        <div className='text-xs'>{expense.categoryName}</div>
-                                    </TableCell>
-                                    <TableCell className="text-right font-medium">
-                                        {formatCurrency(expense.amount, expense.currency)}
-                                    </TableCell>
-                                    <TableCell className="text-right font-medium hidden md:table-cell">
-                                        {formatCurrency(paidAmount, expense.currency)}
-                                    </TableCell>
-                                    <TableCell 
-                                      className={cn("text-right font-medium", balance > 0 ? "text-red-500" : "text-green-500")}
-                                    >
-                                      {formatCurrency(balance, expense.currency)}
-                                    </TableCell>
-                                    <TableCell className="text-right">
-                                        <div className="flex items-center justify-end">
-                                            <Button variant="ghost" size="icon" className="h-8 w-8 text-green-600 hover:text-green-700" onClick={() => handleToggleIsPaid(expense)}>
-                                                <CheckCircle className="h-4 w-4" />
-                                            </Button>
-                                            <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-600 hover:text-blue-700" onClick={() => handleAddActualFromExpected(expense)}>
-                                                <ReceiptText className="h-4 w-4" />
-                                            </Button>
-                                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleEditExpected(expense)}>
-                                                <Pencil className="h-4 w-4" />
-                                            </Button>
-                                            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => handleDeleteExpected(expense.id)}>
-                                                <Trash2 className="h-4 w-4" />
-                                            </Button>
-                                        </div>
-                                    </TableCell>
-                                </TableRow>
-                            )
-                        }) : (
-                            <TableRow>
-                            <TableCell colSpan={6} className="text-center text-muted-foreground py-10">
-                                No hay gastos previstos para mostrar para el período seleccionado.
-                            </TableCell>
-                            </TableRow>
-                        )}
-                        </TableBody>
-                    </Table>
-                  </div>
-                  <div className="md:hidden space-y-2">
+                  <div className="space-y-2">
                     <div className="flex items-center justify-end gap-2 my-4">
                         <Label htmlFor="sort-select-expected" className="text-sm font-medium">Ordenar por:</Label>
                         <Select
@@ -724,12 +685,17 @@ export function PropertyExpenses({
                                 <SelectItem value="amount">Monto Previsto</SelectItem>
                             </SelectContent>
                         </Select>
-                        <Button
-                            variant="outline" size="icon" className="h-9 w-9"
-                            onClick={() => setExpectedSortConfig({ key: expectedSortConfig?.key || 'date', direction: expectedSortConfig?.direction === 'asc' ? 'desc' : 'asc' })}
-                        >
-                            {expectedSortConfig?.direction === 'asc' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />}
-                        </Button>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button
+                                    variant="outline" size="icon" className="h-9 w-9"
+                                    onClick={() => setExpectedSortConfig({ key: expectedSortConfig?.key || 'date', direction: expectedSortConfig?.direction === 'asc' ? 'desc' : 'asc' })}
+                                >
+                                    {expectedSortConfig?.direction === 'asc' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />}
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent><p>Cambiar orden</p></TooltipContent>
+                        </Tooltip>
                     </div>
                       {filteredExpectedExpenses.length > 0 ? filteredExpectedExpenses.map(expense => {
                         const paidAmount = getPaidAmount(expense);
@@ -744,10 +710,38 @@ export function PropertyExpenses({
                                 <p className="text-xs">Vence: {format(new Date(expense.date), 'dd/MM/yyyy')}</p>
                               </div>
                                <div className="flex items-center gap-0">
-                                  <Button variant="ghost" size="icon" className="h-8 w-8 text-green-600" onClick={() => handleToggleIsPaid(expense)}><CheckCircle className="h-4 w-4" /></Button>
-                                  <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-600" onClick={() => handleAddActualFromExpected(expense)}><ReceiptText className="h-4 w-4" /></Button>
-                                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleEditExpected(expense)}><Pencil className="h-4 w-4" /></Button>
-                                  <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleDeleteExpected(expense.id)}><Trash2 className="h-4 w-4" /></Button>
+                                  <Tooltip>
+                                      <TooltipTrigger asChild>
+                                          <Button variant="ghost" size="icon" className="h-8 w-8 text-green-600" onClick={() => handleToggleIsPaid(expense)}><CheckCircle className="h-4 w-4" /></Button>
+                                      </TooltipTrigger>
+                                      <TooltipContent><p>Marcar como pagado</p></TooltipContent>
+                                  </Tooltip>
+                                  <Tooltip>
+                                      <TooltipTrigger asChild>
+                                          <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-600" onClick={() => handleAddActualFromExpected(expense)}><ReceiptText className="h-4 w-4" /></Button>
+                                      </TooltipTrigger>
+                                      <TooltipContent><p>Registrar pago</p></TooltipContent>
+                                  </Tooltip>
+                                  <Tooltip>
+                                      <TooltipTrigger asChild>
+                                          <Button variant="ghost" size="icon" className={cn("h-8 w-8", expense.notes ? "text-yellow-500" : "text-muted-foreground")} onClick={() => handleEditExpected(expense)}>
+                                              <FileText className="h-4 w-4" />
+                                          </Button>
+                                      </TooltipTrigger>
+                                      <TooltipContent><p>{expense.notes ? "Ver/Editar nota" : "Agregar nota"}</p></TooltipContent>
+                                  </Tooltip>
+                                  <Tooltip>
+                                      <TooltipTrigger asChild>
+                                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleEditExpected(expense)}><Pencil className="h-4 w-4" /></Button>
+                                      </TooltipTrigger>
+                                      <TooltipContent><p>Editar previsto</p></TooltipContent>
+                                  </Tooltip>
+                                  <Tooltip>
+                                      <TooltipTrigger asChild>
+                                          <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleDeleteExpected(expense.id)}><Trash2 className="h-4 w-4" /></Button>
+                                      </TooltipTrigger>
+                                      <TooltipContent><p>Eliminar previsto</p></TooltipContent>
+                                  </Tooltip>
                               </div>
                             </div>
                             <div className="mt-2 space-y-1 text-sm">
@@ -764,6 +758,7 @@ export function PropertyExpenses({
                                 <span className={cn("font-semibold", balance > 0 ? "text-red-500" : "text-green-500", isPaid && "text-muted-foreground")}>{formatCurrency(balance, expense.currency)}</span>
                               </div>
                             </div>
+                            {expense.notes && <p className="text-sm text-muted-foreground mt-2 pt-2 border-t">{expense.notes}</p>}
                           </Card>
                         )
                       }) : (
@@ -796,66 +791,7 @@ export function PropertyExpenses({
                     </div>
                 ) : (
                   <>
-                  <div className="hidden md:block">
-                    <Table>
-                        <TableHeader>
-                        <TableRow>
-                            <SortableHeader label="Fecha" sortKey="date" sortConfig={actualSortConfig} onSort={setActualSortConfig} />
-                            <SortableHeader label="Categoría" sortKey="categoryName" sortConfig={actualSortConfig} onSort={setActualSortConfig} />
-                            <SortableHeader label="Billetera" sortKey="walletName" sortConfig={actualSortConfig} onSort={setActualSortConfig} className="hidden md:table-cell" />
-                            <TableHead className="hidden md:table-cell">Notas</TableHead>
-                            <SortableHeader label="Monto" sortKey="amount" sortConfig={actualSortConfig} onSort={setActualSortConfig} className="text-right" />
-                            <TableHead className="w-[120px]"></TableHead>
-                        </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                        {filteredActualExpenses.length > 0 ? filteredActualExpenses.map(expense => {
-                            const alreadyExistsAsExpected = filteredExpectedExpenses.some(e => {
-                                const expenseDate = new Date(expense.date);
-                                const expectedDate = new Date(e.date);
-                                return e.subcategoryId === expense.subcategoryId &&
-                                    e.currency === expense.currency &&
-                                    expectedDate.getFullYear() === expenseDate.getFullYear() &&
-                                    expectedDate.getMonth() === expenseDate.getMonth();
-                            });
-                            return (
-                                <TableRow key={expense.id}>
-                                <TableCell>{new Date(expense.date).toLocaleDateString('es-ES')}</TableCell>
-                                <TableCell>
-                                        <div className='font-medium'>{expense.subcategoryName}</div>
-                                    <div className='text-xs text-muted-foreground'>{expense.categoryName}</div>
-                                </TableCell>
-                                <TableCell className="hidden md:table-cell">{expense.walletName}</TableCell>
-                                <TableCell className="text-muted-foreground max-w-[200px] truncate hidden md:table-cell">{expense.notes}</TableCell>
-                                <TableCell className="text-right font-medium">
-                                    {formatCurrency(expense.amount, expense.currency)}
-                                </TableCell>
-                                <TableCell className="text-right">
-                                    <div className="flex items-center justify-end">
-                                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleCreateExpectedFromActual(expense)} disabled={alreadyExistsAsExpected}>
-                                            <ClipboardPlus className="h-4 w-4" />
-                                        </Button>
-                                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleEditActual(expense)}>
-                                            <Pencil className="h-4 w-4" />
-                                        </Button>
-                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => handleDeleteActual(expense.id)}>
-                                            <Trash2 className="h-4 w-4" />
-                                        </Button>
-                                    </div>
-                                </TableCell>
-                                </TableRow>
-                            )
-                        }) : (
-                            <TableRow>
-                            <TableCell colSpan={6} className="text-center text-muted-foreground py-10">
-                                No hay gastos reales para mostrar para el período seleccionado.
-                            </TableCell>
-                            </TableRow>
-                        )}
-                        </TableBody>
-                    </Table>
-                  </div>
-                   <div className="md:hidden space-y-2">
+                   <div className="space-y-2">
                     <div className="flex items-center justify-end gap-2 my-4">
                         <Label htmlFor="sort-select-actual" className="text-sm font-medium">Ordenar por:</Label>
                         <Select
@@ -869,12 +805,17 @@ export function PropertyExpenses({
                                 <SelectItem value="amount">Monto</SelectItem>
                             </SelectContent>
                         </Select>
-                        <Button
-                            variant="outline" size="icon" className="h-9 w-9"
-                            onClick={() => setActualSortConfig({ key: actualSortConfig?.key || 'date', direction: actualSortConfig?.direction === 'asc' ? 'desc' : 'asc' })}
-                        >
-                            {actualSortConfig?.direction === 'asc' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />}
-                        </Button>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button
+                                    variant="outline" size="icon" className="h-9 w-9"
+                                    onClick={() => setActualSortConfig({ key: actualSortConfig?.key || 'date', direction: actualSortConfig?.direction === 'asc' ? 'desc' : 'asc' })}
+                                >
+                                    {actualSortConfig?.direction === 'asc' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />}
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent><p>Cambiar orden</p></TooltipContent>
+                        </Tooltip>
                     </div>
                         {filteredActualExpenses.length > 0 ? filteredActualExpenses.map(expense => {
                           const alreadyExistsAsExpected = filteredExpectedExpenses.some(e => {
@@ -897,15 +838,30 @@ export function PropertyExpenses({
                               </div>
                               {expense.notes && <p className="text-sm text-muted-foreground mt-2 pt-2 border-t">{expense.notes}</p>}
                                <div className="flex items-center justify-end gap-0 -mb-2 -mr-2 mt-1">
-                                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleCreateExpectedFromActual(expense)} disabled={alreadyExistsAsExpected}>
-                                        <ClipboardPlus className="h-4 w-4" />
-                                    </Button>
-                                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleEditActual(expense)}>
-                                        <Pencil className="h-4 w-4" />
-                                    </Button>
-                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => handleDeleteActual(expense.id)}>
-                                        <Trash2 className="h-4 w-4" />
-                                    </Button>
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleCreateExpectedFromActual(expense)} disabled={alreadyExistsAsExpected}>
+                                                <ClipboardPlus className="h-4 w-4" />
+                                            </Button>
+                                        </TooltipTrigger>
+                                        <TooltipContent><p>Crear gasto previsto</p></TooltipContent>
+                                    </Tooltip>
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleEditActual(expense)}>
+                                                <Pencil className="h-4 w-4" />
+                                            </Button>
+                                        </TooltipTrigger>
+                                        <TooltipContent><p>Editar gasto</p></TooltipContent>
+                                    </Tooltip>
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => handleDeleteActual(expense.id)}>
+                                                <Trash2 className="h-4 w-4" />
+                                            </Button>
+                                        </TooltipTrigger>
+                                        <TooltipContent><p>Eliminar gasto</p></TooltipContent>
+                                    </Tooltip>
                                 </div>
                           </Card>
                         )}) : (

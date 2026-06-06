@@ -14,6 +14,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Loader, AlertTriangle, Filter, FileText, X, TrendingUp, Wallet, Pencil, Trash2, ArrowUp, ArrowDown, PlusCircle, Calendar as CalendarIcon } from 'lucide-react';
 import { type Income, type Property, type IncomeCategory, type Currency, type Wallet as WalletType, Asset, type IncomeSubcategory } from '@/lib/types';
 import { cn } from '@/lib/utils';
@@ -522,70 +523,8 @@ export default function IncomesPage() {
                     <CardDescription>Se encontraron {sortedAndFilteredIncomes.length} ingresos con los filtros aplicados.</CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <div className="hidden md:block">
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <SortableHeader label="Fecha" sortKey="date" sortConfig={sortConfig} onSort={setSortConfig} />
-                                    <SortableHeader label="Cuenta" sortKey="propertyName" sortConfig={sortConfig} onSort={setSortConfig} />
-                                    <SortableHeader label="Billetera" sortKey="walletName" sortConfig={sortConfig} onSort={setSortConfig} />
-                                    <SortableHeader label="Categoría" sortKey="categoryName" sortConfig={sortConfig} onSort={setSortConfig} />
-                                    <TableHead>Notas</TableHead>
-                                    <SortableHeader label="Monto" sortKey="amount" sortConfig={sortConfig} onSort={setSortConfig} className="text-right" />
-                                    <TableHead className="w-[100px]"></TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {sortedAndFilteredIncomes.length > 0 ? sortedAndFilteredIncomes.map(income => {
-                                    return (
-                                    <TableRow key={income.id}>
-                                        <TableCell>{format(new Date(income.date), 'PP', { locale: es })}</TableCell>
-                                        <TableCell>{income.propertyName}</TableCell>
-                                        <TableCell>{income.walletName}</TableCell>
-                                        <TableCell>
-                                            <div className="font-medium">{income.subcategoryName}</div>
-                                            <div className="text-xs text-muted-foreground">{income.categoryName}</div>
-                                        </TableCell>
-                                        <TableCell>
-                                            {income.notes ? (
-                                            <Popover>
-                                                <PopoverTrigger asChild>
-                                                <Button variant="ghost" size="icon" className="h-8 w-8"><FileText className="h-4 w-4" /></Button>
-                                                </PopoverTrigger>
-                                                <PopoverContent className="w-80"><p className="text-sm">{income.notes}</p></PopoverContent>
-                                            </Popover>
-                                            ) : (
-                                            <span className="text-muted-foreground text-xs italic">N/A</span>
-                                            )}
-                                        </TableCell>
-                                        <TableCell className={cn("text-right font-semibold", {
-                                            'text-green-600 dark:text-green-400': income.currency === 'USD',
-                                            'text-blue-600 dark:text-blue-400': income.currency === 'ARS',
-                                        })}>
-                                            {formatCurrency(income.amount, income.currency)}
-                                        </TableCell>
-                                        <TableCell>
-                                            <div className="flex items-center justify-end">
-                                                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleEditClick(income)}>
-                                                    <Pencil className="h-4 w-4" />
-                                                </Button>
-                                                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => handleDeleteClick(income)}>
-                                                    <Trash2 className="h-4 w-4" />
-                                                </Button>
-                                            </div>
-                                        </TableCell>
-                                    </TableRow>
-                                    );
-                                }) : (
-                                    <TableRow>
-                                        <TableCell colSpan={7} className="text-center h-24">No se encontraron ingresos para los filtros seleccionados.</TableCell>
-                                    </TableRow>
-                                )}
-                            </TableBody>
-                        </Table>
-                    </div>
-
-                    <div className="md:hidden space-y-4">
+                    <TooltipProvider>
+                    <div className="space-y-4">
                         <div className="flex items-center justify-end gap-2 mb-4">
                             <Label htmlFor="sort-select" className="text-sm font-medium">Ordenar por:</Label>
                             <Select
@@ -604,16 +543,21 @@ export default function IncomesPage() {
                                     <SelectItem value="propertyName">Cuenta</SelectItem>
                                 </SelectContent>
                             </Select>
-                            <Button
-                                variant="outline"
-                                size="icon"
-                                className="h-9 w-9"
-                                onClick={() => {
-                                    setSortConfig({ key: sortConfig?.key || 'date', direction: sortConfig?.direction === 'asc' ? 'desc' : 'asc' });
-                                }}
-                            >
-                                {sortConfig?.direction === 'asc' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />}
-                            </Button>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Button
+                                        variant="outline"
+                                        size="icon"
+                                        className="h-9 w-9"
+                                        onClick={() => {
+                                            setSortConfig({ key: sortConfig?.key || 'date', direction: sortConfig?.direction === 'asc' ? 'desc' : 'asc' });
+                                        }}
+                                    >
+                                        {sortConfig?.direction === 'asc' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />}
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent><p>Cambiar orden</p></TooltipContent>
+                            </Tooltip>
                         </div>
                         {sortedAndFilteredIncomes.length > 0 ? sortedAndFilteredIncomes.map(income => {
                             const currencyClass = cn({
@@ -634,12 +578,22 @@ export default function IncomesPage() {
                                                 {formatCurrency(income.amount, income.currency)}
                                             </p>
                                             <div className="flex items-center">
-                                                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleEditClick(income)}>
-                                                    <Pencil className="h-4 w-4" />
-                                                </Button>
-                                                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => handleDeleteClick(income)}>
-                                                    <Trash2 className="h-4 w-4" />
-                                                </Button>
+                                                <Tooltip>
+                                                    <TooltipTrigger asChild>
+                                                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleEditClick(income)}>
+                                                            <Pencil className="h-4 w-4" />
+                                                        </Button>
+                                                    </TooltipTrigger>
+                                                    <TooltipContent><p>Editar ingreso</p></TooltipContent>
+                                                </Tooltip>
+                                                <Tooltip>
+                                                    <TooltipTrigger asChild>
+                                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => handleDeleteClick(income)}>
+                                                            <Trash2 className="h-4 w-4" />
+                                                        </Button>
+                                                    </TooltipTrigger>
+                                                    <TooltipContent><p>Eliminar ingreso</p></TooltipContent>
+                                                </Tooltip>
                                             </div>
                                         </div>
                                     </div>
@@ -652,6 +606,7 @@ export default function IncomesPage() {
                             </div>
                         )}
                     </div>
+                    </TooltipProvider>
                 </CardContent>
             </Card>
 
