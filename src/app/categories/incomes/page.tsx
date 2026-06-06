@@ -6,7 +6,8 @@ import { db } from '@/lib/firebase';
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { PlusCircle, Pencil, Trash2, Loader, AlertTriangle, Link2 } from "lucide-react";
+import { PlusCircle, Pencil, Trash2, Loader, AlertTriangle, Link2, ChevronDown } from "lucide-react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useToast } from "@/hooks/use-toast";
 import { type IncomeCategory, type Property, type IncomeSubcategory } from '@/lib/types';
 import { ConfirmDeleteDialog } from '@/components/shared/ConfirmDeleteDialog';
@@ -195,10 +196,18 @@ export default function IncomeCategoriesPage() {
           {categories.length > 0 ? categories.map((category) => {
             const isCategoryAvailable = isAvailableForActiveAccount(category);
             return (
-            <Card key={category.id}>
+            <Collapsible key={category.id}>
+            <Card>
               <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle className="flex items-center gap-2">
-                    {category.name}
+                <div className="flex items-center gap-2">
+                  <CollapsibleTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 [&[data-state=open]>svg]:rotate-180">
+                      <ChevronDown className="h-4 w-4 transition-transform duration-200" />
+                      <span className="sr-only">Toggle Categoría</span>
+                    </Button>
+                  </CollapsibleTrigger>
+                  <CardTitle className="flex items-center gap-2">
+                      {category.name}
                     {isCategoryAvailable && (
                         <Tooltip>
                             <TooltipTrigger>
@@ -210,6 +219,7 @@ export default function IncomeCategoriesPage() {
                         </Tooltip>
                     )}
                 </CardTitle>
+                </div>
                 <div className="flex items-center gap-2">
                   <Button variant="ghost" size="icon" onClick={() => handleAddSubcategory(category)}>
                       <PlusCircle className="h-4 w-4" />
@@ -225,6 +235,7 @@ export default function IncomeCategoriesPage() {
                   </Button>
                 </div>
               </CardHeader>
+              <CollapsibleContent>
               <CardContent>
                 <ul className="space-y-2 text-sm text-muted-foreground">
                   {category.subcategories.map((subcategory) => {
@@ -262,7 +273,9 @@ export default function IncomeCategoriesPage() {
                    )}
                 </ul>
               </CardContent>
+              </CollapsibleContent>
             </Card>
+            </Collapsible>
           )}) : (
             <Card>
                 <CardContent className='p-10 text-center text-muted-foreground'>

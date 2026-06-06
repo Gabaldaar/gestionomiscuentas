@@ -20,11 +20,13 @@ import { RecentActivity } from './RecentActivity';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { ConfirmDeleteDialog } from '../shared/ConfirmDeleteDialog';
+import { useAccount } from '@/components/context/AccountProvider';
 
 
 export function PropertyDetail({ id }: { id: string }) {
   const { toast } = useToast();
   const router = useRouter();
+  const { setActiveAccountId } = useAccount();
   const [property, setProperty] = React.useState<Property | null>(null);
   const [loading, setLoading] = React.useState(true);
   const [isSavingNotes, setIsSavingNotes] = React.useState(false);
@@ -139,6 +141,12 @@ export function PropertyDetail({ id }: { id: string }) {
   React.useEffect(() => {
     fetchPageData();
   }, [fetchPageData]);
+
+  React.useEffect(() => {
+    if (id) {
+      setActiveAccountId(id);
+    }
+  }, [id, setActiveAccountId]);
   
   const selectedMonth = (displayDate.getMonth() + 1).toString();
   const selectedYear = displayDate.getFullYear().toString();

@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { Plus, TrendingDown, TrendingUp, ArrowLeftRight, Loader } from 'lucide-react';
+import { Plus, TrendingDown, TrendingUp, ArrowLeftRight, Loader, ClipboardList } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -199,6 +199,17 @@ export function QuickActions() {
             <DropdownMenuItem onClick={() => router.push('/transfers/new')} className="cursor-pointer py-3 focus:bg-blue-500/10">
               <ArrowLeftRight className="mr-3 h-5 w-5 text-blue-500" />
               <span className="font-semibold">Nueva Transferencia</span>
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => {
+                if (activeAccountId && activeAccountId !== 'all') {
+                  router.push(`/properties/${activeAccountId}`);
+                } else {
+                  toast({ title: 'Selecciona una cuenta', description: 'Por favor, selecciona una cuenta para añadir un presupuesto.', duration: 3000 });
+                  router.push('/properties');
+                }
+              }} className="cursor-pointer py-3 focus:bg-orange-500/10">
+              <ClipboardList className="mr-3 h-5 w-5 text-orange-500" />
+              <span className="font-semibold">Nuevo Presupuesto</span>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
