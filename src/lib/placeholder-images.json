@@ -1,0 +1,106 @@
+{
+  "placeholderImages": [
+    {
+      "id": "prop1",
+      "description": "Un edificio de apartamentos moderno en una ciudad.",
+      "imageUrl": "https://picsum.photos/seed/prop1/600/400",
+      "imageHint": "edificio apartamentos"
+    },
+    {
+      "id": "prop2",
+      "description": "Una casa suburbana con un césped verde.",
+      "imageUrl": "https://picsum.photos/seed/prop2/600/400",
+      "imageHint": "casa suburbana"
+    },
+    {
+      "id": "prop3",
+      "description": "Un moderno edificio de condominios cerca de la playa.",
+      "imageUrl": "https://picsum.photos/seed/prop3/600/400",
+      "imageHint": "condominio playa"
+    },
+    {
+      "id": "office1",
+      "description": "Interior de una oficina moderna y luminosa.",
+      "imageUrl": "https://picsum.photos/seed/office1/600/400",
+      "imageHint": "interior oficina"
+    },
+    {
+      "id": "land1",
+      "description": "Un terreno vacío con árboles y cielo azul.",
+      "imageUrl": "https://picsum.photos/seed/land1/600/400",
+      "imageHint": "terreno baldío"
+    },
+    {
+      "id": "shop1",
+      "description": "Frente de una pequeña tienda o local comercial.",
+      "imageUrl": "https://picsum.photos/seed/shop1/600/400",
+      "imageHint": "frente tienda"
+    },
+    {
+      "id": "garage1",
+      "description": "Una cochera o garaje cerrado.",
+      "imageUrl": "https://picsum.photos/seed/garage1/600/400",
+      "imageHint": "garaje cerrado"
+    },
+    {
+      "id": "storage1",
+      "description": "Un depósito o unidad de almacenamiento.",
+      "imageUrl": "https://picsum.photos/seed/storage1/600/400",
+      "imageHint": "unidad almacenamiento"
+    },
+    {
+      "id": "ambos1",
+      "description": "Foto de ambos.",
+      "imageUrl": "/img/ambos.jpg",
+      "imageHint": "ambos"
+    },
+    {
+      "id": "belen1",
+      "description": "Foto de belen.",
+      "imageUrl": "/img/belen.jpg",
+      "imageHint": "belen"
+    },
+    {
+      "id": "benteveo1",
+      "description": "Foto de benteveo.",
+      "imageUrl": "/img/benteveo.jpg",
+      "imageHint": "benteveo"
+    },
+    {
+      "id": "ceci1",
+      "description": "Foto de ceci.",
+      "imageUrl": "/img/ceci.jpg",
+      "imageHint": "ceci"
+    },
+    {
+      "id": "depto1",
+      "description": "Foto de depto1.",
+      "imageUrl": "/img/depto1.jpg",
+      "imageHint": "depto1"
+    },
+    {
+      "id": "depto2",
+      "description": "Foto de depto2.",
+      "imageUrl": "/img/depto2.jpg",
+      "imageHint": "depto2"
+    },
+    {
+      "id": "deptosf1",
+      "description": "Foto de deptosf.",
+      "imageUrl": "/img/deptosf.jpg",
+      "imageHint": "deptosf"
+    },
+    {
+      "id": "gaby1",
+      "description": "Foto de gaby.",
+      "imageUrl": "/img/gaby.jpg",
+      "imageHint": "gaby"
+    },
+    {
+      "id": "sanfer1",
+      "description": "Foto de sanfer.",
+      "imageUrl": "/img/sanfer.jpg",
+      "imageHint": "sanfer"
+    }
+  ]
+}
