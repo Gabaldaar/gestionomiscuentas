@@ -175,6 +175,7 @@ function AppShellContent({ children }: { children: React.ReactNode }) {
   const { isMobile, setOpenMobile } = useSidebar();
   const pathname = usePathname();
   const { user } = useAuth();
+  const { activeAccountId } = useAccount();
 
   const [walletBadgeCount, setWalletBadgeCount] = React.useState(0);
   const [duesBadgeCount, setDuesBadgeCount] = React.useState(0);
@@ -191,7 +192,10 @@ function AppShellContent({ children }: { children: React.ReactNode }) {
             ]);
 
             const wallets = walletsSnap.docs.map(doc => doc.data() as WalletType);
-            const negativeBalanceCount = wallets.filter(w => w.balance < 0).length;
+            const filteredWallets = activeAccountId && activeAccountId !== 'all'
+                ? wallets.filter(w => w.propertyIds?.includes(activeAccountId))
+                : wallets;
+            const negativeBalanceCount = filteredWallets.filter(w => w.balance < 0).length;
             setWalletBadgeCount(negativeBalanceCount);
 
             const allExpectedExpenses = expectedExpensesSnap.docs.map(doc => {
@@ -224,9 +228,17 @@ function AppShellContent({ children }: { children: React.ReactNode }) {
                 } as ActualExpense & { date: Date, propertyId: string };
             });
 
-            const unpaidDues = allExpectedExpenses.filter(expense => {
+            const filteredExpected = activeAccountId && activeAccountId !== 'all'
+                ? allExpectedExpenses.filter(e => e.propertyId === activeAccountId)
+                : allExpectedExpenses;
+
+            const filteredActual = activeAccountId && activeAccountId !== 'all'
+                ? allActualExpenses.filter(e => e.propertyId === activeAccountId)
+                : allActualExpenses;
+
+            const unpaidDues = filteredExpected.filter(expense => {
                 if (expense.isPaid) return false;
-                const paidAmount = allActualExpenses
+                const paidAmount = filteredActual
                     .filter(actual => {
                         const actualDate = actual.date;
                         const expectedDate = expense.date;
@@ -252,7 +264,7 @@ function AppShellContent({ children }: { children: React.ReactNode }) {
     }
 
     fetchNotificationData();
-  }, [user, pathname]);
+  }, [user, pathname, activeAccountId]);
 
   const handleLinkClick = () => {
     if (isMobile) {
