@@ -36,6 +36,7 @@ import {
   Coins,
   LifeBuoy,
   CalendarClock,
+  Settings,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '../auth/AuthProvider';
@@ -48,27 +49,21 @@ import { type Wallet as WalletType, type ExpectedExpense, type ActualExpense } f
 import { startOfDay } from 'date-fns';
 import { QuickActions } from '../shared/QuickActions';
 import { BottomNav } from './BottomNav';
-
-const navItems = [
-  { href: '/', label: 'Inicio', icon: LayoutDashboard },
-  { href: '/properties', label: 'Cuentas', icon: Building2 },
-  { href: '/due-dates', label: 'Vencimientos', icon: CalendarClock },
-  { href: '/wallets', label: 'Billeteras', icon: Wallet },
-  { href: '/assets', label: 'Activos', icon: Coins },
-  { href: '/liabilities', label: 'Pasivos', icon: HandCoins },
-  { href: '/expenses', label: 'Historial de Gastos', icon: TrendingDown },
-  { href: '/incomes', label: 'Historial de Ingresos', icon: TrendingUp },
-  { href: '/transfers', label: 'Transferencias', icon: ArrowLeftRight },
-  { href: '/reports', label: 'Informes', icon: AreaChart },
-  { href: '/categories', label: 'Categorías', icon: Settings2 },
-];
+import { useAccount } from '@/components/context/AccountProvider';
 
 function MainNav({ onLinkClick, walletBadgeCount, duesBadgeCount }: { onLinkClick: () => void, walletBadgeCount: number, duesBadgeCount: number }) {
   const pathname = usePathname();
+  const { activeAccountId } = useAccount();
 
   const checkActive = (href: string) => {
     if (href === '/') {
       return pathname === '/';
+    }
+    if (href === '/properties') {
+      return pathname === '/properties' || pathname === '/properties/new';
+    }
+    if (href.startsWith('/properties/')) {
+      return pathname.startsWith('/properties/') && pathname !== '/properties/new';
     }
     if (href === '/categories') {
       return pathname.startsWith('/categories');
@@ -81,6 +76,25 @@ function MainNav({ onLinkClick, walletBadgeCount, duesBadgeCount }: { onLinkClic
     }
     return false;
   };
+
+  const navItems = [
+    { href: '/', label: 'Inicio', icon: LayoutDashboard },
+    { 
+      href: activeAccountId && activeAccountId !== 'all' ? `/properties/${activeAccountId}` : '/properties', 
+      label: 'Presupuestos', 
+      icon: Building2 
+    },
+    { href: '/due-dates', label: 'Vencimientos', icon: CalendarClock },
+    { href: '/wallets', label: 'Billeteras', icon: Wallet },
+    { href: '/assets', label: 'Activos', icon: Coins },
+    { href: '/liabilities', label: 'Pasivos', icon: HandCoins },
+    { href: '/expenses', label: 'Historial de Gastos', icon: TrendingDown },
+    { href: '/incomes', label: 'Historial de Ingresos', icon: TrendingUp },
+    { href: '/transfers', label: 'Transferencias', icon: ArrowLeftRight },
+    { href: '/reports', label: 'Informes', icon: AreaChart },
+    { href: '/categories', label: 'Categorías', icon: Settings2 },
+    { href: '/properties', label: 'Config. Cuentas', icon: Settings },
+  ];
 
   const navItemsWithBadges = navItems.map(item => {
     let badgeCount = 0;
@@ -96,7 +110,7 @@ function MainNav({ onLinkClick, walletBadgeCount, duesBadgeCount }: { onLinkClic
     return (
      <SidebarMenu>
         {navItemsWithBadges.map((item) => (
-          <SidebarMenuItem key={item.href}>
+          <SidebarMenuItem key={item.label + item.href}>
             <SidebarMenuButton
               asChild
               isActive={checkActive(item.href)}

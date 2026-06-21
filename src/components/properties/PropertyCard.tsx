@@ -109,7 +109,7 @@ type PropertyCardProps = {
 
 export function PropertyCard({ property, incomes, expenses, expectedExpenses }: PropertyCardProps) {
   return (
-    <Link href={`/properties/${property.id}`} className="block transition-all hover:scale-[1.02]">
+    <Link href={`/properties/${property.id}/edit`} className="block transition-all hover:scale-[1.02]">
         <Card className="overflow-hidden h-full flex flex-col p-0">
             <CardHeader className="p-4 pb-2">
                 <CardTitle className="font-headline text-lg">{property.name}</CardTitle>
