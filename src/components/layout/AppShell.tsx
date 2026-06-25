@@ -50,6 +50,7 @@ import { startOfDay } from 'date-fns';
 import { QuickActions } from '../shared/QuickActions';
 import { BottomNav } from './BottomNav';
 import { useAccount } from '@/components/context/AccountProvider';
+import { PwaInstallPrompt } from '../shared/PwaInstallPrompt';
 
 function MainNav({ onLinkClick, walletBadgeCount, duesBadgeCount }: { onLinkClick: () => void, walletBadgeCount: number, duesBadgeCount: number }) {
   const pathname = usePathname();
@@ -332,6 +333,7 @@ function AppShellContent({ children }: { children: React.ReactNode }) {
         <main className="pb-20 md:pb-0">{children}</main>
         <QuickActions />
         <BottomNav />
+        <PwaInstallPrompt />
       </SidebarInset>
     </>
   );
