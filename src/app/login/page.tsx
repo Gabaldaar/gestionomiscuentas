@@ -1,9 +1,9 @@
-
 'use client';
 
 import * as React from 'react';
+import { Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { GoogleAuthProvider, signInWithPopup, User } from 'firebase/auth';
+import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -20,8 +20,7 @@ const GoogleIcon = () => (
   </svg>
 );
 
-
-export default function LoginPage() {
+function LoginForm() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -30,7 +29,7 @@ export default function LoginPage() {
 
   React.useEffect(() => {
     if (!authLoading && user) {
-      const redirectTo = searchParams.get('redirect') || '/';
+      const redirectTo = searchParams?.get('redirect') || '/';
       router.replace(redirectTo);
     }
   }, [user, authLoading, router, searchParams]);
@@ -41,13 +40,14 @@ export default function LoginPage() {
     const provider = new GoogleAuthProvider();
     try {
       await signInWithPopup(auth, provider);
-      // The onAuthStateChanged listener in AuthProvider will handle the user state update and redirection.
     } catch (err: any) {
       console.error("Error signing in with Google:", err);
       if (err.code === 'auth/popup-blocked' || err.code === 'auth/cancelled-popup-request') {
-          setError('El proceso de inicio de sesión fue bloqueado o cancelado.');
+        setError('El proceso de inicio de sesión fue bloqueado o cancelado.');
+      } else if (err.code === 'auth/unauthorized-domain') {
+        setError('Este dominio no está autorizado en Firebase Authentication. Agrégalo en la consola de Firebase.');
       } else {
-          setError('No se pudo iniciar sesión. Por favor, inténtalo de nuevo.');
+        setError('No se pudo iniciar sesión. Por favor, inténtalo de nuevo.');
       }
       setLoading(false);
     }
@@ -65,14 +65,14 @@ export default function LoginPage() {
     <div className="flex min-h-screen items-center justify-center bg-secondary p-4">
       <Card className="w-full max-w-sm">
         <CardHeader className="text-center">
-            <Image
-                src="/img/logo.png"
-                alt="GestionoMisCuentas Logo"
-                width={200}
-                height={50}
-                className="mx-auto mb-4"
-                priority
-            />
+          <Image
+            src="/img/logo.png"
+            alt="GestionoMisCuentas Logo"
+            width={200}
+            height={50}
+            className="mx-auto mb-4"
+            priority
+          />
           <CardTitle>Bienvenido</CardTitle>
           <CardDescription>Inicia sesión para administrar tus cuentas.</CardDescription>
         </CardHeader>
@@ -91,5 +91,17 @@ export default function LoginPage() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex h-screen w-full items-center justify-center bg-background">
+        <Loader className="h-10 w-10 animate-spin text-primary" />
+      </div>
+    }>
+      <LoginForm />
+    </Suspense>
   );
 }
