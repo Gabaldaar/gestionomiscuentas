@@ -1,5 +1,6 @@
 {
   "hosting": {
+    "site": "gestionomiscuentas",
     "source": ".",
     "ignore": [
       "firebase.json",
