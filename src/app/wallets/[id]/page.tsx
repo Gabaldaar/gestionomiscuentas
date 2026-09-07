@@ -3,10 +3,11 @@
 
 import * as React from 'react';
 import { useParams, useRouter, notFound } from 'next/navigation';
-import { collection, getDocs, doc, getDoc, query, Timestamp } from 'firebase/firestore';
+import { collection, getDocs, doc, getDoc, updateDoc, query, Timestamp, collectionGroup } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { useToast } from "@/hooks/use-toast";
 import Link from 'next/link';
 
 import { PageHeader } from '@/components/shared/PageHeader';
@@ -16,7 +17,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
-import { Loader, AlertTriangle, ArrowDown, ArrowUp, ArrowRightLeft, Pencil, Filter, Calendar as CalendarIcon, DollarSign, CircleDollarSign, FileText } from 'lucide-react';
+import { Loader, AlertTriangle, ArrowDown, ArrowUp, ArrowRightLeft, Pencil, Filter, Calendar as CalendarIcon, DollarSign, CircleDollarSign, FileText, RefreshCw } from 'lucide-react';
 import { type Wallet, type Transaction, type ActualExpense, type Income, type Transfer, type Property, type ExpenseCategory, type IncomeCategory } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { WalletIcon, type WalletIconName } from '@/lib/wallet-icons';
@@ -33,15 +34,21 @@ async function getAllTransactionsForWallet(walletId: string): Promise<{transacti
     const transactions: Transaction[] = [];
     const propertiesMap = new Map<string, string>();
 
-    const [propsSnap, incomesCatSnap, expensesCatSnap] = await Promise.all([
+    const [propsSnap, incomesCatSnap, expensesCatSnap, incomesSnap, expensesSnap, transfersSnap, walletsSnap] = await Promise.all([
       getDocs(query(collection(db, 'properties'))),
       getDocs(query(collection(db, 'incomeCategories'))),
-      getDocs(query(collection(db, 'expenseCategories')))
+      getDocs(query(collection(db, 'expenseCategories'))),
+      getDocs(query(collectionGroup(db, 'incomes'))),
+      getDocs(query(collectionGroup(db, 'actualExpenses'))),
+      getDocs(query(collection(db, 'transfers'))),
+      getDocs(query(collection(db, 'wallets')))
     ]);
     
     propsSnap.docs.forEach(doc => {
       propertiesMap.set(doc.id, (doc.data() as Property).name);
     });
+
+    const walletsMap = new Map(walletsSnap.docs.map(d => [d.id, d.data().name]));
 
     const incomeCategories: IncomeCategory[] = await Promise.all(incomesCatSnap.docs.map(async (categoryDoc) => {
         const subcategoriesQuery = query(collection(db, 'incomeCategories', categoryDoc.id, 'subcategories'));
@@ -64,63 +71,70 @@ async function getAllTransactionsForWallet(walletId: string): Promise<{transacti
         return { categoryName: 'N/A', subcategoryName: 'N/A' };
     };
 
-    // 2. Fetch all incomes and expenses from all properties
-    for (const [propId, propName] of propertiesMap.entries()) {
-        const incomesCol = collection(db, 'properties', propId, 'incomes');
-        const incomesSnap = await getDocs(query(incomesCol));
-        incomesSnap.forEach(doc => {
-            const income = { id: doc.id, ...doc.data() } as Income;
-            if (income.walletId === walletId) {
-                const { categoryName, subcategoryName } = getCategoryInfo(income.subcategoryId, 'income');
-                transactions.push({
-                    id: `income-${doc.id}`,
-                    date: (income.date as any).toDate(),
-                    type: 'income',
-                    amount: income.amount,
-                    currency: income.currency,
-                    description: subcategoryName,
-                    relatedEntity: propName,
-                    notes: income.notes,
-                    category: categoryName
-                });
-            }
-        });
+    incomesSnap.docs.forEach(doc => {
+        const data = doc.data() as Income;
+        if (data.walletId === walletId) {
+            const propId = doc.ref.parent.parent ? doc.ref.parent.parent.id : (data.propertyId || '');
+            const propName = propertiesMap.get(propId) || 'Cuenta Desconocida';
+            const { categoryName, subcategoryName } = getCategoryInfo(data.subcategoryId, 'income');
+            let dateObj = new Date();
+            try {
+                if ((data.date as any)?.toDate) dateObj = (data.date as any).toDate();
+                else if (data.date) dateObj = new Date(data.date);
+            } catch {}
 
-        const expensesCol = collection(db, 'properties', propId, 'actualExpenses');
-        const expensesSnap = await getDocs(query(expensesCol));
-        expensesSnap.forEach(doc => {
-            const expense = { id: doc.id, ...doc.data() } as ActualExpense;
-            if (expense.walletId === walletId) {
-                 const { categoryName, subcategoryName } = getCategoryInfo(expense.subcategoryId, 'expense');
-                transactions.push({
-                    id: `expense-${doc.id}`,
-                    date: (expense.date as any).toDate(),
-                    type: 'expense',
-                    amount: -expense.amount,
-                    currency: expense.currency,
-                    description: subcategoryName,
-                    relatedEntity: propName,
-                    notes: expense.notes,
-                    category: categoryName
-                });
-            }
-        });
-    }
+            transactions.push({
+                id: `income-${doc.id}`,
+                date: dateObj,
+                type: 'income',
+                amount: data.amount,
+                currency: data.currency,
+                description: subcategoryName,
+                relatedEntity: propName,
+                notes: data.notes,
+                category: categoryName
+            });
+        }
+    });
 
-    // 3. Fetch all transfers
-    const transfersCol = collection(db, 'transfers');
-    const transfersSnap = await getDocs(query(transfersCol));
-    const walletsSnap = await getDocs(collection(db, 'wallets'));
-    const walletsMap = new Map(walletsSnap.docs.map(d => [d.id, d.data().name]));
+    expensesSnap.docs.forEach(doc => {
+        const data = doc.data() as ActualExpense;
+        if (data.walletId === walletId) {
+            const propId = doc.ref.parent.parent ? doc.ref.parent.parent.id : (data.propertyId || '');
+            const propName = propertiesMap.get(propId) || 'Cuenta Desconocida';
+            const { categoryName, subcategoryName } = getCategoryInfo(data.subcategoryId, 'expense');
+            let dateObj = new Date();
+            try {
+                if ((data.date as any)?.toDate) dateObj = (data.date as any).toDate();
+                else if (data.date) dateObj = new Date(data.date);
+            } catch {}
 
-    transfersSnap.forEach(doc => {
+            transactions.push({
+                id: `expense-${doc.id}`,
+                date: dateObj,
+                type: 'expense',
+                amount: -data.amount,
+                currency: data.currency,
+                description: subcategoryName,
+                relatedEntity: propName,
+                notes: data.notes,
+                category: categoryName
+            });
+        }
+    });
+
+    transfersSnap.docs.forEach(doc => {
         const transfer = { id: doc.id, ...doc.data() } as Transfer;
-        const date = (transfer.date as any).toDate();
+        let dateObj = new Date();
+        try {
+            if ((transfer.date as any)?.toDate) dateObj = (transfer.date as any).toDate();
+            else if (transfer.date) dateObj = new Date(transfer.date);
+        } catch {}
 
         if (transfer.fromWalletId === walletId) {
             transactions.push({
                 id: `transfer-out-${doc.id}`,
-                date,
+                date: dateObj,
                 type: 'transfer_out',
                 amount: -transfer.amountSent,
                 currency: transfer.fromCurrency,
@@ -133,7 +147,7 @@ async function getAllTransactionsForWallet(walletId: string): Promise<{transacti
         if (transfer.toWalletId === walletId) {
              transactions.push({
                 id: `transfer-in-${doc.id}`,
-                date,
+                date: dateObj,
                 type: 'transfer_in',
                 amount: transfer.amountReceived,
                 currency: transfer.toCurrency,
@@ -154,9 +168,11 @@ export default function WalletDetailPage() {
     const router = useRouter();
     const id = params.id as string;
     
+    const { toast } = useToast();
     const [wallet, setWallet] = React.useState<Wallet | null>(null);
     const [transactions, setTransactions] = React.useState<TransactionWithBalance[]>([]);
     const [loading, setLoading] = React.useState(true);
+    const [isSyncing, setIsSyncing] = React.useState(false);
     const [error, setError] = React.useState<string | null>(null);
 
     // Filters
@@ -164,45 +180,83 @@ export default function WalletDetailPage() {
     const [descriptionFilter, setDescriptionFilter] = React.useState('');
     const [typeFilter, setTypeFilter] = React.useState<'all' | 'income' | 'expense' | 'transfer'>('all');
 
+    const fetchWalletData = React.useCallback(async () => {
+        if (!id) return;
+        setLoading(true);
+        setError(null);
+        try {
+            const walletRef = doc(db, 'wallets', id);
+            const walletSnap = await getDoc(walletRef);
+
+            if (walletSnap.exists()) {
+                const walletData = { id: walletSnap.id, ...walletSnap.data() } as Wallet;
+                setWallet(walletData);
+                const { transactions: rawTransactions } = await getAllTransactionsForWallet(id);
+                
+                // Calculate historical balances
+                const totalTransactionEffect = rawTransactions.reduce((sum, t) => sum + t.amount, 0);
+                let runningBalance = walletData.balance - totalTransactionEffect;
+
+                const transactionsWithBalance = rawTransactions.map(t => {
+                    runningBalance += t.amount;
+                    return { ...t, runningBalance };
+                });
+
+                setTransactions(transactionsWithBalance.reverse()); // Reverse to show newest first
+            } else {
+                setError('Billetera no encontrada.');
+            }
+        } catch (err) {
+            console.error("Error fetching wallet data:", err);
+            setError('No se pudo cargar la información de la billetera.');
+        } finally {
+            setLoading(false);
+        }
+    }, [id]);
 
     React.useEffect(() => {
-        if (!id) return;
-
-        const fetchWalletData = async () => {
-            setLoading(true);
-            setError(null);
-            try {
-                const walletRef = doc(db, 'wallets', id);
-                const walletSnap = await getDoc(walletRef);
-
-                if (walletSnap.exists()) {
-                    const walletData = { id: walletSnap.id, ...walletSnap.data() } as Wallet;
-                    setWallet(walletData);
-                    const { transactions: rawTransactions } = await getAllTransactionsForWallet(id);
-                    
-                    // Calculate historical balances
-                    const totalTransactionEffect = rawTransactions.reduce((sum, t) => sum + t.amount, 0);
-                    let runningBalance = walletData.balance - totalTransactionEffect;
-
-                    const transactionsWithBalance = rawTransactions.map(t => {
-                        runningBalance += t.amount;
-                        return { ...t, runningBalance };
-                    });
-
-                    setTransactions(transactionsWithBalance.reverse()); // Reverse to show newest first
-                } else {
-                    setError('Billetera no encontrada.');
-                }
-            } catch (err) {
-                console.error("Error fetching wallet data:", err);
-                setError('No se pudo cargar la información de la billetera.');
-            } finally {
-                setLoading(false);
-            }
-        };
-
         fetchWalletData();
-    }, [id]);
+    }, [fetchWalletData]);
+
+    const stats = React.useMemo(() => {
+        let totalIncomes = 0;
+        let totalExpenses = 0;
+        let totalTransfersIn = 0;
+        let totalTransfersOut = 0;
+
+        transactions.forEach(t => {
+            if (t.type === 'income') totalIncomes += t.amount;
+            else if (t.type === 'expense') totalExpenses += Math.abs(t.amount);
+            else if (t.type === 'transfer_in') totalTransfersIn += t.amount;
+            else if (t.type === 'transfer_out') totalTransfersOut += Math.abs(t.amount);
+        });
+
+        const netSum = totalIncomes - totalExpenses + totalTransfersIn - totalTransfersOut;
+        return { totalIncomes, totalExpenses, totalTransfersIn, totalTransfersOut, netSum };
+    }, [transactions]);
+
+    const handleSyncBalance = async () => {
+        if (!wallet) return;
+        setIsSyncing(true);
+        try {
+            const walletRef = doc(db, 'wallets', wallet.id);
+            await updateDoc(walletRef, { balance: stats.netSum });
+            setWallet(prev => prev ? { ...prev, balance: stats.netSum } : null);
+            toast({
+                title: "Saldo sincronizado",
+                description: `El saldo de la billetera se actualizó a ${formatCurrency(stats.netSum, wallet.currency)} según la suma exacta de todos los movimientos registrados.`,
+            });
+            fetchWalletData();
+        } catch (e) {
+            toast({
+                title: "Error",
+                description: "No se pudo actualizar el saldo.",
+                variant: "destructive"
+            });
+        } finally {
+            setIsSyncing(false);
+        }
+    };
     
     const filteredTransactions = React.useMemo(() => {
         return transactions.filter(t => {
@@ -281,32 +335,81 @@ export default function WalletDetailPage() {
     return (
         <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
             <PageHeader title={wallet.name}>
-                <Button asChild variant="outline">
-                    <Link href={`/wallets/${wallet.id}/edit`}>
-                        <Pencil className="mr-2 h-4 w-4" />
-                        Editar Billetera
-                    </Link>
-                </Button>
+                <div className="flex items-center gap-2">
+                    <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={handleSyncBalance} 
+                        disabled={isSyncing}
+                        className="text-xs"
+                    >
+                        {isSyncing ? <Loader className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
+                        Alinear saldo con movimientos
+                    </Button>
+                    <Button asChild variant="outline" size="sm">
+                        <Link href={`/wallets/${wallet.id}/edit`}>
+                            <Pencil className="mr-2 h-4 w-4" />
+                            Editar Billetera
+                        </Link>
+                    </Button>
+                </div>
             </PageHeader>
             
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <Card className="md:col-span-1">
-                    <CardHeader className="flex flex-row items-center gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <Card>
+                    <CardHeader className="flex flex-row items-center gap-4 py-4">
                         <div className={cn("p-3 rounded-lg", {
                             'bg-green-100 dark:bg-green-900': wallet.currency === 'USD',
                             'bg-blue-100 dark:bg-blue-900': wallet.currency === 'ARS',
                         })}>
                            {renderIcon(wallet)}
                         </div>
-                        <div>
-                            <CardDescription>Saldo Actual</CardDescription>
-                            <CardTitle className={cn("text-3xl", {
+                        <div className="flex-1">
+                            <CardDescription>Saldo Actual en Billetera</CardDescription>
+                            <CardTitle className={cn("text-2xl font-bold", {
                                 'text-green-600 dark:text-green-400': wallet.currency === 'USD',
                                 'text-blue-600 dark:text-blue-400': wallet.currency === 'ARS',
                                 'text-destructive': wallet.balance < 0,
                             })}>
                                 {formatCurrency(wallet.balance, wallet.currency)}
                             </CardTitle>
+                            {Math.abs(wallet.balance - stats.netSum) > 0.01 && (
+                                <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
+                                    Suma de movimientos: {formatCurrency(stats.netSum, wallet.currency)}
+                                </p>
+                            )}
+                        </div>
+                    </CardHeader>
+                </Card>
+
+                <Card>
+                    <CardHeader className="py-4">
+                        <CardDescription>Ingresos vs Gastos</CardDescription>
+                        <div className="flex justify-between items-center mt-2">
+                            <div>
+                                <span className="text-xs text-muted-foreground">Ingresos</span>
+                                <p className="text-sm font-semibold text-green-600 dark:text-green-400">+{formatCurrency(stats.totalIncomes, wallet.currency)}</p>
+                            </div>
+                            <div className="text-right">
+                                <span className="text-xs text-muted-foreground">Gastos</span>
+                                <p className="text-sm font-semibold text-destructive">-{formatCurrency(stats.totalExpenses, wallet.currency)}</p>
+                            </div>
+                        </div>
+                    </CardHeader>
+                </Card>
+
+                <Card>
+                    <CardHeader className="py-4">
+                        <CardDescription>Transferencias Registradas</CardDescription>
+                        <div className="flex justify-between items-center mt-2">
+                            <div>
+                                <span className="text-xs text-muted-foreground">Recibidas</span>
+                                <p className="text-sm font-semibold text-blue-600 dark:text-blue-400">+{formatCurrency(stats.totalTransfersIn, wallet.currency)}</p>
+                            </div>
+                            <div className="text-right">
+                                <span className="text-xs text-muted-foreground">Enviadas</span>
+                                <p className="text-sm font-semibold text-orange-600 dark:text-orange-400">-{formatCurrency(stats.totalTransfersOut, wallet.currency)}</p>
+                            </div>
                         </div>
                     </CardHeader>
                 </Card>

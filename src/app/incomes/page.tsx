@@ -4,7 +4,7 @@
 import * as React from 'react';
 import { collection, getDocs, Timestamp, query, collectionGroup, doc, writeBatch, getDoc, where, orderBy } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { format, startOfMonth, endOfMonth } from 'date-fns';
+import { format, isValid, startOfMonth, endOfMonth, subMonths, startOfYear, endOfYear } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { type DateRange } from 'react-day-picker';
 
@@ -431,8 +431,48 @@ export default function IncomesPage() {
                         {areFiltersActive && <Button variant="ghost" size="sm" onClick={handleClearFilters}><X className="mr-2 h-4 w-4"/>Limpiar Filtros</Button>}
                     </CardTitle>
                 </CardHeader>
-                <CardContent className="flex flex-wrap items-start gap-4">
-                     <Popover>
+                <CardContent className="space-y-3 p-4">
+                    <div className="flex flex-wrap items-center gap-1.5 pb-1">
+                        <span className="text-xs text-muted-foreground mr-1 font-medium">Período:</span>
+                        <Button 
+                            type="button" 
+                            variant={!date ? "default" : "outline"} 
+                            size="sm" 
+                            className="h-7 text-xs px-2.5"
+                            onClick={() => setDate(undefined)}
+                        >
+                            Todo el historial
+                        </Button>
+                        <Button 
+                            type="button" 
+                            variant={date?.from?.getTime() === startOfMonth(new Date()).getTime() && date?.to?.getTime() === endOfMonth(new Date()).getTime() ? "default" : "outline"} 
+                            size="sm" 
+                            className="h-7 text-xs px-2.5"
+                            onClick={() => setDate({ from: startOfMonth(new Date()), to: endOfMonth(new Date()) })}
+                        >
+                            Este mes
+                        </Button>
+                        <Button 
+                            type="button" 
+                            variant={date?.from?.getTime() === startOfMonth(subMonths(new Date(), 2)).getTime() && date?.to?.getTime() === endOfMonth(new Date()).getTime() ? "default" : "outline"} 
+                            size="sm" 
+                            className="h-7 text-xs px-2.5"
+                            onClick={() => setDate({ from: startOfMonth(subMonths(new Date(), 2)), to: endOfMonth(new Date()) })}
+                        >
+                            Últimos 3 meses
+                        </Button>
+                        <Button 
+                            type="button" 
+                            variant={date?.from?.getTime() === startOfYear(new Date()).getTime() && date?.to?.getTime() === endOfYear(new Date()).getTime() ? "default" : "outline"} 
+                            size="sm" 
+                            className="h-7 text-xs px-2.5"
+                            onClick={() => setDate({ from: startOfYear(new Date()), to: endOfYear(new Date()) })}
+                        >
+                            Este año
+                        </Button>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2">
+                    <Popover>
                         <PopoverTrigger asChild>
                         <Button
                             id="date"
@@ -453,7 +493,7 @@ export default function IncomesPage() {
                                 format(date.from, "LLL dd, y", { locale: es })
                             )
                             ) : (
-                            <span>Elige una fecha</span>
+                            <span>Rango personalizado</span>
                             )}
                         </Button>
                         </PopoverTrigger>
@@ -502,6 +542,7 @@ export default function IncomesPage() {
                             <SelectItem value="USD">USD</SelectItem>
                         </SelectContent>
                     </Select>
+                    </div>
                 </CardContent>
             </Card>
             

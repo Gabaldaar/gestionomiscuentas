@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { collection, getDocs, orderBy, query, doc, deleteDoc, writeBatch, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { format, isValid, startOfMonth, endOfMonth } from 'date-fns';
+import { format, isValid, startOfMonth, endOfMonth, subMonths, startOfYear, endOfYear } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { type DateRange } from 'react-day-picker';
 import { PageHeader } from "@/components/shared/PageHeader";
@@ -46,11 +46,8 @@ export default function TransfersHistoryPage() {
   const [loading, setLoading] = React.useState(true);
   const [deletingTransfer, setDeletingTransfer] = React.useState<Transfer | null>(null);
 
-  // Filter state
-  const [date, setDate] = React.useState<DateRange | undefined>({
-    from: startOfMonth(new Date()),
-    to: endOfMonth(new Date()),
-  });
+  // Filter state - default undefined to show all historical transfers
+  const [date, setDate] = React.useState<DateRange | undefined>(undefined);
   const [selectedCurrency, setSelectedCurrency] = React.useState<Currency | 'all'>('all');
   const [fromWalletId, setFromWalletId] = React.useState<'all'>('all');
   const [toWalletId, setToWalletId] = React.useState<'all'>('all');
@@ -72,12 +69,21 @@ export default function TransfersHistoryPage() {
         const transfersSnapshot = await getDocs(transfersQuery);
         const transfersList = transfersSnapshot.docs.map(doc => {
             const data = doc.data() as Transfer;
+            let dateStr = new Date().toISOString();
+            try {
+                if ((data.date as any)?.toDate) {
+                    dateStr = (data.date as any).toDate().toISOString();
+                } else if (data.date) {
+                    dateStr = new Date(data.date).toISOString();
+                }
+            } catch {}
+
             return { 
-            id: doc.id, 
-            ...data,
-            date: (data.date as any).toDate().toISOString(),
-            fromWalletName: walletsMap.get(data.fromWalletId)?.name || 'N/A',
-            toWalletName: walletsMap.get(data.toWalletId)?.name || 'N/A',
+                ...data,
+                id: doc.id, 
+                date: dateStr,
+                fromWalletName: walletsMap.get(data.fromWalletId)?.name || 'N/A',
+                toWalletName: walletsMap.get(data.toWalletId)?.name || 'N/A',
             } as TransferWithDetails;
         });
         setTransfers(transfersList);
@@ -99,17 +105,15 @@ export default function TransfersHistoryPage() {
   };
   
   const handleClearFilters = () => {
-    setDate({ from: startOfMonth(new Date()), to: endOfMonth(new Date()) });
+    setDate(undefined);
     setSelectedCurrency('all');
     setFromWalletId('all');
     setToWalletId('all');
   };
   
   const areFiltersActive = React.useMemo(() => {
-    const isDefaultDate = date?.from?.getTime() === startOfMonth(new Date()).getTime() && date?.to?.getTime() === endOfMonth(new Date()).getTime();
-
     return (
-        !isDefaultDate ||
+        !!date ||
         selectedCurrency !== 'all' ||
         fromWalletId !== 'all' ||
         toWalletId !== 'all'
@@ -222,7 +226,47 @@ export default function TransfersHistoryPage() {
                     {areFiltersActive && <Button variant="ghost" size="sm" onClick={handleClearFilters}><X className="mr-2 h-4 w-4"/>Limpiar Filtros</Button>}
                 </CardTitle>
             </CardHeader>
-            <CardContent className="flex flex-wrap items-center gap-2 p-4">
+            <CardContent className="space-y-3 p-4">
+                <div className="flex flex-wrap items-center gap-1.5 pb-1">
+                    <span className="text-xs text-muted-foreground mr-1 font-medium">Período:</span>
+                    <Button 
+                        type="button" 
+                        variant={!date ? "default" : "outline"} 
+                        size="sm" 
+                        className="h-7 text-xs px-2.5"
+                        onClick={() => setDate(undefined)}
+                    >
+                        Todo el historial
+                    </Button>
+                    <Button 
+                        type="button" 
+                        variant={date?.from?.getTime() === startOfMonth(new Date()).getTime() && date?.to?.getTime() === endOfMonth(new Date()).getTime() ? "default" : "outline"} 
+                        size="sm" 
+                        className="h-7 text-xs px-2.5"
+                        onClick={() => setDate({ from: startOfMonth(new Date()), to: endOfMonth(new Date()) })}
+                    >
+                        Este mes
+                    </Button>
+                    <Button 
+                        type="button" 
+                        variant={date?.from?.getTime() === startOfMonth(subMonths(new Date(), 2)).getTime() && date?.to?.getTime() === endOfMonth(new Date()).getTime() ? "default" : "outline"} 
+                        size="sm" 
+                        className="h-7 text-xs px-2.5"
+                        onClick={() => setDate({ from: startOfMonth(subMonths(new Date(), 2)), to: endOfMonth(new Date()) })}
+                    >
+                        Últimos 3 meses
+                    </Button>
+                    <Button 
+                        type="button" 
+                        variant={date?.from?.getTime() === startOfYear(new Date()).getTime() && date?.to?.getTime() === endOfYear(new Date()).getTime() ? "default" : "outline"} 
+                        size="sm" 
+                        className="h-7 text-xs px-2.5"
+                        onClick={() => setDate({ from: startOfYear(new Date()), to: endOfYear(new Date()) })}
+                    >
+                        Este año
+                    </Button>
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
                 <Popover>
                     <PopoverTrigger asChild>
                     <Button
@@ -244,7 +288,7 @@ export default function TransfersHistoryPage() {
                             format(date.from, "LLL dd, y", { locale: es })
                         )
                         ) : (
-                        <span>Elige una fecha</span>
+                        <span>Rango personalizado</span>
                         )}
                     </Button>
                     </PopoverTrigger>
@@ -292,6 +336,7 @@ export default function TransfersHistoryPage() {
                     <SelectItem value="USD">USD</SelectItem>
                     </SelectContent>
                 </Select>
+                </div>
             </CardContent>
         </Card>
 

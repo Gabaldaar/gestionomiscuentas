@@ -181,21 +181,31 @@ export default function EditTransferPage() {
             }
 
             const balances = new Map<string, number>();
-            balances.set(originalTransfer.fromWalletId, originalFromWalletData.balance + originalTransfer.amountSent);
-            balances.set(originalTransfer.toWalletId, (balances.get(originalTransfer.toWalletId) ?? originalToWalletData.balance) - originalTransfer.amountReceived);
+            const origFromBal = originalFromWalletData.balance + originalTransfer.amountSent;
+            balances.set(originalTransfer.fromWalletId, origFromBal);
+
+            const origToCurrent = balances.has(originalTransfer.toWalletId)
+                ? balances.get(originalTransfer.toWalletId)!
+                : originalToWalletData.balance;
+            balances.set(originalTransfer.toWalletId, origToCurrent - originalTransfer.amountReceived);
 
             // --- Step 3: Apply the new transaction ---
-            const currentFromWalletBalance = balances.get(data.fromWalletId);
-            const currentToWalletBalance = balances.get(data.toWalletId);
-            const currentToWalletData = walletDataMap.get(data.toWalletId);
             const currentFromWalletData = walletDataMap.get(data.fromWalletId);
+            const currentToWalletData = walletDataMap.get(data.toWalletId);
 
-
-            if (currentFromWalletBalance === undefined || currentToWalletBalance === undefined || !currentToWalletData || !currentFromWalletData) {
+            if (!currentFromWalletData || !currentToWalletData) {
                  throw new Error("No se encontraron las billeteras para la nueva transacción.");
             }
+
+            const currentFromWalletBalance = balances.has(data.fromWalletId)
+                ? balances.get(data.fromWalletId)!
+                : currentFromWalletData.balance;
+
+            const currentToWalletBalance = balances.has(data.toWalletId)
+                ? balances.get(data.toWalletId)!
+                : currentToWalletData.balance;
             
-            if (currentFromWalletBalance < data.amountSent) {
+            if (currentFromWalletBalance < data.amountSent && !currentFromWalletData.allowNegativeBalance) {
                 toast({ title: "Fondos Insuficientes", description: `El saldo revertido de ${currentFromWalletData.name} no es suficiente para la nueva transacción.`, variant: "destructive" });
                 setIsSubmitting(false);
                 return;
