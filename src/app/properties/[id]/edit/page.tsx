@@ -30,9 +30,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { Loader } from 'lucide-react';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { PlaceHolderImages } from '@/lib/placeholder-images';
-import { cn } from '@/lib/utils';
+import { AccountImagePicker } from '@/components/properties/AccountImagePicker';
 import { type Property } from '@/lib/types';
 import {
   AlertDialog,
@@ -297,36 +295,14 @@ export default function EditPropertyPage() {
                 name="imageUrl"
                 render={({ field }) => (
                   <FormItem className="space-y-3">
-                    <FormLabel>Selecciona una Imagen</FormLabel>
-                     <FormMessage />
+                    <FormLabel>Imagen de la Cuenta</FormLabel>
                     <FormControl>
-                      <RadioGroup
-                        onValueChange={field.onChange}
+                      <AccountImagePicker
                         value={field.value}
-                        className="grid grid-cols-3 md:grid-cols-4 gap-4"
-                      >
-                        {PlaceHolderImages.map((image) => (
-                          <FormItem key={image.imageUrl} className="flex items-center space-x-3 space-y-0">
-                            <FormControl>
-                              <RadioGroupItem value={image.imageUrl} className="sr-only" />
-                            </FormControl>
-                            <FormLabel className="font-normal">
-                               <Image
-                                src={image.imageUrl}
-                                alt={image.description}
-                                width={150}
-                                height={150}
-                                className={cn(
-                                  "h-full w-full object-cover rounded-md cursor-pointer transition-all hover:scale-105",
-                                  field.value === image.imageUrl ? 'ring-2 ring-primary ring-offset-2' : 'ring-1 ring-border'
-                                )}
-                                data-ai-hint={image.imageHint}
-                              />
-                            </FormLabel>
-                          </FormItem>
-                        ))}
-                      </RadioGroup>
+                        onChange={field.onChange}
+                      />
                     </FormControl>
+                    <FormMessage />
                   </FormItem>
                 )}
               />
