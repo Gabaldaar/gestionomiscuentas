@@ -1,4 +1,3 @@
-
 'use client';
 
 import * as React from 'react';
@@ -23,8 +22,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
 
   React.useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setUser(user);
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
       setLoading(false);
     });
 
@@ -37,9 +36,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const isPublicRoute = publicRoutes.includes(pathname);
 
     if (!user && !isPublicRoute) {
-      router.replace(`/login?redirect=${pathname}`);
-    } else if (user && isPublicRoute) {
-      router.replace('/');
+      const redirectUrl = pathname === '/' ? '/login' : `/login?redirect=${encodeURIComponent(pathname)}`;
+      router.replace(redirectUrl);
     }
   }, [user, loading, pathname, router]);
 
