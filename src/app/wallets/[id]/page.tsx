@@ -237,6 +237,11 @@ export default function WalletDetailPage() {
 
     const handleSyncBalance = async () => {
         if (!wallet) return;
+        const confirmed = window.confirm(
+            `¿Deseas sincronizar el saldo de "${wallet.name}" con la suma de los movimientos registrados?\n\nSaldo actual guardado: ${formatCurrency(wallet.balance, wallet.currency)}\nSaldo según movimientos: ${formatCurrency(stats.netSum, wallet.currency)}\n\nEsta acción reemplazará el saldo guardado.`
+        );
+        if (!confirmed) return;
+
         setIsSyncing(true);
         try {
             const walletRef = doc(db, 'wallets', wallet.id);
@@ -244,7 +249,7 @@ export default function WalletDetailPage() {
             setWallet(prev => prev ? { ...prev, balance: stats.netSum } : null);
             toast({
                 title: "Saldo sincronizado",
-                description: `El saldo de la billetera se actualizó a ${formatCurrency(stats.netSum, wallet.currency)} según la suma exacta de todos los movimientos registrados.`,
+                description: `El saldo de la billetera se actualizó a ${formatCurrency(stats.netSum, wallet.currency)}.`,
             });
             fetchWalletData();
         } catch (e) {
