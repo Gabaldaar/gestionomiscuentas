@@ -3,41 +3,15 @@
 import * as React from 'react';
 import { useAccount } from '@/components/context/AccountProvider';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { collection, getDocs, query, orderBy } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
-import { type Property } from '@/lib/types';
 import { Building2 } from 'lucide-react';
 import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
 
 export function AccountSelector() {
-  const { activeAccountId, setActiveAccountId } = useAccount();
-  const [properties, setProperties] = React.useState<Property[]>([]);
-  const [loading, setLoading] = React.useState(true);
+  const { activeAccountId, setActiveAccountId, properties, loadingProperties } = useAccount();
   const pathname = usePathname();
   const router = useRouter();
 
-  React.useEffect(() => {
-    const fetchProperties = async () => {
-      setLoading(true);
-      const propsQuery = query(collection(db, 'properties'), orderBy('order'));
-      const propsSnap = await getDocs(propsQuery);
-      const propsList = propsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Property));
-      setProperties(propsList);
-      setLoading(false);
-    };
-    fetchProperties();
-  }, []);
-
-  React.useEffect(() => {
-    if (properties.length > 0) {
-      const hasValidActive = properties.some(p => p.id === activeAccountId);
-      if (!hasValidActive) {
-        setActiveAccountId(properties[0].id);
-      }
-    }
-  }, [properties, activeAccountId, setActiveAccountId]);
-  
   const activeProperty = properties.find(p => p.id === activeAccountId);
 
   const handleAccountChange = (val: string) => {
@@ -47,8 +21,12 @@ export function AccountSelector() {
     }
   };
 
-  if (loading) {
+  if (loadingProperties) {
     return <div className="h-9 w-48 rounded-md bg-muted animate-pulse" />;
+  }
+
+  if (properties.length === 0) {
+    return null;
   }
 
   return (
