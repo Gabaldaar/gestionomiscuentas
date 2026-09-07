@@ -108,12 +108,20 @@ export default function ExpensesPage() {
 
             const expensesList = expensesSnap.docs.map(doc => {
                 const data = doc.data() as ActualExpense;
-                const propertyId = doc.ref.parent.parent!.id;
+                const propertyId = doc.ref.parent.parent ? doc.ref.parent.parent.id : (data.propertyId || '');
                 const { categoryName, subcategoryName } = getCategoryInfo(data.subcategoryId, categoriesList);
+                let dateStr = new Date().toISOString();
+                try {
+                    if (data.date && typeof (data.date as any).toDate === 'function') {
+                        dateStr = (data.date as unknown as Timestamp).toDate().toISOString();
+                    } else if (data.date) {
+                        dateStr = new Date(data.date).toISOString();
+                    }
+                } catch {}
                 return {
-                    id: doc.id,
                     ...data,
-                    date: (data.date as unknown as Timestamp).toDate().toISOString(),
+                    id: doc.id,
+                    date: dateStr,
                     propertyId: propertyId,
                     propertyName: propsMap.get(propertyId) || 'Cuenta Desconocida',
                     categoryName,
@@ -167,7 +175,11 @@ export default function ExpensesPage() {
             }
             batch.update(walletRef, { balance: walletData.balance - data.amount });
             
-            const expenseData: any = { ...data, date: Timestamp.fromDate(data.date) };
+            const expenseData: any = { 
+                ...data, 
+                propertyId: data.propertyId,
+                date: Timestamp.fromDate(data.date) 
+            };
             if (expenseData.liabilityId === 'none' || !expenseData.liabilityId) {
                 delete expenseData.liabilityId;
             }
@@ -210,60 +222,72 @@ export default function ExpensesPage() {
 
 
     const handleUpdateExpenseSubmit = async (data: ExpenseFormValues) => {
-        if (!editingExpense || !data.propertyId) return;
+        if (!editingExpense || !editingExpense.id || !data.propertyId) {
+            toast({ title: "Error", description: "Faltan datos del gasto o de la cuenta.", variant: "destructive" });
+            return;
+        }
         setIsSubmitting(true);
         
         const batch = writeBatch(db);
-        const originalPropertyId = editingExpense.propertyId;
+        const originalPropertyId = editingExpense.propertyId || data.propertyId;
         const newPropertyId = data.propertyId;
 
         const { propertyId, ...restOfData } = data;
-        const dataToSave: any = { ...restOfData, date: Timestamp.fromDate(data.date) };
+        const dataToSave: any = { 
+            ...restOfData, 
+            propertyId: newPropertyId,
+            date: Timestamp.fromDate(data.date) 
+        };
         if (dataToSave.liabilityId === 'none' || !dataToSave.liabilityId) {
             delete dataToSave.liabilityId;
         }
 
         try {
-            // Revert original transaction from original wallet
-            const oldWalletRef = doc(db, 'wallets', editingExpense.walletId);
-            const oldWalletSnap = await getDoc(oldWalletRef);
-            if (!oldWalletSnap.exists()) throw new Error("La billetera original no fue encontrada.");
-            const oldWalletData = oldWalletSnap.data() as WalletType;
-            batch.update(oldWalletRef, { balance: oldWalletData.balance + editingExpense.amount });
+            // Update wallet balance accurately with a single operation per wallet
+            if (editingExpense.walletId === data.walletId) {
+                const walletRef = doc(db, 'wallets', data.walletId);
+                const walletSnap = await getDoc(walletRef);
+                if (!walletSnap.exists()) throw new Error("La billetera no fue encontrada.");
+                const walletData = walletSnap.data() as WalletType;
+                
+                const newBalance = walletData.balance + editingExpense.amount - data.amount;
+                if (newBalance < 0 && !walletData.allowNegativeBalance) {
+                    throw new Error(`Fondos insuficientes en la billetera ${walletData.name}.`);
+                }
+                batch.update(walletRef, { balance: newBalance });
+            } else {
+                // Revert old wallet
+                const oldWalletRef = doc(db, 'wallets', editingExpense.walletId);
+                const oldWalletSnap = await getDoc(oldWalletRef);
+                if (!oldWalletSnap.exists()) throw new Error("La billetera original no fue encontrada.");
+                const oldWalletData = oldWalletSnap.data() as WalletType;
+                batch.update(oldWalletRef, { balance: oldWalletData.balance + editingExpense.amount });
+
+                // Deduct from new wallet
+                const newWalletRef = doc(db, 'wallets', data.walletId);
+                const newWalletSnap = await getDoc(newWalletRef);
+                if (!newWalletSnap.exists()) throw new Error("La nueva billetera no fue encontrada.");
+                const newWalletData = newWalletSnap.data() as WalletType;
+                const newBalance = newWalletData.balance - data.amount;
+                if (newBalance < 0 && !newWalletData.allowNegativeBalance) {
+                    throw new Error(`Fondos insuficientes en la billetera ${newWalletData.name}.`);
+                }
+                batch.update(newWalletRef, { balance: newBalance });
+            }
 
             // If property has changed, delete old and create new. Otherwise, update.
-            if (originalPropertyId !== newPropertyId) {
-                // Delete from old property
+            if (originalPropertyId && originalPropertyId !== newPropertyId) {
                 const oldExpenseRef = doc(db, 'properties', originalPropertyId, 'actualExpenses', editingExpense.id);
                 batch.delete(oldExpenseRef);
 
-                // Create in new property
                 const newExpenseRef = doc(collection(db, 'properties', newPropertyId, 'actualExpenses'));
                 batch.set(newExpenseRef, dataToSave);
             } else {
-                // Update in same property
-                const expenseRef = doc(db, 'properties', originalPropertyId, 'actualExpenses', editingExpense.id);
-                batch.update(expenseRef, dataToSave);
+                const targetPropertyId = originalPropertyId || newPropertyId;
+                const expenseRef = doc(db, 'properties', targetPropertyId, 'actualExpenses', editingExpense.id);
+                batch.set(expenseRef, dataToSave, { merge: true });
             }
 
-            // Apply new transaction to new wallet
-            const newWalletRef = doc(db, 'wallets', data.walletId);
-            // We need to re-fetch the wallet data in case old and new wallet are the same
-            const newWalletSnap = await getDoc(newWalletRef);
-            if (!newWalletSnap.exists()) throw new Error("La nueva billetera no fue encontrada.");
-            const newWalletData = newWalletSnap.data() as WalletType;
-            
-            // Recalculate balance before applying new amount
-            let currentBalance = newWalletData.balance;
-            if(editingExpense.walletId === data.walletId) {
-                 currentBalance += editingExpense.amount;
-            }
-
-            if (currentBalance < data.amount && !newWalletData.allowNegativeBalance) {
-                throw new Error(`Fondos insuficientes en la billetera ${newWalletData.name}.`);
-            }
-            batch.update(newWalletRef, { balance: currentBalance - data.amount });
-            
             await batch.commit();
 
             toast({ title: "Gasto actualizado exitosamente" });

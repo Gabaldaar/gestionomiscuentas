@@ -119,7 +119,7 @@ export function PropertyIncome({ propertyId, wallets, incomeCategories, selected
             batch.update(newWalletRef, { balance: newWalletData.balance + data.amount });
         }
 
-        batch.update(incomeRef, { ...data, date: Timestamp.fromDate(data.date) });
+        batch.set(incomeRef, { ...data, propertyId, date: Timestamp.fromDate(data.date) }, { merge: true });
         toast({ title: "Ingreso actualizado exitosamente" });
 
       } else {

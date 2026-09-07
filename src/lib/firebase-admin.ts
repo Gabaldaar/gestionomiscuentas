@@ -10,12 +10,12 @@ if (!admin.apps.length) {
   if (serviceAccount) {
     admin.initializeApp({
       credential: admin.credential.cert(serviceAccount),
+      projectId: "studio-8566554728-8465b",
     });
   } else {
-    // This will likely only work in a Google Cloud environment.
-    // For Netlify, the service account key is required.
-    console.warn("FIREBASE_SERVICE_ACCOUNT_KEY not found. Initializing without credentials.");
-    admin.initializeApp();
+    admin.initializeApp({
+      projectId: "studio-8566554728-8465b",
+    });
   }
 }
 

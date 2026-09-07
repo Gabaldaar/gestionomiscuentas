@@ -58,24 +58,46 @@ export function PropertyDetail({ id }: { id: string }) {
             // --- Transactions ---
             const incomesCol = collection(db, 'properties', id, 'incomes');
             const incomesSnapshot = await getDocs(incomesCol);
-            const incomesList = incomesSnapshot.docs.map(doc => ({ 
-                id: doc.id, 
-                propertyId: id,
-                propertyName: propertyData.name,
-                ...doc.data(),
-                date: (doc.data().date as Timestamp).toDate().toISOString(),
-            })) as Income[];
+            const incomesList = incomesSnapshot.docs.map(doc => {
+                const data = doc.data();
+                let dateStr = new Date().toISOString();
+                try {
+                    if (data.date && typeof data.date.toDate === 'function') {
+                        dateStr = data.date.toDate().toISOString();
+                    } else if (data.date) {
+                        dateStr = new Date(data.date).toISOString();
+                    }
+                } catch {}
+                return {
+                    ...data,
+                    id: doc.id, 
+                    propertyId: id,
+                    propertyName: propertyData.name,
+                    date: dateStr,
+                } as Income;
+            });
             setIncomes(incomesList);
             
             const actualExpensesCol = collection(db, 'properties', id, 'actualExpenses');
             const actualExpensesSnapshot = await getDocs(actualExpensesCol);
-            const actualExpensesList = actualExpensesSnapshot.docs.map(doc => ({ 
-                id: doc.id, 
-                propertyId: id,
-                propertyName: propertyData.name,
-                ...doc.data(),
-                date: (doc.data().date as Timestamp).toDate().toISOString(),
-            })) as ActualExpense[];
+            const actualExpensesList = actualExpensesSnapshot.docs.map(doc => {
+                const data = doc.data();
+                let dateStr = new Date().toISOString();
+                try {
+                    if (data.date && typeof data.date.toDate === 'function') {
+                        dateStr = data.date.toDate().toISOString();
+                    } else if (data.date) {
+                        dateStr = new Date(data.date).toISOString();
+                    }
+                } catch {}
+                return {
+                    ...data,
+                    id: doc.id, 
+                    propertyId: id,
+                    propertyName: propertyData.name,
+                    date: dateStr,
+                } as ActualExpense;
+            });
             setActualExpenses(actualExpensesList);
         } else {
             setProperty(null); // Triggers notFound()

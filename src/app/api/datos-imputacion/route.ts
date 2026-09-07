@@ -50,7 +50,8 @@ export async function GET(request: Request) {
 
     } catch (error) {
         console.error("Error fetching imputation data:", error);
-        return NextResponse.json({ success: false, error: "Internal Server Error" }, { status: 500, headers: corsHeaders });
+        const errorMessage = error instanceof Error ? error.message : "Error desconocido al obtener datos de imputación";
+        return NextResponse.json({ success: false, error: errorMessage }, { status: 500, headers: corsHeaders });
     }
 }
 

@@ -92,7 +92,12 @@ export default function DueDatesPage() {
           } else {
             date = new Date();
           }
-          return {id: doc.id, ...data, date, propertyId} as ActualExpense & {date: Date};
+          return {
+            ...data,
+            id: doc.id,
+            date,
+            propertyId
+          } as ActualExpense & {date: Date};
       });
       setAllActualExpenses(actualsList);
       
@@ -123,8 +128,8 @@ export default function DueDatesPage() {
             const { categoryName, subcategoryName } = getCategoryInfo(data.subcategoryId, categoriesList);
 
             const typedData = {
-              id: doc.id,
               ...data,
+              id: doc.id,
               date: expenseDate,
               propertyId: propertyId,
               propertyName: propsMap.get(propertyId) || 'Cuenta Desconocida',

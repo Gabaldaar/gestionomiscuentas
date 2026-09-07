@@ -102,12 +102,20 @@ export default function IncomesPage() {
 
             const incomesList = incomesSnap.docs.map(doc => {
                 const data = doc.data() as Income;
-                const propertyId = doc.ref.parent.parent!.id;
+                const propertyId = doc.ref.parent.parent ? doc.ref.parent.parent.id : (data.propertyId || '');
                 const { categoryName, subcategoryName } = getCategoryInfo(data.subcategoryId, categoriesList);
+                let dateStr = new Date().toISOString();
+                try {
+                    if (data.date && typeof (data.date as any).toDate === 'function') {
+                        dateStr = (data.date as unknown as Timestamp).toDate().toISOString();
+                    } else if (data.date) {
+                        dateStr = new Date(data.date).toISOString();
+                    }
+                } catch {}
                 return {
-                    id: doc.id,
                     ...data,
-                    date: (data.date as unknown as Timestamp).toDate().toISOString(),
+                    id: doc.id,
+                    date: dateStr,
                     propertyId: propertyId,
                     propertyName: propsMap.get(propertyId) || 'Cuenta Desconocida',
                     categoryName,
@@ -158,7 +166,11 @@ export default function IncomesPage() {
             const walletData = walletSnap.data() as WalletType;
             batch.update(walletRef, { balance: walletData.balance + data.amount });
             
-            const incomeData: any = { ...data, date: Timestamp.fromDate(data.date) };
+            const incomeData: any = { 
+                ...data, 
+                propertyId: data.propertyId,
+                date: Timestamp.fromDate(data.date) 
+            };
             if (incomeData.assetId === 'none' || !incomeData.assetId) {
                 delete incomeData.assetId;
             }
@@ -179,50 +191,63 @@ export default function IncomesPage() {
 
 
     const handleUpdateIncomeSubmit = async (data: IncomeFormValues) => {
-        if (!editingIncome || !data.propertyId) return;
+        if (!editingIncome || !editingIncome.id || !data.propertyId) {
+            toast({ title: "Error", description: "Faltan datos del ingreso o de la cuenta.", variant: "destructive" });
+            return;
+        }
         setIsSubmitting(true);
     
         const batch = writeBatch(db);
-        const originalPropertyId = editingIncome.propertyId;
+        const originalPropertyId = editingIncome.propertyId || data.propertyId;
         const newPropertyId = data.propertyId;
 
         const { propertyId, ...restOfData } = data;
-        const dataToSave: any = { ...restOfData, date: Timestamp.fromDate(data.date) };
+        const dataToSave: any = { 
+            ...restOfData, 
+            propertyId: newPropertyId,
+            date: Timestamp.fromDate(data.date) 
+        };
         if (dataToSave.assetId === 'none' || !dataToSave.assetId) {
             delete dataToSave.assetId;
         }
     
         try {
-            // Revert original transaction from original wallet
-            const oldWalletRef = doc(db, 'wallets', editingIncome.walletId);
-            const oldWalletSnap = await getDoc(oldWalletRef);
-            if (!oldWalletSnap.exists()) throw new Error("La billetera original no fue encontrada.");
-            const oldWalletData = oldWalletSnap.data() as WalletType;
-            batch.update(oldWalletRef, { balance: oldWalletData.balance - editingIncome.amount });
+            // Update wallet balance accurately with a single operation per wallet
+            if (editingIncome.walletId === data.walletId) {
+                const walletRef = doc(db, 'wallets', data.walletId);
+                const walletSnap = await getDoc(walletRef);
+                if (!walletSnap.exists()) throw new Error("La billetera no fue encontrada.");
+                const walletData = walletSnap.data() as WalletType;
+                const newBalance = walletData.balance - editingIncome.amount + data.amount;
+                batch.update(walletRef, { balance: newBalance });
+            } else {
+                // Revert old wallet
+                const oldWalletRef = doc(db, 'wallets', editingIncome.walletId);
+                const oldWalletSnap = await getDoc(oldWalletRef);
+                if (!oldWalletSnap.exists()) throw new Error("La billetera original no fue encontrada.");
+                const oldWalletData = oldWalletSnap.data() as WalletType;
+                batch.update(oldWalletRef, { balance: oldWalletData.balance - editingIncome.amount });
+
+                // Add to new wallet
+                const newWalletRef = doc(db, 'wallets', data.walletId);
+                const newWalletSnap = await getDoc(newWalletRef);
+                if (!newWalletSnap.exists()) throw new Error("La nueva billetera no fue encontrada.");
+                const newWalletData = newWalletSnap.data() as WalletType;
+                batch.update(newWalletRef, { balance: newWalletData.balance + data.amount });
+            }
     
             // If property has changed, delete old and create new. Otherwise, update.
-            if (originalPropertyId !== newPropertyId) {
+            if (originalPropertyId && originalPropertyId !== newPropertyId) {
                 const oldIncomeRef = doc(db, 'properties', originalPropertyId, 'incomes', editingIncome.id);
                 batch.delete(oldIncomeRef);
     
                 const newIncomeRef = doc(collection(db, 'properties', newPropertyId, 'incomes'));
                 batch.set(newIncomeRef, dataToSave);
             } else {
-                const incomeRef = doc(db, 'properties', originalPropertyId, 'incomes', editingIncome.id);
-                batch.update(incomeRef, dataToSave);
+                const targetPropertyId = originalPropertyId || newPropertyId;
+                const incomeRef = doc(db, 'properties', targetPropertyId, 'incomes', editingIncome.id);
+                batch.set(incomeRef, dataToSave, { merge: true });
             }
-    
-            // Apply new transaction to new wallet
-            const newWalletRef = doc(db, 'wallets', data.walletId);
-            const newWalletSnap = await getDoc(newWalletRef);
-            if (!newWalletSnap.exists()) throw new Error("La nueva billetera no fue encontrada.");
-            const newWalletData = newWalletSnap.data() as WalletType;
-    
-            let currentBalance = newWalletData.balance;
-            if (editingIncome.walletId === data.walletId) {
-                currentBalance -= editingIncome.amount; // Re-add reverted amount if same wallet
-            }
-            batch.update(newWalletRef, { balance: currentBalance + data.amount });
     
             await batch.commit();
     

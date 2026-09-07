@@ -226,7 +226,7 @@ export function PropertyExpenses({
                 batch.update(newWalletRef, { balance: newWalletData.balance - expenseData.amount });
             }
 
-            batch.update(expenseRef, { ...expenseData, date: Timestamp.fromDate(expenseData.date) });
+            batch.set(expenseRef, { ...expenseData, propertyId, date: Timestamp.fromDate(expenseData.date) }, { merge: true });
             toast({ title: "Gasto actualizado exitosamente" });
 
         } else { // Adding new expense
