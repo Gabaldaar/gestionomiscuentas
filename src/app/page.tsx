@@ -10,10 +10,8 @@ import { DashboardStats } from "@/components/dashboard/DashboardStats";
 import { MonthlyComparisonChart } from "@/components/dashboard/MonthlyComparisonChart";
 import { RecentActivity } from '@/components/properties/RecentActivity';
 import { DashboardFilters } from '@/components/dashboard/DashboardFilters';
-import { Suspense } from 'react';
-import { Loader, TrendingDown, TrendingUp, ArrowLeftRight } from 'lucide-react';
+import { Loader } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { useSearchParams, useRouter } from 'next/navigation';
 import { UpcomingDuesAlert } from '@/components/dashboard/UpcomingDuesAlert';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
@@ -36,12 +34,12 @@ type DashboardData = {
 };
 
 // Main dashboard content component
-function DashboardContent() {
+export default function DashboardPage() {
   const [data, setData] = React.useState<DashboardData | null>(null);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
-  const searchParams = useSearchParams();
-  const router = useRouter();
+  const [currentDate, setCurrentDate] = React.useState(new Date());
+  const [selectedCurrency, setSelectedCurrency] = React.useState<Currency | 'all'>('all');
   const { toast } = useToast();
   const { activeAccountId } = useAccount();
 
@@ -241,9 +239,8 @@ function DashboardContent() {
 
   const { incomes, expenses, incomeCategories, expenseCategories, liabilities, assets, properties, expectedExpenses, wallets } = data;
 
-  const currentMonth = searchParams?.get('month') ? parseInt(searchParams.get('month') as string) : new Date().getMonth() + 1;
-  const currentYear = searchParams?.get('year') ? parseInt(searchParams.get('year') as string) : new Date().getFullYear();
-  const selectedCurrency = (searchParams?.get('currency') as Currency | 'all') || 'all';
+  const currentMonth = currentDate.getMonth() + 1;
+  const currentYear = currentDate.getFullYear();
   
   const selectedProperties = activeAccountId === 'all' ? properties.map(p => p.id) : [activeAccountId];
   
@@ -298,7 +295,12 @@ function DashboardContent() {
         </Button>
       </div>
 
-      <DashboardFilters />
+      <DashboardFilters 
+        currentDate={currentDate}
+        onDateChange={setCurrentDate}
+        selectedCurrency={selectedCurrency}
+        onCurrencyChange={setSelectedCurrency}
+      />
       <UpcomingDuesAlert allExpectedExpenses={filteredExpectedExpenses} allActualExpenses={filteredExpenses} />
       <DashboardStats statsByCurrency={statsByCurrency} />
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
@@ -346,17 +348,5 @@ function DashboardContent() {
         description="Registra un nuevo ingreso desde el panel de inicio."
     />
     </>
-  );
-}
-
-export default function DashboardPage() {
-  return (
-    <Suspense fallback={
-      <div className="flex-1 space-y-4 p-4 md:p-8 pt-6 flex justify-center items-center">
-        <Loader className="h-8 w-8 animate-spin" />
-      </div>
-    }>
-      <DashboardContent />
-    </Suspense>
   );
 }
