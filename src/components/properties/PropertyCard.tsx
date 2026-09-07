@@ -5,9 +5,10 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { type Property, type Income, type ActualExpense, type ExpectedExpense, type Currency } from '@/lib/types';
-import { ArrowUp, ArrowDown, Minus, CircleAlert } from 'lucide-react';
+import { ArrowUp, ArrowDown, Minus, CircleAlert, Pencil } from 'lucide-react';
 import * as React from 'react';
 import { cn } from '@/lib/utils';
+import { Badge } from '@/components/ui/badge';
 
 type MiniFinancialSummaryProps = {
   incomes: Income[];
@@ -109,10 +110,13 @@ type PropertyCardProps = {
 
 export function PropertyCard({ property, incomes, expenses, expectedExpenses }: PropertyCardProps) {
   return (
-    <Link href={`/properties/${property.id}/edit`} className="block transition-all hover:scale-[1.02]">
-        <Card className="overflow-hidden h-full flex flex-col p-0">
-            <CardHeader className="p-4 pb-2">
+    <Link href={`/properties/${property.id}/edit`} className="block transition-all hover:scale-[1.01]">
+        <Card className="overflow-hidden h-full flex flex-col p-0 hover:border-primary/50 transition-colors shadow-sm">
+            <CardHeader className="p-4 pb-2 flex flex-row items-center justify-between space-y-0">
                 <CardTitle className="font-headline text-lg">{property.name}</CardTitle>
+                <Badge variant="outline" className="text-xs font-normal gap-1 hover:bg-muted">
+                  <Pencil className="h-3 w-3" /> Editar
+                </Badge>
             </CardHeader>
             <CardContent className="p-4 pt-0 flex flex-col sm:flex-row items-start gap-4">
                 <div className="w-24 h-24 flex-shrink-0">

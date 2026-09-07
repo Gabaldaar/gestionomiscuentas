@@ -19,6 +19,13 @@ export function PwaInstallPrompt() {
   const [isVisible, setIsVisible] = React.useState(false);
 
   React.useEffect(() => {
+    // Register service worker
+    if (typeof window !== 'undefined' && 'serviceWorker' in navigator && process.env.NODE_ENV === 'production') {
+      navigator.serviceWorker.register('/sw.js').catch((err) => {
+        console.error('Service worker registration failed:', err);
+      });
+    }
+
     // Check if app is already running in standalone mode (already installed)
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches 
       || (window.navigator as any).standalone 
