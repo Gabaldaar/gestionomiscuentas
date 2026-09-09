@@ -50,6 +50,7 @@ type ManageSubcategoryDialogProps = {
   collectionPath: string;
   entityName: string;
   properties: Property[];
+  defaultPropertyId?: string;
 };
 
 export function ManageSubcategoryDialog({
@@ -61,6 +62,7 @@ export function ManageSubcategoryDialog({
   collectionPath,
   entityName,
   properties,
+  defaultPropertyId,
 }: ManageSubcategoryDialogProps) {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = React.useState(false);
@@ -84,13 +86,18 @@ export function ManageSubcategoryDialog({
   React.useEffect(() => {
     if (isOpen) {
         const availablePropertyIds = new Set(availableProperties.map(p => p.id));
-        const initialPropertyIds = subcategoryToEdit?.propertyIds?.filter(id => availablePropertyIds.has(id)) || [];
+        let initialPropertyIds: string[] = [];
+        if (subcategoryToEdit?.propertyIds) {
+          initialPropertyIds = subcategoryToEdit.propertyIds.filter(id => availablePropertyIds.has(id));
+        } else if (defaultPropertyId && defaultPropertyId !== 'all' && availablePropertyIds.has(defaultPropertyId)) {
+          initialPropertyIds = [defaultPropertyId];
+        }
         form.reset({
           name: subcategoryToEdit?.name || '',
           propertyIds: initialPropertyIds,
         });
     }
-  }, [isOpen, subcategoryToEdit, form, availableProperties]);
+  }, [isOpen, subcategoryToEdit, form, availableProperties, defaultPropertyId]);
 
   const onSubmit = async (data: SubcategoryFormValues) => {
     if (!parentCategory) {

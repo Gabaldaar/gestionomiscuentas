@@ -11,14 +11,14 @@ export default function SettingsPage() {
       description: "Administra tus categorías y subcategorías de gastos.",
       icon: Landmark,
       action: "Administrar",
-      href: "/settings/expenses"
+      href: "/categories/expenses"
     },
     {
       title: "Categorías de Ingresos",
       description: "Administra tus categorías y subcategorías de ingresos.",
       icon: TrendingUp,
       action: "Administrar",
-      href: "/settings/incomes"
+      href: "/categories/incomes"
     },
   ];
 

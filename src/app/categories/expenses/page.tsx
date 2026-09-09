@@ -6,7 +6,7 @@ import { db } from '@/lib/firebase';
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { PlusCircle, Pencil, Trash2, Loader, AlertTriangle, Link2, ChevronDown } from "lucide-react";
+import { PlusCircle, Pencil, Trash2, Loader, AlertTriangle, ChevronDown, Building2 } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useToast } from "@/hooks/use-toast";
 import { type ExpenseCategory, type Property, type ExpenseSubcategory } from '@/lib/types';
@@ -14,11 +14,13 @@ import { ConfirmDeleteDialog } from '@/components/shared/ConfirmDeleteDialog';
 import { ManageCategoryDialog } from '@/components/settings/ManageCategoryDialog';
 import { ManageSubcategoryDialog } from '@/components/settings/ManageSubcategoryDialog';
 import { useAccount } from '@/components/context/AccountProvider';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import Image from 'next/image';
 
 export default function ExpenseCategoriesPage() {
   const { toast } = useToast();
-  const { activeAccountId } = useAccount();
+  const { activeAccountId, setActiveAccountId } = useAccount();
   const [categories, setCategories] = React.useState<ExpenseCategory[]>([]);
   const [properties, setProperties] = React.useState<Property[]>([]);
   const [loading, setLoading] = React.useState(true);
@@ -81,6 +83,69 @@ export default function ExpenseCategoriesPage() {
   React.useEffect(() => {
     fetchCategories();
   }, [fetchCategories]);
+
+  const propertiesMap = React.useMemo(() => {
+    return new Map(properties.map(p => [p.id, p]));
+  }, [properties]);
+
+  const activeProperty = React.useMemo(() => {
+    return properties.find(p => p.id === activeAccountId);
+  }, [properties, activeAccountId]);
+
+  // Helper to check if an item belongs to the account
+  const isItemBelongingToAccount = React.useCallback((
+    item: { propertyIds?: string[] },
+    parentPropertyIds?: string[],
+    targetAccountId: string = activeAccountId
+  ) => {
+    if (targetAccountId === 'all') return true;
+
+    // If item has explicit propertyIds
+    if (item.propertyIds && item.propertyIds.length > 0) {
+      return item.propertyIds.includes(targetAccountId);
+    }
+
+    // If item has no propertyIds, inherit from parent
+    if (parentPropertyIds && parentPropertyIds.length > 0) {
+      return parentPropertyIds.includes(targetAccountId);
+    }
+
+    // If neither has propertyIds, it is global
+    return true;
+  }, [activeAccountId]);
+
+  // Filter categories and their subcategories strictly by active account
+  const filteredCategories = React.useMemo(() => {
+    if (activeAccountId === 'all') {
+      return categories;
+    }
+
+    return categories
+      .map(category => {
+        const catHasProps = category.propertyIds && category.propertyIds.length > 0;
+        
+        // If category explicitly assigned to properties and activeAccount is not among them, reject
+        if (catHasProps && !category.propertyIds!.includes(activeAccountId)) {
+          return null;
+        }
+
+        // Filter subcategories belonging to this account
+        const matchingSubcategories = category.subcategories.filter(sub =>
+          isItemBelongingToAccount(sub, category.propertyIds, activeAccountId)
+        );
+
+        // If category is global (no propertyIds) but none of its subcategories match this account, reject
+        if (!catHasProps && category.subcategories.length > 0 && matchingSubcategories.length === 0) {
+          return null;
+        }
+
+        return {
+          ...category,
+          subcategories: matchingSubcategories,
+        };
+      })
+      .filter((cat): cat is ExpenseCategory => cat !== null);
+  }, [categories, activeAccountId, isItemBelongingToAccount]);
 
   // --- Category Actions ---
   const handleAddCategory = () => {
@@ -147,143 +212,188 @@ export default function ExpenseCategoriesPage() {
     }
   };
 
-  const isAvailableForActiveAccount = (item: { propertyIds?: string[] }) => {
-    if (activeAccountId === 'all') return false;
-    // An item is "globally" available if it has no specific properties assigned.
-    if (!item.propertyIds || item.propertyIds.length === 0) return true;
-    // Otherwise, it must be explicitly assigned to the active account.
-    return item.propertyIds.includes(activeAccountId);
-  }
-
+  const renderPropertyBadges = (propertyIds?: string[]) => {
+    if (!propertyIds || propertyIds.length === 0) {
+      return <Badge variant="outline" className="text-[11px] font-normal text-muted-foreground">Todas las cuentas</Badge>;
+    }
+    return (
+      <div className="flex flex-wrap gap-1">
+        {propertyIds.map(pid => {
+          const prop = propertiesMap.get(pid);
+          if (!prop) return null;
+          return (
+            <Badge key={pid} variant="secondary" className="text-[11px] font-normal gap-1 py-0 px-1.5">
+              {prop.name}
+            </Badge>
+          );
+        })}
+      </div>
+    );
+  };
 
   if (loading) {
     return (
-      <div className="flex-1 space-y-4 p-4 md:p-8 pt-6 flex justify-center">
-        <Loader className="h-8 w-8 animate-spin" />
+      <div className="flex-1 space-y-4 p-4 md:p-8 pt-6 flex justify-center items-center min-h-[50vh]">
+        <Loader className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
 
   if (error) {
     return (
-        <div className="flex-1 space-y-4 p-4 md:p-8 pt-6 flex justify-center">
-            <Card className="max-w-2xl mx-auto w-full">
-                <CardHeader>
-                    <CardTitle className='text-destructive flex items-center gap-2'>
-                        <AlertTriangle/> Error
-                    </CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <p>{error}</p>
-                    <Button onClick={fetchCategories} className="mt-4">Reintentar</Button>
-                </CardContent>
-            </Card>
+      <div className="flex-1 space-y-4 p-4 md:p-8 pt-6 flex justify-center">
+        <Card className="max-w-2xl mx-auto w-full">
+          <CardHeader>
+            <CardTitle className='text-destructive flex items-center gap-2'>
+              <AlertTriangle/> Error
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p>{error}</p>
+            <Button onClick={fetchCategories} className="mt-4">Reintentar</Button>
+          </CardContent>
+        </Card>
       </div>
     );
   }
 
   return (
-    <TooltipProvider>
-      <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
-        <PageHeader title="Categorías de Gastos">
-          <Button onClick={handleAddCategory}>
-            <PlusCircle className="mr-2 h-4 w-4" />
-            Añadir Categoría
-          </Button>
-        </PageHeader>
+    <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
+      <PageHeader title="Categorías de Gastos">
+        <Button onClick={handleAddCategory}>
+          <PlusCircle className="mr-2 h-4 w-4" />
+          Añadir Categoría
+        </Button>
+      </PageHeader>
 
-        <div className="space-y-6">
-          {categories.length > 0 ? categories.map((category) => {
-            const isCategoryAvailable = isAvailableForActiveAccount(category);
-            return (
-            <Collapsible key={category.id}>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <CollapsibleTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 [&[data-state=open]>svg]:rotate-180">
-                      <ChevronDown className="h-4 w-4 transition-transform duration-200" />
-                      <span className="sr-only">Toggle Categoría</span>
-                    </Button>
-                  </CollapsibleTrigger>
-                  <CardTitle className="flex items-center gap-2">
-                      {category.name}
-                    {isCategoryAvailable && (
-                        <Tooltip>
-                            <TooltipTrigger>
-                                <Link2 className="h-4 w-4 text-muted-foreground" />
-                            </TooltipTrigger>
-                            <TooltipContent>
-                                <p>Disponible para la cuenta activa</p>
-                            </TooltipContent>
-                        </Tooltip>
+      {/* Account Selector Bar */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-card p-3 rounded-lg border shadow-sm">
+        <div className="flex items-center gap-2">
+          <Building2 className="h-5 w-5 text-primary" />
+          <div>
+            <span className="text-xs text-muted-foreground block">Filtrando por cuenta:</span>
+            <span className="text-sm font-semibold">
+              {activeAccountId === 'all' ? 'Todas las Cuentas' : activeProperty?.name || 'Cuenta Seleccionada'}
+            </span>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <Select value={activeAccountId} onValueChange={setActiveAccountId}>
+            <SelectTrigger className="w-full sm:w-[240px] h-9">
+              <SelectValue placeholder="Seleccionar cuenta..." />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">
+                <span className="font-medium">Todas las cuentas</span>
+              </SelectItem>
+              {properties.map(prop => (
+                <SelectItem key={prop.id} value={prop.id}>
+                  <div className="flex items-center gap-2">
+                    {prop.imageUrl ? (
+                      <Image src={prop.imageUrl} alt={prop.name} width={18} height={18} className="rounded-sm object-cover" />
+                    ) : (
+                      <Building2 className="h-4 w-4 text-muted-foreground" />
                     )}
-                </CardTitle>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Button variant="ghost" size="icon" onClick={() => handleAddSubcategory(category)}>
+                    <span>{prop.name}</span>
+                  </div>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      {/* Categories List */}
+      <div className="space-y-4">
+        {filteredCategories.length > 0 ? (
+          filteredCategories.map((category) => (
+            <Collapsible key={category.id} defaultOpen>
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between py-3 px-4">
+                  <div className="flex items-center gap-2 flex-1 min-w-0">
+                    <CollapsibleTrigger asChild>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 [&[data-state=open]>svg]:rotate-180">
+                        <ChevronDown className="h-4 w-4 transition-transform duration-200" />
+                        <span className="sr-only">Toggle Categoría</span>
+                      </Button>
+                    </CollapsibleTrigger>
+                    <div className="flex flex-wrap items-center gap-2 min-w-0">
+                      <CardTitle className="text-base truncate">{category.name}</CardTitle>
+                      {activeAccountId === 'all' && renderPropertyBadges(category.propertyIds)}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1 shrink-0">
+                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleAddSubcategory(category)} title="Añadir Subcategoría">
                       <PlusCircle className="h-4 w-4" />
                       <span className="sr-only">Añadir Subcategoría</span>
-                  </Button>
-                  <Button variant="ghost" size="icon" onClick={() => handleEditCategory(category)}>
-                    <Pencil className="h-4 w-4" />
-                    <span className="sr-only">Editar Categoría</span>
-                  </Button>
-                  <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => handleDeleteCategory(category)}>
-                    <Trash2 className="h-4 w-4" />
-                    <span className="sr-only">Eliminar Categoría</span>
-                  </Button>
-                </div>
-              </CardHeader>
-              <CollapsibleContent>
-                <CardContent>
-                  <ul className="space-y-2 text-sm text-muted-foreground">
-                    {category.subcategories.map((subcategory) => {
-                    const isSubcategoryAvailable = isAvailableForActiveAccount(subcategory);
-                    const showIcon = isCategoryAvailable && isSubcategoryAvailable;
-                    return (
-                    <li key={subcategory.id} className="flex items-center justify-between p-2 rounded-md hover:bg-secondary">
-                      <span className="flex items-center gap-2">
-                        {subcategory.name}
-                        {showIcon && (
-                            <Tooltip>
-                                <TooltipTrigger>
-                                    <Link2 className="h-4 w-4 text-muted-foreground" />
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                    <p>Disponible para la cuenta activa</p>
-                                </TooltipContent>
-                            </Tooltip>
-                        )}
-                      </span>
-                      <div className="flex items-center gap-2">
-                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleEditSubcategory(subcategory, category)}>
-                              <Pencil className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleEditCategory(category)} title="Editar Categoría">
+                      <Pencil className="h-4 w-4" />
+                      <span className="sr-only">Editar Categoría</span>
+                    </Button>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => handleDeleteCategory(category)} title="Eliminar Categoría">
+                      <Trash2 className="h-4 w-4" />
+                      <span className="sr-only">Eliminar Categoría</span>
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CollapsibleContent>
+                  <CardContent className="pt-0 px-4 pb-3">
+                    <ul className="divide-y divide-border/40 rounded-md border bg-muted/20">
+                      {category.subcategories.map((subcategory) => (
+                        <li key={subcategory.id} className="flex items-center justify-between p-2.5 hover:bg-muted/40 transition-colors">
+                          <div className="flex items-center gap-2 flex-1 min-w-0 pr-2">
+                            <span className="text-sm font-medium truncate">{subcategory.name}</span>
+                            {activeAccountId === 'all' && subcategory.propertyIds && subcategory.propertyIds.length > 0 && (
+                              renderPropertyBadges(subcategory.propertyIds)
+                            )}
+                          </div>
+                          <div className="flex items-center gap-1 shrink-0">
+                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleEditSubcategory(subcategory, category)} title="Editar Subcategoría">
+                              <Pencil className="h-3.5 w-3.5" />
                               <span className="sr-only">Editar Subcategoría</span>
-                          </Button>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => handleDeleteSubcategory(subcategory, category)}>
-                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                            <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => handleDeleteSubcategory(subcategory, category)} title="Eliminar Subcategoría">
+                              <Trash2 className="h-3.5 w-3.5" />
                               <span className="sr-only">Eliminar Subcategoría</span>
-                          </Button>
-                      </div>
-                    </li>
-                  )})}
-                   {category.subcategories.length === 0 && (
-                     <p className="text-center text-muted-foreground p-4">No hay subcategorías. Añade una para empezar.</p>
-                   )}
-                </ul>
-              </CardContent>
-              </CollapsibleContent>
-            </Card>
+                            </Button>
+                          </div>
+                        </li>
+                      ))}
+                      {category.subcategories.length === 0 && (
+                        <li className="text-center text-xs text-muted-foreground p-3">
+                          No hay subcategorías {activeAccountId !== 'all' ? 'para esta cuenta' : ''}. Añade una para empezar.
+                        </li>
+                      )}
+                    </ul>
+                  </CardContent>
+                </CollapsibleContent>
+              </Card>
             </Collapsible>
-          )}) : (
-            <Card>
-                <CardContent className='p-10 text-center text-muted-foreground'>
-                    No hay categorías de gastos. Añade una para empezar.
-                </CardContent>
-            </Card>
-          )}
-        </div>
+          ))
+        ) : (
+          <Card>
+            <CardContent className="p-10 text-center text-muted-foreground space-y-3">
+              <p className="text-base font-medium">
+                {activeAccountId === 'all' 
+                  ? 'No hay categorías de gastos registradas.'
+                  : `No hay categorías de gastos asignadas a "${activeProperty?.name || 'esta cuenta'}".`
+                }
+              </p>
+              <p className="text-xs text-muted-foreground max-w-md mx-auto">
+                {activeAccountId !== 'all'
+                  ? 'Puedes añadir una nueva categoría para esta cuenta o cambiar el filtro arriba a "Todas las cuentas".'
+                  : 'Haz clic en "Añadir Categoría" para crear la primera.'
+                }
+              </p>
+              <Button onClick={handleAddCategory} className="mt-2">
+                <PlusCircle className="mr-2 h-4 w-4" />
+                Añadir Categoría
+              </Button>
+            </CardContent>
+          </Card>
+        )}
       </div>
 
       <ManageCategoryDialog 
@@ -291,9 +401,10 @@ export default function ExpenseCategoriesPage() {
         onOpenChange={setIsCategoryDialogOpen}
         onSave={fetchCategories}
         categoryToEdit={editingCategory}
-        collectionPath='expenseCategories'
-        entityName='Categoría de Gasto'
+        collectionPath="expenseCategories"
+        entityName="Categoría de Gasto"
         properties={properties}
+        defaultPropertyId={activeAccountId}
       />
       
       <ManageSubcategoryDialog
@@ -302,9 +413,10 @@ export default function ExpenseCategoriesPage() {
         onSave={fetchCategories}
         parentCategory={parentCategory}
         subcategoryToEdit={editingSubcategory}
-        collectionPath='expenseCategories'
-        entityName='Subcategoría de Gasto'
+        collectionPath="expenseCategories"
+        entityName="Subcategoría de Gasto"
         properties={properties}
+        defaultPropertyId={activeAccountId}
       />
 
       <ConfirmDeleteDialog
@@ -314,6 +426,6 @@ export default function ExpenseCategoriesPage() {
         title={`¿Eliminar "${deletingItem?.name}"?`}
         description={`Esta acción es permanente y no se puede deshacer. ¿Estás seguro de que quieres eliminar esta ${deletingItem?.type === 'category' ? 'categoría' : 'subcategoría'}?`}
       />
-    </TooltipProvider>
+    </div>
   );
 }

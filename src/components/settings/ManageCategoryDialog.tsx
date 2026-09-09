@@ -49,6 +49,7 @@ type ManageCategoryDialogProps = {
   collectionPath: string;
   entityName: string;
   properties: Property[];
+  defaultPropertyId?: string;
 };
 
 export function ManageCategoryDialog({
@@ -59,6 +60,7 @@ export function ManageCategoryDialog({
   collectionPath,
   entityName,
   properties,
+  defaultPropertyId,
 }: ManageCategoryDialogProps) {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = React.useState(false);
@@ -74,12 +76,15 @@ export function ManageCategoryDialog({
 
   React.useEffect(() => {
     if (isOpen) {
+        const defaultProps = categoryToEdit?.propertyIds 
+          ? categoryToEdit.propertyIds 
+          : (defaultPropertyId && defaultPropertyId !== 'all' ? [defaultPropertyId] : []);
         form.reset({
           name: categoryToEdit?.name || '',
-          propertyIds: categoryToEdit?.propertyIds || []
+          propertyIds: defaultProps
         });
     }
-  }, [isOpen, categoryToEdit, form]);
+  }, [isOpen, categoryToEdit, defaultPropertyId, form]);
 
   const onSubmit = async (data: CategoryFormValues) => {
     setIsSubmitting(true);
