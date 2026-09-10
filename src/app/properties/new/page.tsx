@@ -37,7 +37,7 @@ import { AccountImagePicker } from '@/components/properties/AccountImagePicker';
 const propertySchema = z.object({
   name: z.string().min(1, 'El nombre es obligatorio.'),
   description: z.string().min(1, 'La descripción es obligatoria.'),
-  imageUrl: z.string().min(1, 'Debes seleccionar una imagen.'),
+  imageUrl: z.string().optional().default(''),
   order: z.coerce.number().optional(),
   notes: z.string().optional(),
 });

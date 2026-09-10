@@ -290,15 +290,19 @@ export function PropertyDetail({ id }: { id: string }) {
                 <CardContent>
                     <p className="text-muted-foreground mb-4">{property.description}</p>
                     <div className="flex flex-row gap-6">
-                        <div className="flex-shrink-0">
-                            <Image
-                                src={property.imageUrl}
-                                alt={property.name}
-                                width={150}
-                                height={150}
-                                className="w-[150px] h-[150px] object-cover rounded-lg aspect-square"
-                                data-ai-hint="apartment building"
-                            />
+                        <div className="flex-shrink-0 w-[150px] h-[150px] relative rounded-lg overflow-hidden bg-muted flex items-center justify-center border">
+                            {property.imageUrl ? (
+                                <Image
+                                    src={property.imageUrl}
+                                    alt={property.name}
+                                    width={150}
+                                    height={150}
+                                    className="w-full h-full object-cover"
+                                    unoptimized
+                                />
+                            ) : (
+                                <Building2 className="h-16 w-16 text-muted-foreground" />
+                            )}
                         </div>
                         <div className="flex-grow flex flex-col space-y-2">
                             <h3 className="font-semibold text-lg">Notas</h3>

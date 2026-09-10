@@ -119,15 +119,19 @@ export function PropertyCard({ property, incomes, expenses, expectedExpenses }: 
                 </Badge>
             </CardHeader>
             <CardContent className="p-4 pt-0 flex flex-col sm:flex-row items-start gap-4">
-                <div className="w-24 h-24 flex-shrink-0">
-                    <Image
-                        src={property.imageUrl}
-                        alt={property.name}
-                        width={96}
-                        height={96}
-                        className="w-full h-full object-cover rounded-md"
-                        data-ai-hint="apartment building"
-                    />
+                <div className="w-24 h-24 flex-shrink-0 relative rounded-md overflow-hidden bg-muted flex items-center justify-center border">
+                    {property.imageUrl ? (
+                        <Image
+                            src={property.imageUrl}
+                            alt={property.name}
+                            width={96}
+                            height={96}
+                            className="w-full h-full object-cover"
+                            unoptimized
+                        />
+                    ) : (
+                        <Building2 className="h-10 w-10 text-muted-foreground" />
+                    )}
                 </div>
                 <MiniFinancialSummary incomes={incomes} expenses={expenses} expectedExpenses={expectedExpenses}/>
             </CardContent>
