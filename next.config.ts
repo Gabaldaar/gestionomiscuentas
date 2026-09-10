@@ -1,43 +1,57 @@
 import type { NextConfig } from 'next';
-import withPWAInit from '@ducanh2912/next-pwa';
+import { PHASE_PRODUCTION_BUILD } from 'next/constants';
 
-const withPWA = withPWAInit({
-  dest: 'public',
-  disable: process.env.NODE_ENV === 'development',
-  register: true,
-  skipWaiting: true,
-  reloadOnOnline: true,
-});
+const nextConfig = async (phase: string): Promise<NextConfig> => {
+  const baseConfig: NextConfig = {
+    turbopack: {},
+    typescript: {
+      ignoreBuildErrors: true,
+    },
+    images: {
+      unoptimized: true,
+      remotePatterns: [
+        {
+          protocol: 'https',
+          hostname: 'placehold.co',
+          port: '',
+          pathname: '/**',
+        },
+        {
+          protocol: 'https',
+          hostname: 'images.unsplash.com',
+          port: '',
+          pathname: '/**',
+        },
+        {
+          protocol: 'https',
+          hostname: 'picsum.photos',
+          port: '',
+          pathname: '/**',
+        },
+      ],
+    },
+  };
 
-const nextConfig: NextConfig = {
-  turbopack: {},
-  typescript: {
-    ignoreBuildErrors: true,
-  },
-  images: {
-    unoptimized: true,
-    remotePatterns: [
-      {
-        protocol: 'https',
-        hostname: 'placehold.co',
-        port: '',
-        pathname: '/**',
-      },
-      {
-        protocol: 'https',
-        hostname: 'images.unsplash.com',
-        port: '',
-        pathname: '/**',
-      },
-      {
-        protocol: 'https',
-        hostname: 'picsum.photos',
-        port: '',
-        pathname: '/**',
-      },
-    ],
-  },
+  if (phase === PHASE_PRODUCTION_BUILD) {
+    try {
+      const pwaModule = await (new Function('return import("@ducanh2912/next-pwa")')());
+      const withPWAInit = pwaModule.default;
+      const withPWA = withPWAInit({
+        dest: 'public',
+        register: true,
+        skipWaiting: true,
+        reloadOnOnline: true,
+      });
+      return withPWA(baseConfig);
+    } catch (e) {
+      console.warn("PWA initialization skipped:", e);
+      return baseConfig;
+    }
+  }
+
+  return baseConfig;
 };
 
-export default withPWA(nextConfig);
+export default nextConfig;
+
 
