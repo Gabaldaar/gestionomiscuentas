@@ -113,7 +113,10 @@ export function AddIncomeDialog({
       return incomeCategories;
     }
 
-    const isItemVisibleForAccount = (item: { propertyIds?: string[] | null }) => {
+    const isItemVisibleForAccount = (item: { propertyId?: string; propertyIds?: string[] | null }) => {
+      if (item.propertyId) {
+        return item.propertyId === activeAccountId;
+      }
       if (item.propertyIds == null || item.propertyIds.length === 0) {
         return true;
       }

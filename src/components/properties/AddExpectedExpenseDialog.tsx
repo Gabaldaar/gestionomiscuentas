@@ -85,7 +85,10 @@ export function AddExpectedExpenseDialog({
       return expenseCategories;
     }
 
-    const isItemVisibleForAccount = (item: { propertyIds?: string[] | null }) => {
+    const isItemVisibleForAccount = (item: { propertyId?: string; propertyIds?: string[] | null }) => {
+      if (item.propertyId) {
+        return item.propertyId === activeAccountId;
+      }
       // Is global (visible) if propertyIds is not set or is an empty array.
       if (item.propertyIds == null || item.propertyIds.length === 0) {
         return true;

@@ -27,12 +27,14 @@ export type ExpenseCategory = {
   id: string;
   name: string;
   subcategories: ExpenseSubcategory[];
+  propertyId?: string;
   propertyIds?: string[];
 };
 
 export type ExpenseSubcategory = {
   id: string;
   name: string;
+  propertyId?: string;
   propertyIds?: string[];
 };
 
@@ -40,12 +42,14 @@ export type IncomeCategory = {
   id: string;
   name: string;
   subcategories: IncomeSubcategory[];
+  propertyId?: string;
   propertyIds?: string[];
 };
 
 export type IncomeSubcategory = {
     id: string;
-    name:string;
+    name: string;
+    propertyId?: string;
     propertyIds?: string[];
 };
 

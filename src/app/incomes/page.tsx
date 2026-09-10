@@ -347,6 +347,14 @@ export default function IncomesPage() {
         );
     }, [date, selectedCategory, selectedSubcategory, selectedCurrency, selectedWallet]);
 
+    const availableCategories = React.useMemo(() => {
+        if (activeAccountId === 'all') return categories;
+        return categories.filter(c => {
+            const propId = c.propertyId || (c.propertyIds && c.propertyIds[0]);
+            return propId === activeAccountId;
+        });
+    }, [categories, activeAccountId]);
+
     const sortedAndFilteredIncomes = React.useMemo(() => {
         const selectedProperties = activeAccountId === 'all' ? properties.map(p => p.id) : [activeAccountId];
         
@@ -528,7 +536,7 @@ export default function IncomesPage() {
                         <SelectTrigger className="w-full grow sm:grow-0 sm:w-auto"><SelectValue placeholder="Categoría" /></SelectTrigger>
                         <SelectContent>
                             <SelectItem value="all">Todas las categorías</SelectItem>
-                            {categories.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                            {availableCategories.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
                         </SelectContent>
                     </Select>
 

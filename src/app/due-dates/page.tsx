@@ -184,6 +184,14 @@ export default function DueDatesPage() {
     return selectedCategory !== 'all' || daysFilter !== 'all';
   }, [selectedCategory, daysFilter]);
 
+  const availableCategories = React.useMemo(() => {
+    if (activeAccountId === 'all') return categories;
+    return categories.filter(c => {
+      const propId = c.propertyId || (c.propertyIds && c.propertyIds[0]);
+      return propId === activeAccountId;
+    });
+  }, [categories, activeAccountId]);
+
   const sortedAndFilteredExpenses = React.useMemo(() => {
     let filtered = allExpectedExpenses.filter(expense => {
       let match = true;
@@ -351,7 +359,7 @@ export default function DueDatesPage() {
             <SelectTrigger className="w-full grow sm:grow-0 sm:w-auto"><SelectValue placeholder="Categoría" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todas las categorías</SelectItem>
-              {categories.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+              {availableCategories.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
             </SelectContent>
           </Select>
 

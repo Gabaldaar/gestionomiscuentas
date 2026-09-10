@@ -15,12 +15,11 @@ import { ManageCategoryDialog } from '@/components/settings/ManageCategoryDialog
 import { ManageSubcategoryDialog } from '@/components/settings/ManageSubcategoryDialog';
 import { useAccount } from '@/components/context/AccountProvider';
 import { Badge } from '@/components/ui/badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import Image from 'next/image';
 
 export default function ExpenseCategoriesPage() {
   const { toast } = useToast();
-  const { activeAccountId, setActiveAccountId } = useAccount();
+  const { activeAccountId } = useAccount();
   const [categories, setCategories] = React.useState<ExpenseCategory[]>([]);
   const [properties, setProperties] = React.useState<Property[]>([]);
   const [loading, setLoading] = React.useState(true);
@@ -60,13 +59,15 @@ export default function ExpenseCategoriesPage() {
           return {
             id: subDoc.id,
             name: subData.name,
-            propertyIds: subData.propertyIds || [],
+            propertyId: subData.propertyId || (subData.propertyIds && subData.propertyIds[0]),
+            propertyIds: subData.propertyIds || (subData.propertyId ? [subData.propertyId] : []),
           };
         });
         return {
           id: categoryDoc.id,
           name: categoryData.name,
-          propertyIds: categoryData.propertyIds || [],
+          propertyId: categoryData.propertyId || (categoryData.propertyIds && categoryData.propertyIds[0]),
+          propertyIds: categoryData.propertyIds || (categoryData.propertyId ? [categoryData.propertyId] : []),
           subcategories: subcategoriesList,
         } as ExpenseCategory;
       }));
@@ -92,60 +93,17 @@ export default function ExpenseCategoriesPage() {
     return properties.find(p => p.id === activeAccountId);
   }, [properties, activeAccountId]);
 
-  // Helper to check if an item belongs to the account
-  const isItemBelongingToAccount = React.useCallback((
-    item: { propertyIds?: string[] },
-    parentPropertyIds?: string[],
-    targetAccountId: string = activeAccountId
-  ) => {
-    if (targetAccountId === 'all') return true;
-
-    // If item has explicit propertyIds
-    if (item.propertyIds && item.propertyIds.length > 0) {
-      return item.propertyIds.includes(targetAccountId);
-    }
-
-    // If item has no propertyIds, inherit from parent
-    if (parentPropertyIds && parentPropertyIds.length > 0) {
-      return parentPropertyIds.includes(targetAccountId);
-    }
-
-    // If neither has propertyIds, it is global
-    return true;
-  }, [activeAccountId]);
-
-  // Filter categories and their subcategories strictly by active account
+  // Filter categories strictly by active account
   const filteredCategories = React.useMemo(() => {
     if (activeAccountId === 'all') {
       return categories;
     }
 
-    return categories
-      .map(category => {
-        const catHasProps = category.propertyIds && category.propertyIds.length > 0;
-        
-        // If category explicitly assigned to properties and activeAccount is not among them, reject
-        if (catHasProps && !category.propertyIds!.includes(activeAccountId)) {
-          return null;
-        }
-
-        // Filter subcategories belonging to this account
-        const matchingSubcategories = category.subcategories.filter(sub =>
-          isItemBelongingToAccount(sub, category.propertyIds, activeAccountId)
-        );
-
-        // If category is global (no propertyIds) but none of its subcategories match this account, reject
-        if (!catHasProps && category.subcategories.length > 0 && matchingSubcategories.length === 0) {
-          return null;
-        }
-
-        return {
-          ...category,
-          subcategories: matchingSubcategories,
-        };
-      })
-      .filter((cat): cat is ExpenseCategory => cat !== null);
-  }, [categories, activeAccountId, isItemBelongingToAccount]);
+    return categories.filter(category => {
+      const propId = category.propertyId || (category.propertyIds && category.propertyIds[0]);
+      return propId === activeAccountId;
+    });
+  }, [categories, activeAccountId]);
 
   // --- Category Actions ---
   const handleAddCategory = () => {
@@ -212,22 +170,20 @@ export default function ExpenseCategoriesPage() {
     }
   };
 
-  const renderPropertyBadges = (propertyIds?: string[]) => {
-    if (!propertyIds || propertyIds.length === 0) {
-      return <Badge variant="outline" className="text-[11px] font-normal text-muted-foreground">Todas las cuentas</Badge>;
-    }
+  const renderAccountBadge = (propertyId?: string, propertyIds?: string[]) => {
+    const pid = propertyId || (propertyIds && propertyIds[0]);
+    if (!pid) return null;
+    const prop = propertiesMap.get(pid);
+    if (!prop) return null;
     return (
-      <div className="flex flex-wrap gap-1">
-        {propertyIds.map(pid => {
-          const prop = propertiesMap.get(pid);
-          if (!prop) return null;
-          return (
-            <Badge key={pid} variant="secondary" className="text-[11px] font-normal gap-1 py-0 px-1.5">
-              {prop.name}
-            </Badge>
-          );
-        })}
-      </div>
+      <Badge variant="secondary" className="text-[11px] font-normal gap-1.5 py-0.5 px-2">
+        {prop.imageUrl ? (
+          <Image src={prop.imageUrl} alt={prop.name} width={14} height={14} className="rounded-sm object-cover" />
+        ) : (
+          <Building2 className="h-3 w-3 text-muted-foreground" />
+        )}
+        <span>{prop.name}</span>
+      </Badge>
     );
   };
 
@@ -266,44 +222,6 @@ export default function ExpenseCategoriesPage() {
         </Button>
       </PageHeader>
 
-      {/* Account Selector Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-card p-3 rounded-lg border shadow-sm">
-        <div className="flex items-center gap-2">
-          <Building2 className="h-5 w-5 text-primary" />
-          <div>
-            <span className="text-xs text-muted-foreground block">Filtrando por cuenta:</span>
-            <span className="text-sm font-semibold">
-              {activeAccountId === 'all' ? 'Todas las Cuentas' : activeProperty?.name || 'Cuenta Seleccionada'}
-            </span>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <Select value={activeAccountId} onValueChange={setActiveAccountId}>
-            <SelectTrigger className="w-full sm:w-[240px] h-9">
-              <SelectValue placeholder="Seleccionar cuenta..." />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">
-                <span className="font-medium">Todas las cuentas</span>
-              </SelectItem>
-              {properties.map(prop => (
-                <SelectItem key={prop.id} value={prop.id}>
-                  <div className="flex items-center gap-2">
-                    {prop.imageUrl ? (
-                      <Image src={prop.imageUrl} alt={prop.name} width={18} height={18} className="rounded-sm object-cover" />
-                    ) : (
-                      <Building2 className="h-4 w-4 text-muted-foreground" />
-                    )}
-                    <span>{prop.name}</span>
-                  </div>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-
       {/* Categories List */}
       <div className="space-y-4">
         {filteredCategories.length > 0 ? (
@@ -320,7 +238,7 @@ export default function ExpenseCategoriesPage() {
                     </CollapsibleTrigger>
                     <div className="flex flex-wrap items-center gap-2 min-w-0">
                       <CardTitle className="text-base truncate">{category.name}</CardTitle>
-                      {activeAccountId === 'all' && renderPropertyBadges(category.propertyIds)}
+                      {activeAccountId === 'all' && renderAccountBadge(category.propertyId, category.propertyIds)}
                     </div>
                   </div>
                   <div className="flex items-center gap-1 shrink-0">
@@ -345,9 +263,6 @@ export default function ExpenseCategoriesPage() {
                         <li key={subcategory.id} className="flex items-center justify-between p-2.5 hover:bg-muted/40 transition-colors">
                           <div className="flex items-center gap-2 flex-1 min-w-0 pr-2">
                             <span className="text-sm font-medium truncate">{subcategory.name}</span>
-                            {activeAccountId === 'all' && subcategory.propertyIds && subcategory.propertyIds.length > 0 && (
-                              renderPropertyBadges(subcategory.propertyIds)
-                            )}
                           </div>
                           <div className="flex items-center gap-1 shrink-0">
                             <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleEditSubcategory(subcategory, category)} title="Editar Subcategoría">
@@ -383,7 +298,7 @@ export default function ExpenseCategoriesPage() {
               </p>
               <p className="text-xs text-muted-foreground max-w-md mx-auto">
                 {activeAccountId !== 'all'
-                  ? 'Puedes añadir una nueva categoría para esta cuenta o cambiar el filtro arriba a "Todas las cuentas".'
+                  ? 'Puedes añadir una nueva categoría para esta cuenta o cambiar la cuenta seleccionada en la barra superior.'
                   : 'Haz clic en "Añadir Categoría" para crear la primera.'
                 }
               </p>
@@ -404,7 +319,7 @@ export default function ExpenseCategoriesPage() {
         collectionPath="expenseCategories"
         entityName="Categoría de Gasto"
         properties={properties}
-        defaultPropertyId={activeAccountId}
+        defaultPropertyId={activeAccountId === 'all' ? (properties[0]?.id || '') : activeAccountId}
       />
       
       <ManageSubcategoryDialog
@@ -416,7 +331,7 @@ export default function ExpenseCategoriesPage() {
         collectionPath="expenseCategories"
         entityName="Subcategoría de Gasto"
         properties={properties}
-        defaultPropertyId={activeAccountId}
+        defaultPropertyId={activeAccountId === 'all' ? (properties[0]?.id || '') : activeAccountId}
       />
 
       <ConfirmDeleteDialog

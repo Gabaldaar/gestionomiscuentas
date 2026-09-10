@@ -8,7 +8,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useToast } from '@/hooks/use-toast';
 import { collection, addDoc, doc, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { Loader } from 'lucide-react';
+import { Loader, Building2 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -22,7 +22,6 @@ import {
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -30,13 +29,10 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { type ExpenseCategory, type IncomeCategory, type ExpenseSubcategory, type IncomeSubcategory, type Property } from '@/lib/types';
-import { Checkbox } from '../ui/checkbox';
-import { ScrollArea } from '../ui/scroll-area';
-import { Separator } from '../ui/separator';
+import Image from 'next/image';
 
 const subcategorySchema = z.object({
   name: z.string().min(1, 'El nombre es obligatorio.'),
-  propertyIds: z.array(z.string()).optional(),
 });
 
 type SubcategoryFormValues = z.infer<typeof subcategorySchema>;
@@ -68,52 +64,61 @@ export function ManageSubcategoryDialog({
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const isEditing = !!subcategoryToEdit;
 
+  // Determine propertyId from parent category, editing subcategory, or default
+  const assignedPropertyId = React.useMemo(() => {
+    if (subcategoryToEdit?.propertyId) return subcategoryToEdit.propertyId;
+    if (subcategoryToEdit?.propertyIds && subcategoryToEdit.propertyIds.length > 0) return subcategoryToEdit.propertyIds[0];
+    if (parentCategory?.propertyId) return parentCategory.propertyId;
+    if (parentCategory?.propertyIds && parentCategory.propertyIds.length > 0) return parentCategory.propertyIds[0];
+    if (defaultPropertyId && defaultPropertyId !== 'all') return defaultPropertyId;
+    return properties[0]?.id || '';
+  }, [subcategoryToEdit, parentCategory, defaultPropertyId, properties]);
+
+  const assignedProperty = React.useMemo(() => {
+    return properties.find(p => p.id === assignedPropertyId);
+  }, [properties, assignedPropertyId]);
+
   const form = useForm<SubcategoryFormValues>({
     resolver: zodResolver(subcategorySchema),
     defaultValues: {
       name: '',
-      propertyIds: [],
     },
   });
 
-  const availableProperties = React.useMemo(() => {
-    if (!parentCategory || !parentCategory.propertyIds || parentCategory.propertyIds.length === 0) {
-      return properties;
-    }
-    return properties.filter(p => parentCategory.propertyIds.includes(p.id));
-  }, [properties, parentCategory]);
-
   React.useEffect(() => {
     if (isOpen) {
-        const availablePropertyIds = new Set(availableProperties.map(p => p.id));
-        let initialPropertyIds: string[] = [];
-        if (subcategoryToEdit?.propertyIds) {
-          initialPropertyIds = subcategoryToEdit.propertyIds.filter(id => availablePropertyIds.has(id));
-        } else if (defaultPropertyId && defaultPropertyId !== 'all' && availablePropertyIds.has(defaultPropertyId)) {
-          initialPropertyIds = [defaultPropertyId];
-        }
-        form.reset({
-          name: subcategoryToEdit?.name || '',
-          propertyIds: initialPropertyIds,
-        });
+      form.reset({
+        name: subcategoryToEdit?.name || '',
+      });
     }
-  }, [isOpen, subcategoryToEdit, form, availableProperties, defaultPropertyId]);
+  }, [isOpen, subcategoryToEdit, form]);
 
   const onSubmit = async (data: SubcategoryFormValues) => {
     if (!parentCategory) {
-        toast({ title: "Error", description: "Categoría padre no especificada.", variant: "destructive" });
-        return;
+      toast({ title: "Error", description: "Categoría padre no especificada.", variant: "destructive" });
+      return;
+    }
+
+    if (!assignedPropertyId) {
+      toast({ title: "Error", description: "No se ha podido determinar la cuenta asociada.", variant: "destructive" });
+      return;
     }
 
     setIsSubmitting(true);
     try {
+      const payload = {
+        name: data.name.trim(),
+        propertyId: assignedPropertyId,
+        propertyIds: [assignedPropertyId],
+      };
+
       const subcategoryCollectionPath = `${collectionPath}/${parentCategory.id}/subcategories`;
       if (isEditing && subcategoryToEdit) {
         const subcategoryRef = doc(db, subcategoryCollectionPath, subcategoryToEdit.id);
-        await updateDoc(subcategoryRef, data);
+        await updateDoc(subcategoryRef, payload);
         toast({ title: `${entityName} actualizada` });
       } else {
-        await addDoc(collection(db, subcategoryCollectionPath), data);
+        await addDoc(collection(db, subcategoryCollectionPath), payload);
         toast({ title: `${entityName} creada` });
       }
       onSave();
@@ -126,7 +131,7 @@ export function ManageSubcategoryDialog({
         variant: 'destructive',
       });
     } finally {
-        setIsSubmitting(false);
+      setIsSubmitting(false);
     }
   };
 
@@ -138,7 +143,7 @@ export function ManageSubcategoryDialog({
             <DialogHeader>
               <DialogTitle>{isEditing ? `Editar ${entityName}` : `Añadir ${entityName}`}</DialogTitle>
               <DialogDescription>
-                {isEditing ? `Actualiza el nombre y las cuentas asociadas de esta ${entityName.toLowerCase()}` : `Añade una nueva ${entityName.toLowerCase()} a la categoría "${parentCategory?.name}".`}
+                {isEditing ? `Actualiza el nombre de esta ${entityName.toLowerCase()}` : `Añade una nueva ${entityName.toLowerCase()} a la categoría "${parentCategory?.name}".`}
               </DialogDescription>
             </DialogHeader>
             <div className="py-4 space-y-4">
@@ -156,78 +161,27 @@ export function ManageSubcategoryDialog({
                 )}
               />
 
-              <Separator />
-
-              <FormField
-                control={form.control}
-                name="propertyIds"
-                render={() => (
-                  <FormItem>
-                    <div className="mb-4">
-                      <FormLabel className="text-base">Asociar a Cuentas</FormLabel>
-                      <FormDescription>
-                        Selecciona las cuentas donde esta subcategoría estará disponible. Solo se muestran las cuentas asignadas a la categoría padre "{parentCategory?.name}".
-                      </FormDescription>
-                    </div>
-                    <div className="flex items-center space-x-2 pb-2">
-                        <Checkbox
-                          id="select-all-properties-sub"
-                          checked={form.getValues('propertyIds')?.length === availableProperties.length}
-                          onCheckedChange={(checked) => {
-                            if (checked) {
-                              form.setValue('propertyIds', availableProperties.map(p => p.id));
-                            } else {
-                              form.setValue('propertyIds', []);
-                            }
-                          }}
+              {assignedProperty && (
+                <div className="rounded-lg border bg-muted/40 p-3 flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <span className="text-xs text-muted-foreground block">Cuenta asignada:</span>
+                    <span className="text-sm font-semibold text-foreground flex items-center gap-2">
+                      {assignedProperty.imageUrl ? (
+                        <Image
+                          src={assignedProperty.imageUrl}
+                          alt={assignedProperty.name}
+                          width={18}
+                          height={18}
+                          className="rounded-sm object-cover"
                         />
-                        <label
-                          htmlFor="select-all-properties-sub"
-                          className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                        >
-                          Seleccionar todas ({availableProperties.length})
-                        </label>
-                      </div>
-                    <ScrollArea className="h-40 rounded-md border p-4">
-                      {availableProperties.map((item) => (
-                        <FormField
-                          key={item.id}
-                          control={form.control}
-                          name="propertyIds"
-                          render={({ field }) => {
-                            return (
-                              <FormItem
-                                key={item.id}
-                                className="flex flex-row items-start space-x-3 space-y-0 mb-3"
-                              >
-                                <FormControl>
-                                  <Checkbox
-                                    checked={field.value?.includes(item.id)}
-                                    onCheckedChange={(checked) => {
-                                      return checked
-                                        ? field.onChange([...(field.value || []), item.id])
-                                        : field.onChange(
-                                            field.value?.filter(
-                                              (value) => value !== item.id
-                                            )
-                                          )
-                                    }}
-                                  />
-                                </FormControl>
-                                <FormLabel className="font-normal">
-                                  {item.name}
-                                </FormLabel>
-                              </FormItem>
-                            )
-                          }}
-                        />
-                      ))}
-                    </ScrollArea>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
+                      ) : (
+                        <Building2 className="h-4 w-4 text-primary" />
+                      )}
+                      {assignedProperty.name}
+                    </span>
+                  </div>
+                </div>
+              )}
             </div>
             <DialogFooter>
               <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>Cancelar</Button>

@@ -8,7 +8,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useToast } from '@/hooks/use-toast';
 import { collection, addDoc, doc, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { Loader } from 'lucide-react';
+import { Loader, Building2 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -22,21 +22,17 @@ import {
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { type ExpenseCategory, type Property } from '@/lib/types';
-import { Separator } from '../ui/separator';
-import { Checkbox } from '../ui/checkbox';
-import { ScrollArea } from '../ui/scroll-area';
+import { type ExpenseCategory, type IncomeCategory, type Property } from '@/lib/types';
+import Image from 'next/image';
 
 const categorySchema = z.object({
   name: z.string().min(1, 'El nombre es obligatorio.'),
-  propertyIds: z.array(z.string()).optional(),
 });
 
 type CategoryFormValues = z.infer<typeof categorySchema>;
@@ -45,7 +41,7 @@ type ManageCategoryDialogProps = {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
   onSave: () => void;
-  categoryToEdit?: Pick<ExpenseCategory, 'id' | 'name' | 'propertyIds'> | null;
+  categoryToEdit?: Pick<ExpenseCategory | IncomeCategory, 'id' | 'name' | 'propertyId' | 'propertyIds'> | null;
   collectionPath: string;
   entityName: string;
   properties: Property[];
@@ -66,35 +62,57 @@ export function ManageCategoryDialog({
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const isEditing = !!categoryToEdit;
 
+  // Determine propertyId
+  const assignedPropertyId = React.useMemo(() => {
+    if (categoryToEdit?.propertyId) return categoryToEdit.propertyId;
+    if (categoryToEdit?.propertyIds && categoryToEdit.propertyIds.length > 0) return categoryToEdit.propertyIds[0];
+    if (defaultPropertyId && defaultPropertyId !== 'all') return defaultPropertyId;
+    return properties[0]?.id || '';
+  }, [categoryToEdit, defaultPropertyId, properties]);
+
+  const assignedProperty = React.useMemo(() => {
+    return properties.find(p => p.id === assignedPropertyId);
+  }, [properties, assignedPropertyId]);
+
   const form = useForm<CategoryFormValues>({
     resolver: zodResolver(categorySchema),
     defaultValues: {
       name: '',
-      propertyIds: [],
     },
   });
 
   React.useEffect(() => {
     if (isOpen) {
-        const defaultProps = categoryToEdit?.propertyIds 
-          ? categoryToEdit.propertyIds 
-          : (defaultPropertyId && defaultPropertyId !== 'all' ? [defaultPropertyId] : []);
-        form.reset({
-          name: categoryToEdit?.name || '',
-          propertyIds: defaultProps
-        });
+      form.reset({
+        name: categoryToEdit?.name || '',
+      });
     }
-  }, [isOpen, categoryToEdit, defaultPropertyId, form]);
+  }, [isOpen, categoryToEdit, form]);
 
   const onSubmit = async (data: CategoryFormValues) => {
+    if (!assignedPropertyId) {
+      toast({
+        title: 'Error',
+        description: 'No se ha podido determinar la cuenta para esta categoría.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     setIsSubmitting(true);
     try {
+      const payload = {
+        name: data.name.trim(),
+        propertyId: assignedPropertyId,
+        propertyIds: [assignedPropertyId],
+      };
+
       if (isEditing && categoryToEdit) {
         const categoryRef = doc(db, collectionPath, categoryToEdit.id);
-        await updateDoc(categoryRef, data);
+        await updateDoc(categoryRef, payload);
         toast({ title: `${entityName} actualizada` });
       } else {
-        await addDoc(collection(db, collectionPath), data);
+        await addDoc(collection(db, collectionPath), payload);
         toast({ title: `${entityName} creada` });
       }
       onSave();
@@ -107,7 +125,7 @@ export function ManageCategoryDialog({
         variant: 'destructive',
       });
     } finally {
-        setIsSubmitting(false);
+      setIsSubmitting(false);
     }
   };
 
@@ -119,96 +137,45 @@ export function ManageCategoryDialog({
             <DialogHeader>
               <DialogTitle>{isEditing ? `Editar ${entityName}` : `Añadir ${entityName}`}</DialogTitle>
               <DialogDescription>
-                {isEditing ? `Actualiza el nombre y las cuentas asociadas de esta ${entityName.toLowerCase()}.` : `Crea una nueva ${entityName.toLowerCase()}.`}
+                {isEditing ? `Actualiza el nombre de esta ${entityName.toLowerCase()}.` : `Crea una nueva ${entityName.toLowerCase()}.`}
               </DialogDescription>
             </DialogHeader>
             <div className="py-4 space-y-4">
-                <FormField
+              <FormField
                 control={form.control}
                 name="name"
                 render={({ field }) => (
-                    <FormItem>
+                  <FormItem>
                     <FormLabel>Nombre</FormLabel>
                     <FormControl>
-                        <Input placeholder={`Ej: Mantenimiento`} {...field} />
+                      <Input placeholder={`Ej: Mantenimiento`} {...field} />
                     </FormControl>
                     <FormMessage />
-                    </FormItem>
+                  </FormItem>
                 )}
-                />
-                
-                <Separator />
+              />
 
-                <FormField
-                  control={form.control}
-                  name="propertyIds"
-                  render={() => (
-                    <FormItem>
-                      <div className="mb-4">
-                        <FormLabel className="text-base">Asociar a Cuentas</FormLabel>
-                        <FormDescription>
-                          Selecciona las cuentas donde esta categoría estará disponible. Si no seleccionas ninguna, estará disponible para todas.
-                        </FormDescription>
-                      </div>
-                      <div className="flex items-center space-x-2 pb-2">
-                          <Checkbox
-                            id="select-all-properties-cat"
-                            checked={form.getValues('propertyIds')?.length === properties.length}
-                            onCheckedChange={(checked) => {
-                              if (checked) {
-                                form.setValue('propertyIds', properties.map(p => p.id));
-                              } else {
-                                form.setValue('propertyIds', []);
-                              }
-                            }}
-                          />
-                          <label
-                            htmlFor="select-all-properties-cat"
-                            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                          >
-                            Seleccionar todas
-                          </label>
-                        </div>
-                      <ScrollArea className="h-40 rounded-md border p-4">
-                        {properties.map((item) => (
-                          <FormField
-                            key={item.id}
-                            control={form.control}
-                            name="propertyIds"
-                            render={({ field }) => {
-                              return (
-                                <FormItem
-                                  key={item.id}
-                                  className="flex flex-row items-start space-x-3 space-y-0 mb-3"
-                                >
-                                  <FormControl>
-                                    <Checkbox
-                                      checked={field.value?.includes(item.id)}
-                                      onCheckedChange={(checked) => {
-                                        return checked
-                                          ? field.onChange([...(field.value || []), item.id])
-                                          : field.onChange(
-                                              field.value?.filter(
-                                                (value) => value !== item.id
-                                              )
-                                            )
-                                      }}
-                                    />
-                                  </FormControl>
-                                  <FormLabel className="font-normal">
-                                    {item.name}
-                                  </FormLabel>
-                                </FormItem>
-                              )
-                            }}
-                          />
-                        ))}
-                      </ScrollArea>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
+              {assignedProperty && (
+                <div className="rounded-lg border bg-muted/40 p-3 flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <span className="text-xs text-muted-foreground block">Cuenta asignada:</span>
+                    <span className="text-sm font-semibold text-foreground flex items-center gap-2">
+                      {assignedProperty.imageUrl ? (
+                        <Image
+                          src={assignedProperty.imageUrl}
+                          alt={assignedProperty.name}
+                          width={18}
+                          height={18}
+                          className="rounded-sm object-cover"
+                        />
+                      ) : (
+                        <Building2 className="h-4 w-4 text-primary" />
+                      )}
+                      {assignedProperty.name}
+                    </span>
+                  </div>
+                </div>
+              )}
             </div>
             <DialogFooter>
               <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>Cancelar</Button>
