@@ -263,7 +263,10 @@ export function PropertyIncome({ propertyId, wallets, incomeCategories, selected
                                     'text-blue-600 dark:text-blue-400': income.currency === 'ARS',
                                 }
                             )}>
-                                {new Intl.NumberFormat('es-AR', { style: 'currency', currency: income.currency }).format(income.amount)}
+                                {new Intl.NumberFormat('es-AR', { 
+                                    style: 'currency', 
+                                    currency: (income.currency === 'USD' || income.currency === 'ARS') ? income.currency : 'ARS' 
+                                }).format(income.amount || 0)}
                             </div>
                         </div>
                         {income.notes && <p className="text-sm text-muted-foreground mt-2 pt-2 border-t">{income.notes}</p>}

@@ -14,8 +14,14 @@ type FinancialSummaryProps = {
   expenses: ActualExpense[];
 };
 
-const formatCurrency = (amount: number, currency: Currency) => {
-  return new Intl.NumberFormat('es-AR', { style: 'currency', currency }).format(amount);
+const formatCurrency = (amount: number | null | undefined, currency?: Currency | string | null) => {
+  const safeCurrency = (currency === 'USD' || currency === 'ARS') ? currency : 'ARS';
+  const safeAmount = typeof amount === 'number' && !isNaN(amount) ? amount : 0;
+  try {
+    return new Intl.NumberFormat('es-AR', { style: 'currency', currency: safeCurrency }).format(safeAmount);
+  } catch {
+    return `${safeCurrency === 'USD' ? 'US$' : '$'} ${safeAmount.toFixed(2)}`;
+  }
 };
 
 export function FinancialSummary({ incomes, expenses }: FinancialSummaryProps) {
@@ -26,11 +32,13 @@ export function FinancialSummary({ incomes, expenses }: FinancialSummaryProps) {
     };
 
     incomes.forEach(income => {
-      totals[income.currency].income += income.amount;
+      const curr: Currency = (income.currency === 'USD' || income.currency === 'ARS') ? income.currency : 'ARS';
+      totals[curr].income += (income.amount || 0);
     });
 
     expenses.forEach(expense => {
-      totals[expense.currency].expense += expense.amount;
+      const curr: Currency = (expense.currency === 'USD' || expense.currency === 'ARS') ? expense.currency : 'ARS';
+      totals[curr].expense += (expense.amount || 0);
     });
     
     (Object.keys(totals) as Currency[]).forEach(currency => {

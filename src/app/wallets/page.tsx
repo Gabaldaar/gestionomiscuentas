@@ -30,8 +30,14 @@ import { Line, LineChart, ResponsiveContainer, XAxis, YAxis, Tooltip as Recharts
 import { subMonths, format, startOfMonth, endOfMonth } from 'date-fns';
 import { es } from 'date-fns/locale';
 
-const formatCurrency = (amount: number, currency: string) => {
-  return new Intl.NumberFormat('es-AR', { style: 'currency', currency, minimumFractionDigits: 0 }).format(amount);
+const formatCurrency = (amount: number | null | undefined, currency?: string | null, digits: number = 2) => {
+  const safeCurrency = (currency === 'USD' || currency === 'ARS') ? currency : 'ARS';
+  const safeAmount = typeof amount === 'number' && !isNaN(amount) ? amount : 0;
+  try {
+    return new Intl.NumberFormat('es-AR', { style: 'currency', currency: safeCurrency, minimumFractionDigits: digits }).format(safeAmount);
+  } catch {
+    return `${safeCurrency === 'USD' ? 'US$' : '$'} ${safeAmount.toFixed(digits)}`;
+  }
 };
 
 // --- Componente interno para el gráfico de evolución ---
@@ -107,9 +113,13 @@ export default function WalletsSettingsPage() {
             .map(doc => {
               const data = doc.data();
               const propId = data.propertyId || data.propertyIds?.[0] || '';
+              const rawCurrency = data.currency;
+              const safeCurrency: Currency = (rawCurrency === 'USD' || rawCurrency === 'ARS') ? rawCurrency : 'ARS';
               return { 
                 id: doc.id, 
                 ...data,
+                currency: safeCurrency,
+                balance: typeof data.balance === 'number' && !isNaN(data.balance) ? data.balance : 0,
                 propertyId: propId,
               } as Wallet;
             })
@@ -182,13 +192,12 @@ export default function WalletsSettingsPage() {
   }, [wallets, currencyFilter, activeAccountId]);
   
   const walletTotals = React.useMemo(() => {
-    return filteredWallets.reduce((acc, wallet) => {
-      if (acc[wallet.currency] === undefined) {
-        acc[wallet.currency] = 0;
-      }
-      acc[wallet.currency]! += wallet.balance;
-      return acc;
-    }, {} as Record<Currency, number>);
+    const totals: { ARS: number; USD: number } = { ARS: 0, USD: 0 };
+    filteredWallets.forEach(wallet => {
+      const curr = (wallet.currency === 'USD' || wallet.currency === 'ARS') ? wallet.currency : 'ARS';
+      totals[curr] = (totals[curr] || 0) + (wallet.balance || 0);
+    });
+    return totals;
   }, [filteredWallets]);
 
   const handleWalletSelection = (e: React.MouseEvent, walletId: string) => {
@@ -206,10 +215,11 @@ export default function WalletsSettingsPage() {
     selectedWallets.forEach(id => {
         const wallet = wallets.find(w => w.id === id);
         if (wallet) {
-            if (!totals[wallet.currency]) {
-                totals[wallet.currency] = 0;
+            const curr: Currency = (wallet.currency === 'USD' || wallet.currency === 'ARS') ? wallet.currency : 'ARS';
+            if (totals[curr] === undefined) {
+                totals[curr] = 0;
             }
-            totals[wallet.currency]! += wallet.balance;
+            totals[curr]! += (wallet.balance || 0);
         }
     });
     return totals;
@@ -377,34 +387,34 @@ export default function WalletsSettingsPage() {
       </Tabs>
 
       {/* Totals Cards */}
-      {Object.keys(walletTotals).length > 0 && (
-        <div className="grid gap-4 md:grid-cols-2">
-          {(Object.keys(walletTotals) as Currency[]).map(currency => (
-            <Card key={currency} className={cn(
-              "border-none shadow-sm",
-              currency === 'USD' ? 'bg-green-500/10' : 'bg-blue-500/10'
-            )}>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Total {currency} {activeAccountId !== 'all' ? `(${activeProperty?.name})` : ''}
-                </CardTitle>
-                {currency === 'USD' ? <DollarSign className="h-4 w-4 text-green-600" /> : <CircleDollarSign className="h-4 w-4 text-blue-600" />}
-              </CardHeader>
-              <CardContent>
-                <div className={cn(
-                    "text-2xl font-bold",
-                    currency === 'USD' ? 'text-green-700 dark:text-green-400' : 'text-blue-700 dark:text-blue-400'
-                )}>
-                  {new Intl.NumberFormat('es-AR', { style: 'currency', currency, minimumFractionDigits: 2 }).format(walletTotals[currency]!)}
-                </div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  {filteredWallets.filter(w => w.currency === currency).length} billetera(s)
-                </p>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      )}
+      <div className="grid gap-4 md:grid-cols-2">
+        {(['ARS', 'USD'] as Currency[])
+          .filter(currency => currencyFilter === 'all' || currencyFilter === currency)
+          .map(currency => (
+          <Card key={currency} className={cn(
+            "border-none shadow-sm",
+            currency === 'USD' ? 'bg-green-500/10' : 'bg-blue-500/10'
+          )}>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                Total {currency} {activeAccountId !== 'all' ? `(${activeProperty?.name})` : ''}
+              </CardTitle>
+              {currency === 'USD' ? <DollarSign className="h-4 w-4 text-green-600" /> : <CircleDollarSign className="h-4 w-4 text-blue-600" />}
+            </CardHeader>
+            <CardContent>
+              <div className={cn(
+                  "text-2xl font-bold",
+                  currency === 'USD' ? 'text-green-700 dark:text-green-400' : 'text-blue-700 dark:text-blue-400'
+              )}>
+                {formatCurrency(walletTotals[currency] ?? 0, currency, 2)}
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                {filteredWallets.filter(w => w.currency === currency).length} billetera(s)
+              </p>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
       
       {/* Combined Selection Box */}
       {selectedWallets.length > 0 && (
@@ -433,7 +443,7 @@ export default function WalletsSettingsPage() {
                     'text-green-600 dark:text-green-400': currency === 'USD',
                     'text-blue-600 dark:text-blue-400': currency === 'ARS',
                   })}>
-                    {new Intl.NumberFormat('es-AR', { style: 'currency', currency, minimumFractionDigits: 2 }).format(selectedTotals[currency]!)}
+                    {formatCurrency(selectedTotals[currency] ?? 0, currency, 2)}
                   </span>
                 </div>
               ))}
@@ -540,7 +550,7 @@ export default function WalletsSettingsPage() {
                         'text-blue-600 dark:text-blue-400': wallet.currency === 'ARS',
                         'text-destructive': wallet.balance < 0,
                       })}>
-                        {new Intl.NumberFormat('es-AR', { style: 'currency', currency: wallet.currency, minimumFractionDigits: 2 }).format(wallet.balance)}
+                        {formatCurrency(wallet.balance, wallet.currency, 2)}
                       </div>
                     </CardContent>
                   </Card>

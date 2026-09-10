@@ -24,8 +24,14 @@ import { WalletIcon, type WalletIconName } from '@/lib/wallet-icons';
 import { type DateRange } from 'react-day-picker';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
-const formatCurrency = (amount: number, currency: string) => {
-  return new Intl.NumberFormat('es-AR', { style: 'currency', currency }).format(amount);
+const formatCurrency = (amount: number | null | undefined, currency?: string | null) => {
+  const safeCurrency = (currency === 'USD' || currency === 'ARS') ? currency : 'ARS';
+  const safeAmount = typeof amount === 'number' && !isNaN(amount) ? amount : 0;
+  try {
+    return new Intl.NumberFormat('es-AR', { style: 'currency', currency: safeCurrency }).format(safeAmount);
+  } catch {
+    return `${safeCurrency === 'USD' ? 'US$' : '$'} ${safeAmount.toFixed(2)}`;
+  }
 };
 
 type TransactionWithBalance = Transaction & { runningBalance: number };

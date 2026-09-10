@@ -28,8 +28,14 @@ import { useAccount } from '@/components/context/AccountProvider';
 
 type Transaction = Income | ActualExpense;
 
-const formatCurrency = (amount: number, currency: Currency) => {
-  return new Intl.NumberFormat('es-AR', { style: 'currency', currency, minimumFractionDigits: 0 }).format(amount);
+const formatCurrency = (amount: number | null | undefined, currency?: Currency | string | null) => {
+  const safeCurrency = (currency === 'USD' || currency === 'ARS') ? currency : 'ARS';
+  const safeAmount = typeof amount === 'number' && !isNaN(amount) ? amount : 0;
+  try {
+    return new Intl.NumberFormat('es-AR', { style: 'currency', currency: safeCurrency, minimumFractionDigits: 0 }).format(safeAmount);
+  } catch {
+    return `${safeCurrency === 'USD' ? 'US$' : '$'} ${safeAmount.toFixed(0)}`;
+  }
 };
 
 const COLORS = ["hsl(var(--chart-1))", "hsl(var(--chart-2))", "hsl(var(--chart-3))", "hsl(var(--chart-4))", "hsl(var(--chart-5))", "#f59e0b", "#10b981", "#3b82f6"];

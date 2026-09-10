@@ -75,7 +75,10 @@ export function RecentActivity({ incomes, expenses, expenseCategories, incomeCat
                     activity.type === 'income' ? 'text-green-500' : 'text-red-500'
                 )}>
                   {activity.type === 'expense' && '-'}
-                  {new Intl.NumberFormat('es-AR', { style: 'currency', currency: activity.currency }).format(activity.amount)}
+                  {new Intl.NumberFormat('es-AR', { 
+                    style: 'currency', 
+                    currency: (activity.currency === 'USD' || activity.currency === 'ARS') ? activity.currency : 'ARS' 
+                  }).format(activity.amount || 0)}
                 </div>
               </div>
             ))}

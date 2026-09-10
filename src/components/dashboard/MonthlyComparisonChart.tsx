@@ -95,11 +95,18 @@ const SingleCurrencyChart = ({ incomes, expenses, currency }: SingleCurrencyChar
                     backgroundColor: 'hsl(var(--background))',
                     borderColor: 'hsl(var(--border))'
                 }}
-                formatter={(value: number) => new Intl.NumberFormat('es-AR', {
-                    style: 'currency',
-                    currency: currency,
-                    notation: 'compact',
-                }).format(value)}
+                formatter={(value: number) => {
+                    const safeCurrency = (currency === 'USD' || currency === 'ARS') ? currency : 'ARS';
+                    try {
+                        return new Intl.NumberFormat('es-AR', {
+                            style: 'currency',
+                            currency: safeCurrency,
+                            notation: 'compact',
+                        }).format(value || 0);
+                    } catch {
+                        return `${safeCurrency === 'USD' ? 'US$' : '$'} ${value || 0}`;
+                    }
+                }}
             />
             <Legend wrapperStyle={{fontSize: "0.8rem"}}/>
             <Bar dataKey="income" fill="hsl(var(--chart-1))" name="Ingresos" radius={[4, 4, 0, 0]} />

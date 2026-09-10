@@ -31,8 +31,14 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar } from '@/components/ui/calendar';
 import { useAccount } from '@/components/context/AccountProvider';
 
-const formatCurrency = (amount: number, currency: string) => {
-  return new Intl.NumberFormat('es-AR', { style: 'currency', currency }).format(amount);
+const formatCurrency = (amount: number | null | undefined, currency?: string | null) => {
+  const safeCurrency = (currency === 'USD' || currency === 'ARS') ? currency : 'ARS';
+  const safeAmount = typeof amount === 'number' && !isNaN(amount) ? amount : 0;
+  try {
+    return new Intl.NumberFormat('es-AR', { style: 'currency', currency: safeCurrency }).format(safeAmount);
+  } catch {
+    return `${safeCurrency === 'USD' ? 'US$' : '$'} ${safeAmount.toFixed(2)}`;
+  }
 };
 
 type TransferWithDetails = Transfer & { fromWalletName: string, toWalletName: string };
