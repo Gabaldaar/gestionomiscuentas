@@ -78,7 +78,6 @@ async function getAllTransactionsForWallet(walletId: string): Promise<{transacti
     };
 
     incomesSnap.docs
-      .filter(doc => doc.ref.parent.parent && !doc.ref.parent.parent.parent)
       .forEach(doc => {
         const data = doc.data() as Income;
         if (data.walletId === walletId) {
@@ -106,7 +105,6 @@ async function getAllTransactionsForWallet(walletId: string): Promise<{transacti
     });
 
     expensesSnap.docs
-      .filter(doc => doc.ref.parent.parent && !doc.ref.parent.parent.parent)
       .forEach(doc => {
         const data = doc.data() as ActualExpense;
         if (data.walletId === walletId) {

@@ -92,7 +92,6 @@ export default function ReportsPage() {
       setProperties(propsList);
 
       const incomesList = incomesSnap.docs
-        .filter(doc => doc.ref.parent.parent && !doc.ref.parent.parent.parent)
         .map(doc => {
           const data = doc.data();
           return { ...data, id: doc.id, date: (data.date as Timestamp).toDate().toISOString(), propertyId: doc.ref.parent.parent?.id } as Income;
@@ -100,7 +99,6 @@ export default function ReportsPage() {
       setAllIncomes(incomesList);
 
       const expensesList = expensesSnap.docs
-        .filter(doc => doc.ref.parent.parent && !doc.ref.parent.parent.parent)
         .map(doc => {
           const data = doc.data();
           return { ...data, id: doc.id, date: (data.date as Timestamp).toDate().toISOString(), propertyId: doc.ref.parent.parent?.id } as ActualExpense;

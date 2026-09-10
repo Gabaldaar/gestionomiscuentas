@@ -107,7 +107,6 @@ export default function IncomesPage() {
             setCategories(categoriesList);
 
             const incomesList = incomesSnap.docs
-                .filter(doc => doc.ref.parent.parent && !doc.ref.parent.parent.parent)
                 .map(doc => {
                     const data = doc.data() as Income;
                     const propertyId = doc.ref.parent.parent ? doc.ref.parent.parent.id : (data.propertyId || '');

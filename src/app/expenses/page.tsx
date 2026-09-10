@@ -112,7 +112,6 @@ export default function ExpensesPage() {
             setCategories(categoriesList);
 
             const expensesList = expensesSnap.docs
-                .filter(doc => doc.ref.parent.parent && !doc.ref.parent.parent.parent)
                 .map(doc => {
                     const data = doc.data() as ActualExpense;
                     const propertyId = doc.ref.parent.parent ? doc.ref.parent.parent.id : (data.propertyId || '');

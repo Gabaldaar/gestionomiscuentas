@@ -86,7 +86,6 @@ export default function DashboardPage() {
       ]);
 
       const incomes = incomesSnapshot.docs
-        .filter(doc => doc.ref.parent.parent && !doc.ref.parent.parent.parent)
         .map(doc => ({
           ...doc.data(),
           id: doc.id,
@@ -95,7 +94,6 @@ export default function DashboardPage() {
         } as Income));
 
       const expenses = expensesSnapshot.docs
-        .filter(doc => doc.ref.parent.parent && !doc.ref.parent.parent.parent)
         .map(doc => ({
           ...doc.data(),
           id: doc.id,
@@ -104,7 +102,6 @@ export default function DashboardPage() {
         } as ActualExpense));
       
       const expectedExpenses = expectedExpensesSnapshot.docs
-        .filter(doc => doc.ref.parent.parent && !doc.ref.parent.parent.parent)
         .map(doc => {
           const data = doc.data();
           let date;

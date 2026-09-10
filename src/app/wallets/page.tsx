@@ -244,7 +244,6 @@ export default function WalletsSettingsPage() {
       const transactions: { date: Date, amount: number, currency: Currency }[] = [];
 
       incomesSnap.docs
-        .filter(doc => doc.ref.parent.parent && !doc.ref.parent.parent.parent)
         .forEach(doc => {
           const data = doc.data() as Income;
           if (selectedWalletIds.has(data.walletId)) {
@@ -258,7 +257,6 @@ export default function WalletsSettingsPage() {
         });
 
       expensesSnap.docs
-        .filter(doc => doc.ref.parent.parent && !doc.ref.parent.parent.parent)
         .forEach(doc => {
           const data = doc.data() as ActualExpense;
           if (selectedWalletIds.has(data.walletId)) {
