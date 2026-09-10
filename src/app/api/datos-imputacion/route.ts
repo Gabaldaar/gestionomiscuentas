@@ -22,9 +22,13 @@ export async function GET(request: Request) {
             
             return subcategoriesSnap.docs.map(subDoc => {
                 const subData = subDoc.data();
+                const propertyIds = (subData.propertyIds && Array.isArray(subData.propertyIds) && subData.propertyIds.length > 0)
+                    ? subData.propertyIds
+                    : (categoryData.propertyIds && Array.isArray(categoryData.propertyIds) ? categoryData.propertyIds : []);
                 return {
                     id: subDoc.id,
-                    nombre: `${categoryData.name} / ${subData.name}`
+                    nombre: `${categoryData.name} / ${subData.name}`,
+                    propertyIds: propertyIds
                 };
             });
         });
@@ -39,7 +43,12 @@ export async function GET(request: Request) {
 
         const billeteras = walletsSnap.docs.map(doc => {
             const data = doc.data() as Omit<Wallet, 'id'>;
-            return { id: doc.id, nombre: data.name };
+            return { 
+                id: doc.id, 
+                nombre: data.name,
+                currency: data.currency,
+                propertyIds: data.propertyIds && Array.isArray(data.propertyIds) ? data.propertyIds : []
+            };
         });
 
         return NextResponse.json({
