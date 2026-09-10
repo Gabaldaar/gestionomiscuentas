@@ -339,44 +339,6 @@ export default function WalletsSettingsPage() {
         </Button>
       </PageHeader>
 
-      {/* Account Selector Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-card p-3 rounded-lg border shadow-sm">
-        <div className="flex items-center gap-2">
-          <Building2 className="h-5 w-5 text-primary" />
-          <div>
-            <span className="text-xs text-muted-foreground block">Mostrando billeteras de:</span>
-            <span className="text-sm font-semibold">
-              {activeAccountId === 'all' ? 'Todas las Cuentas' : activeProperty?.name || 'Cuenta Seleccionada'}
-            </span>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <Select value={activeAccountId} onValueChange={setActiveAccountId}>
-            <SelectTrigger className="w-full sm:w-[240px] h-9">
-              <SelectValue placeholder="Seleccionar cuenta..." />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">
-                <span className="font-medium">Todas las cuentas</span>
-              </SelectItem>
-              {properties.map(prop => (
-                <SelectItem key={prop.id} value={prop.id}>
-                  <div className="flex items-center gap-2">
-                    {prop.imageUrl ? (
-                      <Image src={prop.imageUrl} alt={prop.name} width={18} height={18} className="rounded-sm object-cover" />
-                    ) : (
-                      <Building2 className="h-4 w-4 text-muted-foreground" />
-                    )}
-                    <span>{prop.name}</span>
-                  </div>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-
       {/* Currency Tabs */}
       <Tabs defaultValue="all" onValueChange={(value) => setCurrencyFilter(value as 'all' | Currency)}>
         <TabsList className="grid w-full grid-cols-3 md:w-auto md:inline-flex">

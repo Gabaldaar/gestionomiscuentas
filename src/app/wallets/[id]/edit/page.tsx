@@ -44,12 +44,14 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { walletIcons, WalletIcon, type WalletIconName } from '@/lib/wallet-icons';
 import { Switch } from '@/components/ui/switch';
 
+import { useAccount } from '@/components/context/AccountProvider';
+
 const walletSchema = z.object({
   name: z.string().min(1, 'El nombre es obligatorio.'),
   currency: z.enum(['ARS', 'USD'], {
     required_error: 'La moneda es obligatoria.',
   }),
-  propertyId: z.string().min(1, 'Debes seleccionar la cuenta a la que pertenece esta billetera.'),
+  propertyId: z.string().optional(),
   balance: z.coerce.number({invalid_type_error: 'El saldo debe ser un número.'}),
   icon: z.string().optional(),
   allowNegativeBalance: z.boolean().optional(),
@@ -63,12 +65,14 @@ export default function EditWalletPage() {
   const router = useRouter();
   const params = useParams();
   const { toast } = useToast();
+  const { activeAccountId } = useAccount();
   const id = params.id as string;
 
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
   const [properties, setProperties] = React.useState<Property[]>([]);
+  const [currentPropertyId, setCurrentPropertyId] = React.useState<string>('');
 
   const form = useForm<WalletFormValues>({
     resolver: zodResolver(walletSchema),
@@ -91,6 +95,7 @@ export default function EditWalletPage() {
         if (walletSnap.exists()) {
           const walletData = walletSnap.data() as Wallet;
           const assignedPropertyId = walletData.propertyId || walletData.propertyIds?.[0] || '';
+          setCurrentPropertyId(assignedPropertyId);
           
           form.reset({
             name: walletData.name,
@@ -115,15 +120,32 @@ export default function EditWalletPage() {
     fetchWallet();
   }, [id, form, toast]);
 
+  const targetProperty = React.useMemo(() => {
+    if (activeAccountId !== 'all') {
+      return properties.find(p => p.id === activeAccountId) || properties.find(p => p.id === currentPropertyId);
+    }
+    return properties.find(p => p.id === currentPropertyId) || properties[0];
+  }, [properties, activeAccountId, currentPropertyId]);
+
   const onSubmit = async (data: WalletFormValues) => {
+    const finalPropertyId = (activeAccountId !== 'all' ? activeAccountId : (currentPropertyId || data.propertyId || properties[0]?.id));
+    if (!finalPropertyId) {
+      toast({
+        title: 'Error',
+        description: 'No se pudo determinar la cuenta asociada a la billetera.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       const walletRef = doc(db, 'wallets', id);
       await updateDoc(walletRef, {
         name: data.name,
         currency: data.currency,
-        propertyId: data.propertyId,
-        propertyIds: [data.propertyId],
+        propertyId: finalPropertyId,
+        propertyIds: [finalPropertyId],
         balance: data.balance,
         icon: data.icon,
         allowNegativeBalance: data.allowNegativeBalance,
@@ -182,12 +204,29 @@ export default function EditWalletPage() {
         <CardHeader>
           <CardTitle>Editar Detalles</CardTitle>
           <CardDescription>
-            Modifica la información y la cuenta a la que pertenece esta billetera.
+            Modifica la información de la billetera.
           </CardDescription>
         </CardHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)}>
             <CardContent className="space-y-6">
+              {/* Account Association Info */}
+              <div className="rounded-lg border bg-muted/40 p-3.5 flex items-center justify-between">
+                <div>
+                  <span className="text-xs text-muted-foreground block">Cuenta asignada (según encabezado):</span>
+                  <div className="flex items-center gap-2 mt-1">
+                    {targetProperty?.imageUrl ? (
+                      <Image src={targetProperty.imageUrl} alt={targetProperty.name} width={20} height={20} className="rounded-sm object-cover" />
+                    ) : (
+                      <Building2 className="h-4 w-4 text-primary" />
+                    )}
+                    <span className="font-semibold text-sm">
+                      {targetProperty?.name || (loading ? 'Cargando cuenta...' : 'Cuenta asignada')}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
               <FormField
                 control={form.control}
                 name="name"
@@ -197,42 +236,6 @@ export default function EditWalletPage() {
                     <FormControl>
                       <Input placeholder="Ej: Efectivo" {...field} />
                     </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              {/* Single Account Association Selector */}
-              <FormField
-                control={form.control}
-                name="propertyId"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Cuenta a la que pertenece</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value || ''}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecciona la cuenta dueña" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {properties.map(property => (
-                          <SelectItem key={property.id} value={property.id}>
-                            <div className="flex items-center gap-2">
-                              {property.imageUrl ? (
-                                <Image src={property.imageUrl} alt={property.name} width={18} height={18} className="rounded-sm object-cover" />
-                              ) : (
-                                <Building2 className="h-4 w-4 text-muted-foreground" />
-                              )}
-                              <span>{property.name}</span>
-                            </div>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormDescription>
-                      Esta billetera pertenecerá exclusivamente a la cuenta seleccionada.
-                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}

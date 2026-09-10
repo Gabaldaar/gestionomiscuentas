@@ -51,7 +51,7 @@ const walletSchema = z.object({
   currency: z.enum(['ARS', 'USD'], {
     required_error: 'La moneda es obligatoria.',
   }),
-  propertyId: z.string().min(1, 'Debes seleccionar la cuenta a la que pertenece esta billetera.'),
+  propertyId: z.string().optional(),
   icon: z.string().optional(),
   allowNegativeBalance: z.boolean().optional(),
   order: z.coerce.number().optional(),
@@ -91,7 +91,7 @@ export default function NewWalletPage() {
         // If active account is set, pre-fill
         if (activeAccountId !== 'all' && propsList.some(p => p.id === activeAccountId)) {
           form.setValue('propertyId', activeAccountId);
-        } else if (propsList.length > 0 && !form.getValues('propertyId')) {
+        } else if (propsList.length > 0) {
           form.setValue('propertyId', propsList[0].id);
         }
       } catch (error) {
@@ -103,7 +103,24 @@ export default function NewWalletPage() {
     fetchProperties();
   }, [toast, activeAccountId, form]);
 
+  const targetProperty = React.useMemo(() => {
+    if (activeAccountId !== 'all') {
+      return properties.find(p => p.id === activeAccountId);
+    }
+    return properties[0];
+  }, [properties, activeAccountId]);
+
   const onSubmit = async (data: WalletFormValues) => {
+    const finalPropertyId = (activeAccountId !== 'all' ? activeAccountId : targetProperty?.id) || data.propertyId;
+    if (!finalPropertyId) {
+      toast({
+        title: 'Error',
+        description: 'Por favor selecciona una cuenta en el encabezado antes de crear la billetera.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       const walletsCollection = collection(db, 'wallets');
@@ -113,8 +130,8 @@ export default function NewWalletPage() {
       await addDoc(walletsCollection, {
         name: data.name,
         currency: data.currency,
-        propertyId: data.propertyId,
-        propertyIds: [data.propertyId],
+        propertyId: finalPropertyId,
+        propertyIds: [finalPropertyId],
         icon: data.icon || 'Wallet',
         allowNegativeBalance: data.allowNegativeBalance || false,
         balance: 0,
@@ -151,6 +168,23 @@ export default function NewWalletPage() {
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)}>
             <CardContent className="space-y-6">
+              {/* Account Association Info */}
+              <div className="rounded-lg border bg-muted/40 p-3.5 flex items-center justify-between">
+                <div>
+                  <span className="text-xs text-muted-foreground block">Cuenta asignada (según encabezado):</span>
+                  <div className="flex items-center gap-2 mt-1">
+                    {targetProperty?.imageUrl ? (
+                      <Image src={targetProperty.imageUrl} alt={targetProperty.name} width={20} height={20} className="rounded-sm object-cover" />
+                    ) : (
+                      <Building2 className="h-4 w-4 text-primary" />
+                    )}
+                    <span className="font-semibold text-sm">
+                      {targetProperty?.name || (loading ? 'Cargando cuenta...' : 'Todas las cuentas')}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
               <FormField
                 control={form.control}
                 name="name"
@@ -160,42 +194,6 @@ export default function NewWalletPage() {
                     <FormControl>
                       <Input placeholder="Ej: Efectivo, Banco Santander" {...field} />
                     </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              {/* Single Account Association Selector */}
-              <FormField
-                control={form.control}
-                name="propertyId"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Cuenta a la que pertenece</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value || ''}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder={loading ? "Cargando cuentas..." : "Selecciona la cuenta"} />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {properties.map(property => (
-                          <SelectItem key={property.id} value={property.id}>
-                            <div className="flex items-center gap-2">
-                              {property.imageUrl ? (
-                                <Image src={property.imageUrl} alt={property.name} width={18} height={18} className="rounded-sm object-cover" />
-                              ) : (
-                                <Building2 className="h-4 w-4 text-muted-foreground" />
-                              )}
-                              <span>{property.name}</span>
-                            </div>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormDescription>
-                      Esta billetera pertenecerá exclusivamente a la cuenta seleccionada.
-                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
