@@ -180,12 +180,27 @@ export default function DueDatesPage() {
     setDaysFilter('all');
   };
 
+  React.useEffect(() => {
+    setSelectedCategory('all');
+  }, [activeAccountId]);
+
   const areFiltersActive = React.useMemo(() => {
     return selectedCategory !== 'all' || daysFilter !== 'all';
   }, [selectedCategory, daysFilter]);
 
   const availableCategories = React.useMemo(() => {
-    if (activeAccountId === 'all') return categories;
+    if (activeAccountId === 'all') {
+      const seenNames = new Set<string>();
+      const unique: ExpenseCategory[] = [];
+      for (const c of categories) {
+        const normalized = c.name.trim().toLowerCase();
+        if (!seenNames.has(normalized)) {
+          seenNames.add(normalized);
+          unique.push(c);
+        }
+      }
+      return unique;
+    }
     return categories.filter(c => {
       const propId = c.propertyId || (c.propertyIds && c.propertyIds[0]);
       return propId === activeAccountId;
@@ -211,10 +226,15 @@ export default function DueDatesPage() {
       }
       
       if (selectedCategory !== 'all') {
-        const category = categories.find(c => c.id === selectedCategory);
-        const subcategoryIds = category?.subcategories.map(s => s.id) || [];
-        if (!subcategoryIds.includes(expense.subcategoryId)) {
-          match = false;
+        const selectedCat = categories.find(c => c.id === selectedCategory);
+        if (selectedCat) {
+          const matchingCategories = activeAccountId === 'all'
+            ? categories.filter(c => c.name.trim().toLowerCase() === selectedCat.name.trim().toLowerCase())
+            : [selectedCat];
+          const subcategoryIds = matchingCategories.flatMap(c => c.subcategories.map(s => s.id));
+          if (!subcategoryIds.includes(expense.subcategoryId)) {
+            match = false;
+          }
         }
       }
       
@@ -233,7 +253,7 @@ export default function DueDatesPage() {
 
     return filtered;
 
-  }, [allExpectedExpenses, activeAccountId, daysFilter, categories, sortConfig]);
+  }, [allExpectedExpenses, activeAccountId, daysFilter, categories, selectedCategory, sortConfig]);
 
   // --- Action Handlers ---
   const handleToggleIsPaid = async (expense: ExpectedExpenseWithDetails) => {
@@ -404,7 +424,8 @@ export default function DueDatesPage() {
                     <SelectContent>
                         <SelectItem value="date">Fecha</SelectItem>
                         <SelectItem value="balance">Saldo</SelectItem>
-                        <SelectItem value="subcategoryName">Categoría</SelectItem>
+                        <SelectItem value="categoryName">Categoría</SelectItem>
+                        <SelectItem value="subcategoryName">Subcategoría</SelectItem>
                         <SelectItem value="propertyName">Cuenta</SelectItem>
                     </SelectContent>
                 </Select>
@@ -425,10 +446,12 @@ export default function DueDatesPage() {
                 <Card key={expense.id} className="p-4">
                   <div className="flex justify-between items-start mb-2">
                     <div className="flex-1 space-y-1">
-                      <p className="font-semibold">{expense.subcategoryName}</p>
-                       <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <Tag className="h-3 w-3" />
-                        <span>{expense.categoryName}</span>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="font-semibold text-xs bg-muted text-muted-foreground px-2 py-0.5 rounded border">
+                          {expense.categoryName}
+                        </span>
+                        <span className="text-muted-foreground text-xs font-semibold">›</span>
+                        <span className="font-bold text-base text-foreground">{expense.subcategoryName}</span>
                       </div>
                       <div className="flex items-center gap-2 text-sm text-muted-foreground">
                           <Building className="h-3 w-3" />

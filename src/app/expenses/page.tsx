@@ -364,8 +364,14 @@ export default function ExpensesPage() {
     };
     
     React.useEffect(() => {
+        setSelectedCategory('all');
         setSelectedSubcategory('all');
-    }, [selectedCategory])
+        setSelectedWallet('all');
+    }, [activeAccountId]);
+
+    React.useEffect(() => {
+        setSelectedSubcategory('all');
+    }, [selectedCategory]);
     
     const areFiltersActive = React.useMemo(() => {
         const isDefaultDate = date?.from?.getTime() === startOfMonth(new Date()).getTime() && date?.to?.getTime() === endOfMonth(new Date()).getTime();
@@ -380,12 +386,46 @@ export default function ExpensesPage() {
     }, [date, selectedCategory, selectedSubcategory, selectedCurrency, selectedWallet]);
 
     const availableCategories = React.useMemo(() => {
-        if (activeAccountId === 'all') return categories;
+        if (activeAccountId === 'all') {
+            const seenNames = new Set<string>();
+            const unique: ExpenseCategory[] = [];
+            for (const c of categories) {
+                const normalized = c.name.trim().toLowerCase();
+                if (!seenNames.has(normalized)) {
+                    seenNames.add(normalized);
+                    unique.push(c);
+                }
+            }
+            return unique;
+        }
         return categories.filter(c => {
             const propId = c.propertyId || (c.propertyIds && c.propertyIds[0]);
             return propId === activeAccountId;
         });
     }, [categories, activeAccountId]);
+
+    const availableSubcategories = React.useMemo(() => {
+        if (selectedCategory === 'all') return [];
+        const selectedCat = categories.find(c => c.id === selectedCategory);
+        if (!selectedCat) return [];
+
+        if (activeAccountId === 'all') {
+            const matchingCats = categories.filter(c => c.name.trim().toLowerCase() === selectedCat.name.trim().toLowerCase());
+            const seenSubNames = new Set<string>();
+            const uniqueSubs: ExpenseSubcategory[] = [];
+            for (const cat of matchingCats) {
+                for (const sub of cat.subcategories) {
+                    const normalized = sub.name.trim().toLowerCase();
+                    if (!seenSubNames.has(normalized)) {
+                        seenSubNames.add(normalized);
+                        uniqueSubs.push(sub);
+                    }
+                }
+            }
+            return uniqueSubs;
+        }
+        return selectedCat.subcategories || [];
+    }, [categories, selectedCategory, activeAccountId]);
 
     const sortedAndFilteredExpenses = React.useMemo(() => {
         const selectedProperties = activeAccountId === 'all' ? properties.map(p => p.id) : [activeAccountId];
@@ -402,13 +442,33 @@ export default function ExpensesPage() {
             if (selectedWallet !== 'all' && expense.walletId !== selectedWallet) match = false;
             
             if (selectedCategory !== 'all') {
-                const category = categories.find(c => c.id === selectedCategory);
-                const subcategoryIds = category?.subcategories.map(s => s.id) || [];
-                if (!subcategoryIds.includes(expense.subcategoryId)) {
-                    match = false;
+                const selectedCat = categories.find(c => c.id === selectedCategory);
+                if (selectedCat) {
+                    const matchingCategories = activeAccountId === 'all'
+                        ? categories.filter(c => c.name.trim().toLowerCase() === selectedCat.name.trim().toLowerCase())
+                        : [selectedCat];
+                    const subcategoryIds = matchingCategories.flatMap(c => c.subcategories.map(s => s.id));
+                    if (!subcategoryIds.includes(expense.subcategoryId)) {
+                        match = false;
+                    }
                 }
             }
-            if (selectedSubcategory !== 'all' && expense.subcategoryId !== selectedSubcategory) match = false;
+            if (selectedSubcategory !== 'all') {
+                if (activeAccountId === 'all') {
+                    const selectedSubName = availableSubcategories.find(s => s.id === selectedSubcategory)?.name.trim().toLowerCase();
+                    if (selectedSubName) {
+                        if (expense.subcategoryName?.trim().toLowerCase() !== selectedSubName) {
+                            match = false;
+                        }
+                    } else if (expense.subcategoryId !== selectedSubcategory) {
+                        match = false;
+                    }
+                } else {
+                    if (expense.subcategoryId !== selectedSubcategory) {
+                        match = false;
+                    }
+                }
+            }
 
             return match;
         });
@@ -429,7 +489,7 @@ export default function ExpensesPage() {
         }
         
         return filtered;
-    }, [allExpenses, date, selectedCurrency, selectedCategory, selectedSubcategory, selectedWallet, categories, sortConfig, activeAccountId, properties]);
+    }, [allExpenses, date, selectedCurrency, selectedCategory, selectedSubcategory, selectedWallet, categories, availableSubcategories, sortConfig, activeAccountId, properties]);
     
     const expenseTotals = React.useMemo(() => {
         return sortedAndFilteredExpenses.reduce((acc, expense) => {
@@ -576,7 +636,7 @@ export default function ExpensesPage() {
                         <SelectTrigger className="w-full grow sm:grow-0 sm:w-auto"><SelectValue placeholder="Subcategoría" /></SelectTrigger>
                         <SelectContent>
                             <SelectItem value="all">Todas las subcategorías</SelectItem>
-                            {categories.find(c => c.id === selectedCategory)?.subcategories.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
+                            {availableSubcategories.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
                         </SelectContent>
                     </Select>
 
@@ -643,7 +703,8 @@ export default function ExpensesPage() {
                                 <SelectContent>
                                     <SelectItem value="date">Fecha</SelectItem>
                                     <SelectItem value="amount">Monto</SelectItem>
-                                    <SelectItem value="subcategoryName">Categoría</SelectItem>
+                                    <SelectItem value="categoryName">Categoría</SelectItem>
+                                    <SelectItem value="subcategoryName">Subcategoría</SelectItem>
                                     <SelectItem value="propertyName">Cuenta</SelectItem>
                                 </SelectContent>
                             </Select>
@@ -668,8 +729,13 @@ export default function ExpensesPage() {
                                 <Card key={expense.id} className="p-4">
                                     <div className="flex justify-between items-start">
                                         <div className="flex-1 space-y-1">
-                                            <p className="font-semibold">{expense.subcategoryName}</p>
-                                            <p className="text-sm text-muted-foreground">{expense.categoryName}</p>
+                                            <div className="flex items-center gap-1.5 flex-wrap">
+                                                <span className="font-semibold text-xs bg-muted text-muted-foreground px-2 py-0.5 rounded border">
+                                                    {expense.categoryName}
+                                                </span>
+                                                <span className="text-muted-foreground text-xs font-semibold">›</span>
+                                                <span className="font-bold text-base text-foreground">{expense.subcategoryName}</span>
+                                            </div>
                                             <p className="text-sm text-muted-foreground">{expense.propertyName} - {expense.walletName}</p>
                                             <p className="text-xs text-muted-foreground">{format(new Date(expense.date), 'PP', { locale: es })}</p>
                                         </div>
