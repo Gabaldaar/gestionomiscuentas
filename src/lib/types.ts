@@ -19,6 +19,7 @@ export type Wallet = {
   icon?: string;
   allowNegativeBalance?: boolean;
   order?: number;
+  propertyId?: string;
   propertyIds?: string[];
 };
 

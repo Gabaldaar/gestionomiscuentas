@@ -1,4 +1,3 @@
-
 'use client';
 
 import * as React from 'react';
@@ -9,6 +8,7 @@ import { useRouter, useParams } from 'next/navigation';
 import { doc, getDoc, updateDoc, collection, getDocs, query, orderBy } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { cn } from '@/lib/utils';
+import Image from 'next/image';
 
 import { PageHeader } from '@/components/shared/PageHeader';
 import { Button } from '@/components/ui/button';
@@ -38,29 +38,26 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { Loader, AlertTriangle } from 'lucide-react';
+import { Loader, AlertTriangle, Building2 } from 'lucide-react';
 import { type Wallet, type Property } from '@/lib/types';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { walletIcons, WalletIcon, type WalletIconName } from '@/lib/wallet-icons';
 import { Switch } from '@/components/ui/switch';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Separator } from '@/components/ui/separator';
 
 const walletSchema = z.object({
   name: z.string().min(1, 'El nombre es obligatorio.'),
   currency: z.enum(['ARS', 'USD'], {
     required_error: 'La moneda es obligatoria.',
   }),
+  propertyId: z.string().min(1, 'Debes seleccionar la cuenta a la que pertenece esta billetera.'),
   balance: z.coerce.number({invalid_type_error: 'El saldo debe ser un número.'}),
   icon: z.string().optional(),
   allowNegativeBalance: z.boolean().optional(),
   order: z.coerce.number().optional(),
-  propertyIds: z.array(z.string()).optional(),
 });
 
 type WalletFormValues = z.infer<typeof walletSchema>;
 const iconNames = Object.keys(walletIcons) as WalletIconName[];
-
 
 export default function EditWalletPage() {
   const router = useRouter();
@@ -88,45 +85,54 @@ export default function EditWalletPage() {
           getDocs(query(collection(db, 'properties'), orderBy('name')))
         ]);
 
-        setProperties(propertiesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Property)));
+        const propsList = propertiesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Property));
+        setProperties(propsList);
 
         if (walletSnap.exists()) {
           const walletData = walletSnap.data() as Wallet;
+          const assignedPropertyId = walletData.propertyId || walletData.propertyIds?.[0] || '';
+          
           form.reset({
             name: walletData.name,
             currency: walletData.currency,
+            propertyId: assignedPropertyId,
             balance: walletData.balance,
             icon: walletData.icon || 'Wallet',
             allowNegativeBalance: walletData.allowNegativeBalance || false,
-            order: walletData.order ?? '' as any,
-            propertyIds: walletData.propertyIds || [],
+            order: walletData.order ?? undefined,
           });
         } else {
-          setError('No se encontró la billetera.');
+          setError("La billetera no existe.");
         }
-      } catch (err) {
-        setError('Error al cargar la billetera.');
-        console.error(err);
+      } catch (error) {
+        console.error("Error fetching wallet:", error);
+        setError("No se pudo cargar la billetera.");
+        toast({ title: "Error", description: "No se pudo cargar la billetera.", variant: "destructive" });
       } finally {
         setLoading(false);
       }
     };
     fetchWallet();
-  }, [id, form]);
+  }, [id, form, toast]);
 
   const onSubmit = async (data: WalletFormValues) => {
     setIsSubmitting(true);
     try {
       const walletRef = doc(db, 'wallets', id);
       await updateDoc(walletRef, {
-        ...data,
-        order: data.order || null,
-        propertyIds: data.propertyIds || [],
+        name: data.name,
+        currency: data.currency,
+        propertyId: data.propertyId,
+        propertyIds: [data.propertyId],
+        balance: data.balance,
+        icon: data.icon,
+        allowNegativeBalance: data.allowNegativeBalance,
+        order: data.order ?? null,
       });
 
       toast({
         title: 'Billetera actualizada',
-        description: 'La billetera ha sido actualizada exitosamente.',
+        description: 'Los datos de la billetera se guardaron correctamente.',
       });
       router.push('/wallets');
     } catch (error) {
@@ -136,51 +142,51 @@ export default function EditWalletPage() {
         description: 'No se pudo actualizar la billetera.',
         variant: 'destructive',
       });
-    } finally {
       setIsSubmitting(false);
     }
   };
 
   if (loading) {
     return (
-      <div className="flex-1 space-y-4 p-4 md:p-8 pt-6 flex justify-center">
-        <Loader className="h-8 w-8 animate-spin" />
+      <div className="flex-1 space-y-4 p-4 md:p-8 pt-6 flex justify-center items-center min-h-[50vh]">
+        <Loader className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
 
   if (error) {
     return (
-        <div className="flex-1 space-y-4 p-4 md:p-8 pt-6 flex justify-center">
-            <Card className="max-w-2xl mx-auto w-full">
-                <CardHeader>
-                    <CardTitle className='text-destructive flex items-center gap-2'>
-                        <AlertTriangle/> Error
-                    </CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <p>{error}</p>
-                    <Button onClick={() => router.back()} className="mt-4">Volver</Button>
-                </CardContent>
-            </Card>
+      <div className="flex-1 space-y-4 p-4 md:p-8 pt-6 flex justify-center">
+        <Card className="max-w-2xl mx-auto w-full">
+          <CardHeader>
+            <CardTitle className="text-destructive flex items-center gap-2">
+              <AlertTriangle /> Error
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p>{error}</p>
+            <Button onClick={() => router.push('/wallets')} className="mt-4">
+              Volver a Billeteras
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     );
   }
-
 
   return (
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
       <PageHeader title="Editar Billetera" />
 
       <Card className="max-w-2xl mx-auto">
+        <CardHeader>
+          <CardTitle>Editar Detalles</CardTitle>
+          <CardDescription>
+            Modifica la información y la cuenta a la que pertenece esta billetera.
+          </CardDescription>
+        </CardHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)}>
-            <CardHeader>
-              <CardTitle>Detalles de la Billetera</CardTitle>
-              <CardDescription>
-                Modifica la información de la billetera, incluyendo su saldo actual.
-              </CardDescription>
-            </CardHeader>
             <CardContent className="space-y-6">
               <FormField
                 control={form.control}
@@ -189,84 +195,86 @@ export default function EditWalletPage() {
                   <FormItem>
                     <FormLabel>Nombre de la Billetera</FormLabel>
                     <FormControl>
-                      <Input placeholder="Ej: Cuenta Principal" {...field} />
+                      <Input placeholder="Ej: Efectivo" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField
-                    control={form.control}
-                    name="balance"
-                    render={({ field }) => (
-                    <FormItem>
-                        <FormLabel>Saldo Actual</FormLabel>
-                        <FormControl>
-                        <Input type="number" step="0.01" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                    </FormItem>
-                    )}
-                />
-                <FormField
-                    control={form.control}
-                    name="currency"
-                    render={({ field }) => (
-                    <FormItem>
-                        <FormLabel>Moneda</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value} disabled>
-                            <FormControl>
-                            <SelectTrigger>
-                                <SelectValue placeholder="Moneda" />
-                            </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                            <SelectItem value="ARS">ARS</SelectItem>
-                            <SelectItem value="USD">USD</SelectItem>
-                            </SelectContent>
-                        </Select>
-                        <FormMessage />
-                    </FormItem>
-                    )}
-                />
-              </div>
-              
+
+              {/* Single Account Association Selector */}
               <FormField
                 control={form.control}
-                name="icon"
+                name="propertyId"
                 render={({ field }) => (
-                  <FormItem className="space-y-3">
-                    <FormLabel>Selecciona un Ícono</FormLabel>
-                    <FormControl>
-                      <RadioGroup
-                        onValueChange={field.onChange}
-                        value={field.value}
-                        className="grid grid-cols-3 md:grid-cols-6 gap-4"
-                      >
-                        {iconNames.map((name) => (
-                          <FormItem key={name} className="flex items-center space-x-3 space-y-0">
-                            <FormControl>
-                              <RadioGroupItem value={name} className="sr-only" />
-                            </FormControl>
-                            <FormLabel className="font-normal">
-                               <div className={cn(
-                                  "p-4 rounded-lg border-2 flex items-center justify-center cursor-pointer transition-all",
-                                   field.value === name 
-                                    ? 'border-primary bg-primary/10' 
-                                    : 'border-border hover:border-primary/50'
-                                )}>
-                                  <WalletIcon name={name} className="h-6 w-6" />
-                               </div>
-                            </FormLabel>
-                          </FormItem>
+                  <FormItem>
+                    <FormLabel>Cuenta a la que pertenece</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value || ''}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecciona la cuenta dueña" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {properties.map(property => (
+                          <SelectItem key={property.id} value={property.id}>
+                            <div className="flex items-center gap-2">
+                              {property.imageUrl ? (
+                                <Image src={property.imageUrl} alt={property.name} width={18} height={18} className="rounded-sm object-cover" />
+                              ) : (
+                                <Building2 className="h-4 w-4 text-muted-foreground" />
+                              )}
+                              <span>{property.name}</span>
+                            </div>
+                          </SelectItem>
                         ))}
-                      </RadioGroup>
-                    </FormControl>
+                      </SelectContent>
+                    </Select>
+                    <FormDescription>
+                      Esta billetera pertenecerá exclusivamente a la cuenta seleccionada.
+                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
               />
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="currency"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Moneda</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecciona una moneda" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="ARS">Pesos (ARS)</SelectItem>
+                          <SelectItem value="USD">Dólares (USD)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="balance"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Saldo Actual</FormLabel>
+                      <FormControl>
+                        <Input type="number" step="any" placeholder="0.00" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
 
               <FormField
                 control={form.control}
@@ -275,7 +283,44 @@ export default function EditWalletPage() {
                   <FormItem>
                     <FormLabel>Orden de Visualización</FormLabel>
                     <FormControl>
-                      <Input type="number" placeholder="Ej: 1" {...field} />
+                      <Input type="number" placeholder="Ej: 1" {...field} value={field.value ?? ''} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="icon"
+                render={({ field }) => (
+                  <FormItem className="space-y-3">
+                    <FormLabel>Icono</FormLabel>
+                    <FormControl>
+                      <RadioGroup
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
+                        value={field.value}
+                        className="grid grid-cols-4 sm:grid-cols-8 gap-2"
+                      >
+                        {iconNames.map((name) => (
+                          <FormItem key={name}>
+                            <FormControl>
+                              <RadioGroupItem value={name} className="sr-only" />
+                            </FormControl>
+                            <FormLabel className="font-normal">
+                              <div className={cn(
+                                "p-3 rounded-lg border-2 flex items-center justify-center cursor-pointer transition-all",
+                                field.value === name 
+                                  ? 'border-primary bg-primary/10' 
+                                  : 'border-border hover:border-primary/50'
+                              )}>
+                                <WalletIcon name={name} className="h-6 w-6" />
+                              </div>
+                            </FormLabel>
+                          </FormItem>
+                        ))}
+                      </RadioGroup>
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -289,6 +334,9 @@ export default function EditWalletPage() {
                   <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
                     <div className="space-y-0.5">
                       <FormLabel className="text-base">Permitir Saldo Negativo</FormLabel>
+                      <FormDescription>
+                        Habilitar si la cuenta puede quedar en descubierto o crédito.
+                      </FormDescription>
                       <FormMessage />
                     </div>
                     <FormControl>
@@ -300,79 +348,10 @@ export default function EditWalletPage() {
                   </FormItem>
                 )}
               />
-              <Separator />
-               <FormField
-                control={form.control}
-                name="propertyIds"
-                render={() => (
-                  <FormItem>
-                    <div className="mb-4">
-                      <FormLabel className="text-base">Asociar a Cuentas</FormLabel>
-                      <FormDescription>
-                        Selecciona las cuentas en las que esta billetera estará disponible. Si no seleccionas ninguna, estará disponible para todas.
-                      </FormDescription>
-                    </div>
-                     <div className="flex items-center space-x-2 pb-2">
-                        <Checkbox
-                          id="select-all-properties"
-                          checked={form.getValues('propertyIds')?.length === properties.length}
-                          onCheckedChange={(checked) => {
-                            if (checked) {
-                              form.setValue('propertyIds', properties.map(p => p.id));
-                            } else {
-                              form.setValue('propertyIds', []);
-                            }
-                          }}
-                        />
-                        <label
-                          htmlFor="select-all-properties"
-                          className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                        >
-                          Seleccionar todas
-                        </label>
-                      </div>
-                    {properties.map((item) => (
-                      <FormField
-                        key={item.id}
-                        control={form.control}
-                        name="propertyIds"
-                        render={({ field }) => {
-                          return (
-                            <FormItem
-                              key={item.id}
-                              className="flex flex-row items-start space-x-3 space-y-0"
-                            >
-                              <FormControl>
-                                <Checkbox
-                                  checked={field.value?.includes(item.id)}
-                                  onCheckedChange={(checked) => {
-                                    return checked
-                                      ? field.onChange([...(field.value || []), item.id])
-                                      : field.onChange(
-                                          field.value?.filter(
-                                            (value) => value !== item.id
-                                          )
-                                        )
-                                  }}
-                                />
-                              </FormControl>
-                              <FormLabel className="font-normal">
-                                {item.name}
-                              </FormLabel>
-                            </FormItem>
-                          )
-                        }}
-                      />
-                    ))}
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
             </CardContent>
-            <CardFooter className='flex flex-col sm:flex-row justify-end gap-2 p-6'>
-                <Button type="button" variant="ghost" onClick={() => router.push('/wallets')}>
-                  Cancelar
+            <CardFooter className="flex flex-col sm:flex-row justify-end gap-2 p-6">
+              <Button type="button" variant="ghost" onClick={() => router.back()}>
+                Cancelar
               </Button>
               <Button type="submit" disabled={isSubmitting}>
                 {isSubmitting && <Loader className="mr-2 h-4 w-4 animate-spin" />}
