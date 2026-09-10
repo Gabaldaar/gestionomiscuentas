@@ -243,29 +243,33 @@ export default function WalletsSettingsPage() {
 
       const transactions: { date: Date, amount: number, currency: Currency }[] = [];
 
-      incomesSnap.docs.forEach(doc => {
-        const data = doc.data() as Income;
-        if (selectedWalletIds.has(data.walletId)) {
-          let dateObj = new Date();
-          try {
-            if ((data.date as any)?.toDate) dateObj = (data.date as any).toDate();
-            else if (data.date) dateObj = new Date(data.date);
-          } catch {}
-          transactions.push({ date: dateObj, amount: data.amount, currency: data.currency });
-        }
-      });
+      incomesSnap.docs
+        .filter(doc => doc.ref.parent.parent && !doc.ref.parent.parent.parent)
+        .forEach(doc => {
+          const data = doc.data() as Income;
+          if (selectedWalletIds.has(data.walletId)) {
+            let dateObj = new Date();
+            try {
+              if ((data.date as any)?.toDate) dateObj = (data.date as any).toDate();
+              else if (data.date) dateObj = new Date(data.date);
+            } catch {}
+            transactions.push({ date: dateObj, amount: data.amount, currency: data.currency });
+          }
+        });
 
-      expensesSnap.docs.forEach(doc => {
-        const data = doc.data() as ActualExpense;
-        if (selectedWalletIds.has(data.walletId)) {
-          let dateObj = new Date();
-          try {
-            if ((data.date as any)?.toDate) dateObj = (data.date as any).toDate();
-            else if (data.date) dateObj = new Date(data.date);
-          } catch {}
-          transactions.push({ date: dateObj, amount: -data.amount, currency: data.currency });
-        }
-      });
+      expensesSnap.docs
+        .filter(doc => doc.ref.parent.parent && !doc.ref.parent.parent.parent)
+        .forEach(doc => {
+          const data = doc.data() as ActualExpense;
+          if (selectedWalletIds.has(data.walletId)) {
+            let dateObj = new Date();
+            try {
+              if ((data.date as any)?.toDate) dateObj = (data.date as any).toDate();
+              else if (data.date) dateObj = new Date(data.date);
+            } catch {}
+            transactions.push({ date: dateObj, amount: -data.amount, currency: data.currency });
+          }
+        });
 
       transfersSnap.docs.forEach(doc => {
         const data = doc.data() as Transfer;

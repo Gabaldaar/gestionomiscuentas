@@ -91,16 +91,20 @@ export default function ReportsPage() {
       const propsList = propsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Property));
       setProperties(propsList);
 
-      const incomesList = incomesSnap.docs.map(doc => {
-        const data = doc.data();
-        return { ...data, id: doc.id, date: (data.date as Timestamp).toDate().toISOString(), propertyId: doc.ref.parent.parent?.id } as Income;
-      });
+      const incomesList = incomesSnap.docs
+        .filter(doc => doc.ref.parent.parent && !doc.ref.parent.parent.parent)
+        .map(doc => {
+          const data = doc.data();
+          return { ...data, id: doc.id, date: (data.date as Timestamp).toDate().toISOString(), propertyId: doc.ref.parent.parent?.id } as Income;
+        });
       setAllIncomes(incomesList);
 
-      const expensesList = expensesSnap.docs.map(doc => {
-        const data = doc.data();
-        return { ...data, id: doc.id, date: (data.date as Timestamp).toDate().toISOString(), propertyId: doc.ref.parent.parent?.id } as ActualExpense;
-      });
+      const expensesList = expensesSnap.docs
+        .filter(doc => doc.ref.parent.parent && !doc.ref.parent.parent.parent)
+        .map(doc => {
+          const data = doc.data();
+          return { ...data, id: doc.id, date: (data.date as Timestamp).toDate().toISOString(), propertyId: doc.ref.parent.parent?.id } as ActualExpense;
+        });
       setAllExpenses(expensesList);
 
       const allTransactions = [...incomesList, ...expensesList];

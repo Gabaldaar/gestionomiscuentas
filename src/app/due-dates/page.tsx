@@ -87,7 +87,9 @@ export default function DueDatesPage() {
 
       setWallets(walletsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Wallet)));
       
-      const actualsList = actualExpensesSnap.docs.map(doc => {
+      const actualsList = actualExpensesSnap.docs
+        .filter(doc => doc.ref.parent.parent && !doc.ref.parent.parent.parent)
+        .map(doc => {
           const data = doc.data();
           const propertyId = doc.ref.parent.parent!.id;
           let date;
@@ -116,6 +118,7 @@ export default function DueDatesPage() {
       setCategories(categoriesList);
 
       const expectedList = expectedExpensesSnap.docs
+        .filter(doc => doc.ref.parent.parent && !doc.ref.parent.parent.parent)
         .map(doc => {
             const data = doc.data();
             const propertyId = doc.ref.parent.parent!.id;

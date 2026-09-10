@@ -109,31 +109,40 @@ export function AddExpenseDialog({
     resolver: zodResolver(expenseSchema),
   });
 
+  const effectivePropertyId = isEditing
+    ? ((expenseToEdit as any)?.propertyId || activeAccountId)
+    : (initialData?.propertyId || activeAccountId);
+
   const sortedCategories = React.useMemo(() => {
     if (!expenseCategories) return [];
     
     // If we are in "All Accounts" context, don't filter anything.
-    if (activeAccountId === 'all') {
+    if (effectivePropertyId === 'all') {
       return expenseCategories;
     }
 
     const isItemVisibleForAccount = (item: { propertyId?: string; propertyIds?: string[] | null }) => {
       if (item.propertyId) {
-        return item.propertyId === activeAccountId;
+        return item.propertyId === effectivePropertyId;
       }
       // Is global (visible) if propertyIds is not set or is an empty array.
       if (item.propertyIds == null || item.propertyIds.length === 0) {
         return true;
       }
       // Is visible if the active account is in its list of assigned properties.
-      return item.propertyIds.includes(activeAccountId);
+      return item.propertyIds.includes(effectivePropertyId);
     };
 
     return expenseCategories
       .filter(isItemVisibleForAccount) // 1. Filter parent categories
       .map(cat => {
         // 2. Filter subcategories of the visible parent
-        const visibleSubcategories = cat.subcategories.filter(isItemVisibleForAccount);
+        const visibleSubcategories = (cat.subcategories || []).filter(sub => {
+          if (sub.propertyId || (sub.propertyIds && sub.propertyIds.length > 0)) {
+            return isItemVisibleForAccount(sub);
+          }
+          return true;
+        });
 
         // 3. Only include the parent category if it has any visible subcategories left
         if (visibleSubcategories.length > 0) {
@@ -145,7 +154,7 @@ export function AddExpenseDialog({
         return null;
       })
       .filter((cat): cat is NonNullable<typeof cat> => cat !== null);
-  }, [expenseCategories, activeAccountId]);
+  }, [expenseCategories, effectivePropertyId]);
   
   React.useEffect(() => {
     const subscription = form.watch((value, { name }) => {
@@ -210,12 +219,14 @@ export function AddExpenseDialog({
     return wallets
       .filter(wallet => {
         if (wallet.currency !== selectedCurrency) return false;
-        if (activeAccountId === 'all') return true;
+        if (effectivePropertyId === 'all') return true;
+        const propId = wallet.propertyId || (wallet.propertyIds && wallet.propertyIds[0]);
+        if (propId) return propId === effectivePropertyId;
         if (!wallet.propertyIds || wallet.propertyIds.length === 0) return true;
-        return wallet.propertyIds.includes(activeAccountId);
+        return wallet.propertyIds.includes(effectivePropertyId);
       })
       .sort(sortWallets);
-  }, [wallets, selectedCurrency, activeAccountId]);
+  }, [wallets, selectedCurrency, effectivePropertyId]);
 
   const availableLiabilities = liabilities?.filter(l => l.currency === selectedCurrency);
   const isPropertyFixed = !!initialData?.propertyId;

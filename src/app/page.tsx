@@ -85,21 +85,27 @@ export default function DashboardPage() {
         getDocs(walletsQuery),
       ]);
 
-      const incomes = incomesSnapshot.docs.map(doc => ({
-        ...doc.data(),
-        id: doc.id,
-        date: (doc.data().date as Timestamp).toDate().toISOString(),
-        propertyId: doc.ref.parent.parent?.id,
-      } as Income));
+      const incomes = incomesSnapshot.docs
+        .filter(doc => doc.ref.parent.parent && !doc.ref.parent.parent.parent)
+        .map(doc => ({
+          ...doc.data(),
+          id: doc.id,
+          date: (doc.data().date as Timestamp).toDate().toISOString(),
+          propertyId: doc.ref.parent.parent?.id,
+        } as Income));
 
-      const expenses = expensesSnapshot.docs.map(doc => ({
-        ...doc.data(),
-        id: doc.id,
-        date: (doc.data().date as Timestamp).toDate().toISOString(),
-        propertyId: doc.ref.parent.parent?.id,
-      } as ActualExpense));
+      const expenses = expensesSnapshot.docs
+        .filter(doc => doc.ref.parent.parent && !doc.ref.parent.parent.parent)
+        .map(doc => ({
+          ...doc.data(),
+          id: doc.id,
+          date: (doc.data().date as Timestamp).toDate().toISOString(),
+          propertyId: doc.ref.parent.parent?.id,
+        } as ActualExpense));
       
-      const expectedExpenses = expectedExpensesSnapshot.docs.map(doc => {
+      const expectedExpenses = expectedExpensesSnapshot.docs
+        .filter(doc => doc.ref.parent.parent && !doc.ref.parent.parent.parent)
+        .map(doc => {
           const data = doc.data();
           let date;
           if (data.date instanceof Timestamp) {

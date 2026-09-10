@@ -111,29 +111,31 @@ export default function ExpensesPage() {
             }));
             setCategories(categoriesList);
 
-            const expensesList = expensesSnap.docs.map(doc => {
-                const data = doc.data() as ActualExpense;
-                const propertyId = doc.ref.parent.parent ? doc.ref.parent.parent.id : (data.propertyId || '');
-                const { categoryName, subcategoryName } = getCategoryInfo(data.subcategoryId, categoriesList);
-                let dateStr = new Date().toISOString();
-                try {
-                    if (data.date && typeof (data.date as any).toDate === 'function') {
-                        dateStr = (data.date as unknown as Timestamp).toDate().toISOString();
-                    } else if (data.date) {
-                        dateStr = new Date(data.date).toISOString();
-                    }
-                } catch {}
-                return {
-                    ...data,
-                    id: doc.id,
-                    date: dateStr,
-                    propertyId: propertyId,
-                    propertyName: propsMap.get(propertyId) || 'Cuenta Desconocida',
-                    categoryName,
-                    subcategoryName,
-                    walletName: walletsMap.get(data.walletId) || 'N/A'
-                } as ExpenseWithDetails;
-            });
+            const expensesList = expensesSnap.docs
+                .filter(doc => doc.ref.parent.parent && !doc.ref.parent.parent.parent)
+                .map(doc => {
+                    const data = doc.data() as ActualExpense;
+                    const propertyId = doc.ref.parent.parent ? doc.ref.parent.parent.id : (data.propertyId || '');
+                    const { categoryName, subcategoryName } = getCategoryInfo(data.subcategoryId, categoriesList);
+                    let dateStr = new Date().toISOString();
+                    try {
+                        if (data.date && typeof (data.date as any).toDate === 'function') {
+                            dateStr = (data.date as unknown as Timestamp).toDate().toISOString();
+                        } else if (data.date) {
+                            dateStr = new Date(data.date).toISOString();
+                        }
+                    } catch {}
+                    return {
+                        ...data,
+                        id: doc.id,
+                        date: dateStr,
+                        propertyId: propertyId,
+                        propertyName: propsMap.get(propertyId) || 'Cuenta Desconocida',
+                        categoryName,
+                        subcategoryName,
+                        walletName: walletsMap.get(data.walletId) || 'N/A'
+                    } as ExpenseWithDetails;
+                });
             setAllExpenses(expensesList);
 
         } catch (err) {

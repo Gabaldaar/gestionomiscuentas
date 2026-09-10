@@ -106,34 +106,43 @@ export function AddIncomeDialog({
     resolver: zodResolver(incomeSchema),
   });
 
+  const effectivePropertyId = isEditing
+    ? ((incomeToEdit as any)?.propertyId || activeAccountId)
+    : (initialData?.propertyId || activeAccountId);
+
   const sortedCategories = React.useMemo(() => {
     if (!incomeCategories) return [];
 
-    if (activeAccountId === 'all') {
+    if (effectivePropertyId === 'all') {
       return incomeCategories;
     }
 
     const isItemVisibleForAccount = (item: { propertyId?: string; propertyIds?: string[] | null }) => {
       if (item.propertyId) {
-        return item.propertyId === activeAccountId;
+        return item.propertyId === effectivePropertyId;
       }
       if (item.propertyIds == null || item.propertyIds.length === 0) {
         return true;
       }
-      return item.propertyIds.includes(activeAccountId);
+      return item.propertyIds.includes(effectivePropertyId);
     };
 
     return incomeCategories
       .filter(isItemVisibleForAccount)
       .map(cat => {
-        const visibleSubcategories = cat.subcategories.filter(isItemVisibleForAccount);
+        const visibleSubcategories = (cat.subcategories || []).filter(sub => {
+          if (sub.propertyId || (sub.propertyIds && sub.propertyIds.length > 0)) {
+            return isItemVisibleForAccount(sub);
+          }
+          return true;
+        });
         if (visibleSubcategories.length > 0) {
           return { ...cat, subcategories: visibleSubcategories };
         }
         return null;
       })
       .filter((cat): cat is NonNullable<typeof cat> => cat !== null);
-  }, [incomeCategories, activeAccountId]);
+  }, [incomeCategories, effectivePropertyId]);
 
   const selectedWalletId = form.watch('walletId');
 
@@ -196,12 +205,14 @@ export function AddIncomeDialog({
     return wallets
       .filter(wallet => {
         if (wallet.currency !== selectedCurrency) return false;
-        if (activeAccountId === 'all') return true;
+        if (effectivePropertyId === 'all') return true;
+        const propId = wallet.propertyId || (wallet.propertyIds && wallet.propertyIds[0]);
+        if (propId) return propId === effectivePropertyId;
         if (!wallet.propertyIds || wallet.propertyIds.length === 0) return true;
-        return wallet.propertyIds.includes(activeAccountId);
+        return wallet.propertyIds.includes(effectivePropertyId);
       })
       .sort(sortWallets);
-  }, [wallets, selectedCurrency, activeAccountId]);
+  }, [wallets, selectedCurrency, effectivePropertyId]);
   
   const isPropertyFixed = !!initialData?.propertyId;
 

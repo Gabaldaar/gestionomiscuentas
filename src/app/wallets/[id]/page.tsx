@@ -77,7 +77,9 @@ async function getAllTransactionsForWallet(walletId: string): Promise<{transacti
         return { categoryName: 'N/A', subcategoryName: 'N/A' };
     };
 
-    incomesSnap.docs.forEach(doc => {
+    incomesSnap.docs
+      .filter(doc => doc.ref.parent.parent && !doc.ref.parent.parent.parent)
+      .forEach(doc => {
         const data = doc.data() as Income;
         if (data.walletId === walletId) {
             const propId = doc.ref.parent.parent ? doc.ref.parent.parent.id : (data.propertyId || '');
@@ -103,7 +105,9 @@ async function getAllTransactionsForWallet(walletId: string): Promise<{transacti
         }
     });
 
-    expensesSnap.docs.forEach(doc => {
+    expensesSnap.docs
+      .filter(doc => doc.ref.parent.parent && !doc.ref.parent.parent.parent)
+      .forEach(doc => {
         const data = doc.data() as ActualExpense;
         if (data.walletId === walletId) {
             const propId = doc.ref.parent.parent ? doc.ref.parent.parent.id : (data.propertyId || '');
