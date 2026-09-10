@@ -1,24 +1,54 @@
-import admin from 'firebase-admin';
-import { getFirestore } from 'firebase-admin/firestore';
+import { initializeApp, getApps, cert, type App } from 'firebase-admin/app';
+import { getFirestore, type Firestore } from 'firebase-admin/firestore';
 
-// IMPORTANT: Service account key is stored in an environment variable.
-const serviceAccount = process.env.FIREBASE_SERVICE_ACCOUNT_KEY
-  ? JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY)
-  : null;
-
-if (!admin.apps.length) {
-  if (serviceAccount) {
-    admin.initializeApp({
-      credential: admin.credential.cert(serviceAccount),
-      projectId: "studio-8566554728-8465b",
-    });
-  } else {
-    admin.initializeApp({
-      projectId: "studio-8566554728-8465b",
-    });
+function getServiceAccount() {
+  const rawKey = process.env.SERVICE_ACCOUNT_KEY || process.env.FB_SERVICE_ACCOUNT_KEY;
+  if (rawKey) {
+    try {
+      const parsed = typeof rawKey === 'string' ? JSON.parse(rawKey) : rawKey;
+      if (parsed && parsed.private_key) {
+        parsed.private_key = parsed.private_key.replace(/\\n/g, '\n');
+      }
+      return parsed;
+    } catch (e) {
+      console.error("Error parsing service account key:", e);
+    }
   }
+
+  const clientEmail = process.env.FB_CLIENT_EMAIL;
+  let privateKey = process.env.FB_PRIVATE_KEY;
+  if (clientEmail && privateKey) {
+    privateKey = privateKey.replace(/\\n/g, '\n');
+    return {
+      client_email: clientEmail,
+      private_key: privateKey,
+      project_id: process.env.FB_PROJECT_ID || 'studio-8566554728-8465b',
+    };
+  }
+
+  return null;
 }
 
-const db = getFirestore();
+function initAdmin(): App {
+  const apps = getApps();
+  if (apps.length > 0) {
+    return apps[0];
+  }
 
-export { db as adminDb };
+  const serviceAccount = getServiceAccount();
+  if (serviceAccount) {
+    return initializeApp({
+      credential: cert(serviceAccount),
+      projectId: serviceAccount.project_id || "studio-8566554728-8465b",
+    });
+  }
+
+  return initializeApp({
+    projectId: "studio-8566554728-8465b",
+  });
+}
+
+const adminApp = initAdmin();
+const adminDb: Firestore = getFirestore(adminApp);
+
+export { adminDb, adminApp };
