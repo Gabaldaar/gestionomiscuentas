@@ -10,6 +10,7 @@ const withPWA = withPWAInit({
 });
 
 const nextConfig: NextConfig = {
+  turbopack: {},
   typescript: {
     ignoreBuildErrors: true,
   },
