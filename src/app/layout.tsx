@@ -5,6 +5,8 @@ import { Toaster } from '@/components/ui/toaster';
 import { AuthProvider } from '@/components/auth/AuthProvider';
 import { AccountProvider } from '@/components/context/AccountProvider';
 
+import { ThemeProvider } from '@/components/theme/ThemeProvider';
+
 export const metadata: Metadata = {
   title: 'GestionoMisCuentas',
   description: 'Administra tus cuentas con facilidad.',
@@ -24,15 +26,17 @@ export default function RootLayout({
         <link href="https://fonts.googleapis.com/css2?family=PT+Sans:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet" />
         <meta name="theme-color" content="#64B5F6" />
       </head>
-      <body className="font-body antialiased">
-        <AuthProvider>
-          <AccountProvider>
-            <AppShell>
-              {children}
-            </AppShell>
-          </AccountProvider>
-        </AuthProvider>
-        <Toaster />
+      <body className="font-body antialiased bg-background text-foreground">
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+          <AuthProvider>
+            <AccountProvider>
+              <AppShell>
+                {children}
+              </AppShell>
+            </AccountProvider>
+          </AuthProvider>
+          <Toaster />
+        </ThemeProvider>
       </body>
     </html>
   );

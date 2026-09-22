@@ -51,6 +51,7 @@ import { QuickActions } from '../shared/QuickActions';
 import { BottomNav } from './BottomNav';
 import { useAccount } from '@/components/context/AccountProvider';
 import { PwaInstallPrompt } from '../shared/PwaInstallPrompt';
+import { ThemeToggle } from '../theme/ThemeToggle';
 
 function MainNav({ onLinkClick, walletBadgeCount, duesBadgeCount }: { onLinkClick: () => void, walletBadgeCount: number, duesBadgeCount: number }) {
   const pathname = usePathname();
@@ -321,13 +322,15 @@ function AppShellContent({ children }: { children: React.ReactNode }) {
               <SidebarTrigger>
                 <Menu />
               </SidebarTrigger>
-              <div className='hidden md:block'>
+              <div className='hidden md:flex items-center gap-2'>
                 <AccountSelector />
+                <ThemeToggle />
               </div>
               <span className="font-semibold md:hidden">Menú</span>
             </div>
-             <div className="md:hidden">
+            <div className="md:hidden flex items-center gap-2">
               <AccountSelector />
+              <ThemeToggle />
             </div>
         </header>
         <main className="pb-20 md:pb-0">{children}</main>
