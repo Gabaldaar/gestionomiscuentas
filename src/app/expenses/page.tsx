@@ -386,6 +386,17 @@ export default function ExpensesPage() {
         );
     }, [date, selectedCategory, selectedSubcategory, selectedCurrency, selectedWallet]);
 
+    const availableWallets = React.useMemo(() => {
+        return wallets.filter(w => {
+            if (!w.name) return false;
+            if (activeAccountId === 'all') return true;
+            const propId = w.propertyId || (w.propertyIds && w.propertyIds[0]);
+            if (propId) return propId === activeAccountId;
+            if (!w.propertyIds || w.propertyIds.length === 0) return true;
+            return w.propertyIds.includes(activeAccountId);
+        });
+    }, [wallets, activeAccountId]);
+
     const availableCategories = React.useMemo(() => {
         if (activeAccountId === 'all') {
             const seenNames = new Set<string>();
@@ -621,7 +632,7 @@ export default function ExpensesPage() {
                         <SelectTrigger className="w-full grow sm:grow-0 sm:w-auto"><SelectValue placeholder="Billetera" /></SelectTrigger>
                         <SelectContent>
                             <SelectItem value="all">Todas las billeteras</SelectItem>
-                            {wallets.map(w => <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>)}
+                            {availableWallets.map(w => <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>)}
                         </SelectContent>
                     </Select>
                     

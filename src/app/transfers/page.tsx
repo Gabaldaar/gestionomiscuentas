@@ -211,7 +211,22 @@ export default function TransfersHistoryPage() {
     }
   };
 
-  const walletsList = Array.from(wallets.values());
+  React.useEffect(() => {
+    setFromWalletId('all');
+    setToWalletId('all');
+  }, [activeAccountId]);
+
+  const availableWallets = React.useMemo(() => {
+    const list = Array.from(wallets.values());
+    return list.filter(w => {
+      if (!w.name) return false;
+      if (activeAccountId === 'all') return true;
+      const propId = w.propertyId || (w.propertyIds && w.propertyIds[0]);
+      if (propId) return propId === activeAccountId;
+      if (!w.propertyIds || w.propertyIds.length === 0) return true;
+      return w.propertyIds.includes(activeAccountId);
+    });
+  }, [wallets, activeAccountId]);
 
   return (
     <>
@@ -317,7 +332,7 @@ export default function TransfersHistoryPage() {
                     </SelectTrigger>
                     <SelectContent>
                     <SelectItem value="all">Todas las billeteras (Origen)</SelectItem>
-                    {walletsList.map(w => <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>)}
+                    {availableWallets.map(w => <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>)}
                     </SelectContent>
                 </Select>
 
@@ -327,7 +342,7 @@ export default function TransfersHistoryPage() {
                     </SelectTrigger>
                     <SelectContent>
                     <SelectItem value="all">Todas las billeteras (Destino)</SelectItem>
-                    {walletsList.map(w => <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>)}
+                    {availableWallets.map(w => <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>)}
                     </SelectContent>
                 </Select>
 
