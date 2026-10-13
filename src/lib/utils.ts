@@ -8,11 +8,15 @@ export function cn(...inputs: ClassValue[]) {
 
 export function sortWallets(a: Wallet, b: Wallet) {
   // Group by currency first (ARS then USD)
-  if (a.currency === 'ARS' && b.currency === 'USD') return -1;
-  if (a.currency === 'USD' && b.currency === 'ARS') return 1;
+  const currA = a.currency || 'ARS';
+  const currB = b.currency || 'ARS';
+  if (currA === 'ARS' && currB === 'USD') return -1;
+  if (currA === 'USD' && currB === 'ARS') return 1;
 
-  // Then sort alphabetically by name
-  return a.name.localeCompare(b.name);
+  // Then sort alphabetically by name (handling undefined/null safely)
+  const nameA = a.name || '';
+  const nameB = b.name || '';
+  return nameA.localeCompare(nameB);
 }
 
 export function formatCurrency(

@@ -102,6 +102,7 @@ export default function NewTransferPage() {
   const availableWallets = React.useMemo(() => {
     return wallets
       .filter(wallet => {
+        if (!wallet.name) return false;
         if (activeAccountId === 'all') return true;
         if (!wallet.propertyIds || wallet.propertyIds.length === 0) return true;
         return wallet.propertyIds.includes(activeAccountId);
